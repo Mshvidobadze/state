@@ -6,7 +6,6 @@ import 'package:state/features/auth/bloc/auth_state.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/bloc/home_state.dart';
 import 'package:state/features/home/ui/post_tile.dart';
-import 'package:state/features/home/ui/filters_row.dart';
 import 'package:state/app/app_router.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -46,16 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _onRegionChanged(String region) {
-    setState(() => selectedRegion = region);
-    context.read<HomeCubit>().loadPosts(region: region, sort: selectedSort);
-  }
-
-  void _onSortChanged(String sort) {
-    setState(() => selectedSort = sort);
-    context.read<HomeCubit>().loadPosts(region: selectedRegion, sort: sort);
-  }
-
   @override
   Widget build(BuildContext context) {
     const logoColor = Color(0xFF800020);
@@ -63,24 +52,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
-        String currentUserId = '';
-        String currentUserName = '';
-        if (authState is Authenticated) {
-          currentUserId = authState.userId;
-          currentUserName = authState.userName;
-        }
-
         return Scaffold(
           appBar: AppBar(
-            automaticallyImplyLeading: false,
-            title: const Text(
-              'State',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-                letterSpacing: 1.2,
-              ),
-            ),
+            title: const Text('State'),
             backgroundColor: logoColor,
             actions: [
               IconButton(
@@ -90,19 +64,81 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ],
-            elevation: 2,
           ),
           backgroundColor: backgroundColor,
           body: Column(
             children: [
-              FiltersRow(
-                selectedRegion: selectedRegion,
-                selectedSort: selectedSort,
-                onRegionChanged: _onRegionChanged,
-                onSortChanged: _onSortChanged,
-                onCreatePost: _onCreatePost,
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    // Region filter
+                    DropdownButton<String>(
+                      value: selectedRegion,
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(color: logoColor),
+                      items:
+                          kRegions
+                              .map(
+                                (region) => DropdownMenuItem(
+                                  value: region,
+                                  child: Text(region),
+                                ),
+                              )
+                              .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => selectedRegion = value);
+                          context.read<HomeCubit>().loadPosts(
+                            region: selectedRegion,
+                            sort: selectedSort,
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    // Sort filter
+                    DropdownButton<String>(
+                      value: selectedSort,
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(color: logoColor),
+                      items: const [
+                        DropdownMenuItem(value: 'hot', child: Text('Hot')),
+                        DropdownMenuItem(value: 'new', child: Text('New')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => selectedSort = value);
+                          context.read<HomeCubit>().loadPosts(
+                            region: selectedRegion,
+                            sort: selectedSort,
+                          );
+                        }
+                      },
+                    ),
+                    const Spacer(),
+                    // Create button
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: logoColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Create'),
+                      onPressed: _onCreatePost,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
+              // Posts list with pull-to-refresh
               Expanded(
                 child: BlocBuilder<HomeCubit, HomeState>(
                   builder: (context, state) {
@@ -121,8 +157,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             final post = state.posts[index];
                             return PostTile(
                               post: post,
-                              currentUserId: currentUserId,
-                              currentUserName: currentUserName,
+                              currentUserId: state.currentUserId,
+                              currentUserName: state.currentUserName,
                             );
                           },
                         ),

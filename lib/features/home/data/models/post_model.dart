@@ -13,7 +13,7 @@ class PostModel {
   final int commentsCount;
   final DateTime createdAt;
   final List<String> followers;
-  final List<String> upvoters; // <-- Add this line
+  final List<String> upvoters;
 
   PostModel({
     required this.id,
@@ -28,7 +28,7 @@ class PostModel {
     required this.commentsCount,
     required this.createdAt,
     required this.followers,
-    required this.upvoters, // <-- Add this line
+    required this.upvoters,
   });
 
   factory PostModel.fromDoc(DocumentSnapshot doc) {
@@ -46,7 +46,7 @@ class PostModel {
       commentsCount: data['commentsCount'] ?? 0,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       followers: List<String>.from(data['followers'] ?? []),
-      upvoters: List<String>.from(data['upvoters'] ?? []), // <-- Add this line
+      upvoters: List<String>.from(data['upvoters'] ?? []),
     );
   }
 
@@ -62,7 +62,7 @@ class PostModel {
     'commentsCount': commentsCount,
     'createdAt': createdAt,
     'followers': followers,
-    'upvoters': upvoters, // <-- Add this line
+    'upvoters': upvoters,
   };
 
   PostModel copyWith({
@@ -78,7 +78,7 @@ class PostModel {
     int? commentsCount,
     DateTime? createdAt,
     List<String>? followers,
-    List<String>? upvoters, // <-- Add this line
+    List<String>? upvoters,
   }) {
     return PostModel(
       id: id ?? this.id,
@@ -93,7 +93,7 @@ class PostModel {
       commentsCount: commentsCount ?? this.commentsCount,
       createdAt: createdAt ?? this.createdAt,
       followers: followers ?? this.followers,
-      upvoters: upvoters ?? this.upvoters, // <-- Add this line
+      upvoters: upvoters ?? this.upvoters,
     );
   }
 }

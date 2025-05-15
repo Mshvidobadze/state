@@ -7,11 +7,13 @@ class PostTile extends StatelessWidget {
   final PostModel post;
   final String currentUserId;
   final String currentUserName;
+  final VoidCallback? onUnfollow;
 
   const PostTile({
     required this.post,
     required this.currentUserId,
     required this.currentUserName,
+    this.onUnfollow,
     super.key,
   });
 
@@ -47,7 +49,7 @@ class PostTile extends StatelessWidget {
                   post.authorName,
                   style: const TextStyle(
                     fontWeight: FontWeight.w500,
-                    fontSize: 11, // Smaller like Reddit
+                    fontSize: 11,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -78,10 +80,14 @@ class PostTile extends StatelessWidget {
                   ),
                   onPressed: () {
                     if (isFollowing) {
-                      context.read<HomeCubit>().unfollowPost(
-                        post.id,
-                        currentUserId,
-                      );
+                      if (onUnfollow != null) {
+                        onUnfollow!();
+                      } else {
+                        context.read<HomeCubit>().unfollowPost(
+                          post.id,
+                          currentUserId,
+                        );
+                      }
                     } else {
                       context.read<HomeCubit>().followPost(
                         post.id,
