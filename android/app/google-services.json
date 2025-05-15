@@ -12,7 +12,20 @@
           "package_name": "com.stateapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "230214864870-ev3ve4uq7h2l9le6bv9ihp6v72np4jld.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.stateapp",
+            "certificate_hash": "b36120952d12c74b5f8a6a3e1b9be3e498e5133a"
+          }
+        },
+        {
+          "client_id": "230214864870-tq3vcsu9g8qgn45h75u2qe1edtgffk4e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBOSJP6i4F0QsM-OvKL65iPBzVyDG_FGdA"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "230214864870-tq3vcsu9g8qgn45h75u2qe1edtgffk4e.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "230214864870-ct2v5868s4criqqhvrrvo5s9de7809s6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.stateapp"
+              }
+            }
+          ]
         }
       }
     }
