@@ -1,17 +1,23 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/home/bloc/home_state.dart';
 import 'package:state/features/home/domain/home_repository.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository homeRepository;
+  final FirebaseAuth firebaseAuth;
 
-  HomeCubit(this.homeRepository) : super(HomeInitial());
+  HomeCubit(this.homeRepository, this.firebaseAuth) : super(HomeInitial());
+
+  String? get currentUserId => firebaseAuth.currentUser?.uid;
+  String? get currentUserName => firebaseAuth.currentUser?.displayName ?? '';
 
   Future<void> loadPosts({required String region, required String sort}) async {
     emit(HomeLoading());
     try {
       final posts = await homeRepository.fetchPosts(region: region, sort: sort);
-      emit(HomeLoaded(posts));
+      final user = firebaseAuth.currentUser;
+      emit(HomeLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
     } catch (e) {
       emit(HomeError(e.toString()));
     }
@@ -45,7 +51,8 @@ class HomeCubit extends Cubit<HomeState> {
             return post;
           }).toList();
 
-      emit(HomeLoaded(posts));
+      final user = firebaseAuth.currentUser;
+      emit(HomeLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
 
       // Await backend update (if it fails, you may want to reload posts)
       await homeRepository.upvotePost(postId, userId);
@@ -67,7 +74,9 @@ class HomeCubit extends Cubit<HomeState> {
             }
             return post;
           }).toList();
-      emit(HomeLoaded(posts));
+
+      final user = firebaseAuth.currentUser;
+      emit(HomeLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
     } catch (e) {
       emit(HomeError(e.toString()));
     }
@@ -86,7 +95,8 @@ class HomeCubit extends Cubit<HomeState> {
             }
             return post;
           }).toList();
-      emit(HomeLoaded(posts));
+      final user = firebaseAuth.currentUser;
+      emit(HomeLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
     } catch (e) {
       emit(HomeError(e.toString()));
     }

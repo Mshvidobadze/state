@@ -6,7 +6,6 @@ import 'package:state/features/auth/ui/signin_screen.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postCreation/ui/post_creation_screen.dart';
 import 'package:state/features/splash/ui/splash_screen.dart';
-import 'package:state/features/home/domain/home_repository.dart';
 import 'package:state/service_locator.dart';
 
 class AppRouter {

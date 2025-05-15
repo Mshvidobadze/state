@@ -8,7 +8,9 @@ class HomeLoading extends HomeState {}
 
 class HomeLoaded extends HomeState {
   final List<PostModel> posts;
-  HomeLoaded(this.posts);
+  final String currentUserId;
+  final String currentUserName;
+  HomeLoaded(this.posts, this.currentUserId, this.currentUserName);
 }
 
 class HomeError extends HomeState {
