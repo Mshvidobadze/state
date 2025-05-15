@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/app/app_router.dart';
 import 'package:state/core/constants/routes.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
+import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/splash/bloc/splash_cubit.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/service_locator.dart';
@@ -17,6 +18,7 @@ class App extends StatelessWidget {
         BlocProvider(create: (_) => sl<SplashCubit>()..appStarted()),
         BlocProvider(create: (_) => sl<AuthCubit>()),
         BlocProvider(create: (_) => sl<HomeCubit>()),
+        BlocProvider(create: (_) => sl<PostCreationCubit>()),
       ],
       child: MaterialApp(
         title: 'State',
