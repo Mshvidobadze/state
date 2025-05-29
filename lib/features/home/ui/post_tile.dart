@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/data/models/post_model.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PostTile extends StatelessWidget {
   final PostModel post;
@@ -20,146 +21,181 @@ class PostTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUpvoted = post.upvoters.contains(currentUserId);
-    final isFollowing = post.followers.contains(currentUserId);
-    const logoColor = Color(0xFF800020);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header: author, region, bookmark
-            Row(
+    return Container(
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with author info
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                post.authorPhotoUrl != null
-                    ? CircleAvatar(
-                      radius: 14,
-                      backgroundImage: NetworkImage(post.authorPhotoUrl!),
-                    )
-                    : const CircleAvatar(
-                      radius: 14,
-                      child: Icon(Icons.person, size: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Author avatar
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        image:
+                            post.authorPhotoUrl != null
+                                ? DecorationImage(
+                                  image: NetworkImage(post.authorPhotoUrl!),
+                                  fit: BoxFit.cover,
+                                )
+                                : null,
+                      ),
+                      child:
+                          post.authorPhotoUrl == null
+                              ? const Icon(
+                                Icons.person,
+                                size: 30,
+                                color: Colors.grey,
+                              )
+                              : null,
                     ),
-                const SizedBox(width: 8),
-                Text(
-                  post.authorName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 11,
-                  ),
+                    const SizedBox(width: 16),
+                    // Author name and date
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          post.authorName,
+                          style: GoogleFonts.beVietnamPro(
+                            color: const Color(0xFF121416),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          _formatDate(post.createdAt),
+                          style: GoogleFonts.beVietnamPro(
+                            color: const Color(0xFF6A7681),
+                            fontSize: 13,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: logoColor.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    post.region,
-                    style: TextStyle(
-                      color: logoColor,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
+                // Follow button
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    onPressed:
+                        () => _handleFollowToggle(
+                          context,
+                          post.followers.contains(currentUserId),
+                        ),
+                    child: Text(
+                      post.followers.contains(currentUserId)
+                          ? 'Following'
+                          : 'Follow',
+                      style: GoogleFonts.beVietnamPro(
+                        color: const Color(0xFF6A7681),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: Icon(
-                    isFollowing ? Icons.bookmark : Icons.bookmark_border,
-                    color: isFollowing ? logoColor : Colors.grey,
-                    size: 22,
-                  ),
-                  onPressed: () {
-                    if (isFollowing) {
-                      if (onUnfollow != null) {
-                        onUnfollow!();
-                      } else {
-                        context.read<HomeCubit>().unfollowPost(
-                          post.id,
-                          currentUserId,
-                        );
-                      }
-                    } else {
-                      context.read<HomeCubit>().followPost(
-                        post.id,
-                        currentUserId,
-                      );
-                    }
-                  },
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            // Image if present
-            if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    post.imageUrl!,
-                    height: 180,
-                    width: double.infinity,
+          ),
+
+          // Post content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: Text(
+              post.content,
+              style: GoogleFonts.beVietnamPro(
+                color: const Color(0xFF121416),
+                fontSize: 16,
+                fontWeight: FontWeight.normal,
+                height: 1.5,
+              ),
+            ),
+          ),
+
+          // Post image if exists
+          if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+            AspectRatio(
+              aspectRatio: 3 / 2,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: NetworkImage(post.imageUrl!),
                     fit: BoxFit.cover,
                   ),
                 ),
               ),
-            // Content
-            Text(post.content, style: const TextStyle(fontSize: 15)),
-            const SizedBox(height: 8),
-            // Actions row: upvote, comments, date
-            Row(
+            ),
+
+          // Actions row
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
               children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.arrow_upward,
-                    color: isUpvoted ? logoColor : Colors.grey,
-                  ),
-                  onPressed: () {
-                    context.read<HomeCubit>().upvotePost(
-                      post.id,
-                      currentUserId,
-                    );
-                  },
-                ),
-                Text(
-                  post.upvotes.toString(),
-                  style: TextStyle(
-                    color: isUpvoted ? logoColor : Colors.grey[700],
-                    fontWeight: FontWeight.bold,
-                  ),
+                _buildActionButton(
+                  icon: Icons.arrow_upward,
+                  label: post.upvotes.toString(),
+                  isActive: isUpvoted,
+                  onPressed: () => _handleUpvote(context),
                 ),
                 const SizedBox(width: 16),
-                IconButton(
-                  icon: const Icon(Icons.comment, size: 20),
-                  onPressed: () {
-                    _showCommentDialog(
-                      context,
-                      post.id,
-                      currentUserId,
-                      currentUserName,
-                    );
-                  },
-                ),
-                Text(
-                  post.commentsCount.toString(),
-                  style: const TextStyle(fontSize: 13),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  _formatDate(post.createdAt),
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                _buildActionButton(
+                  icon: Icons.chat_bubble_outline,
+                  label: post.commentsCount.toString(),
+                  isActive: false,
+                  onPressed: () => _showCommentDialog(context),
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 20), // Bottom spacing
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onPressed,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, size: 24, color: const Color(0xFF6A7681)),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.beVietnamPro(
+                color: const Color(0xFF6A7681),
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.015,
+              ),
             ),
           ],
         ),
@@ -167,43 +203,90 @@ class PostTile extends StatelessWidget {
     );
   }
 
-  void _showCommentDialog(
-    BuildContext context,
-    String postId,
-    String userId,
-    String userName, [
-    String? parentCommentId,
-  ]) {
+  void _handleUpvote(BuildContext context) {
+    context.read<HomeCubit>().upvotePost(post.id, currentUserId);
+  }
+
+  void _handleFollowToggle(BuildContext context, bool isFollowing) {
+    if (isFollowing) {
+      if (onUnfollow != null) {
+        onUnfollow!();
+      } else {
+        context.read<HomeCubit>().unfollowPost(post.id, currentUserId);
+      }
+    } else {
+      context.read<HomeCubit>().followPost(post.id, currentUserId);
+    }
+  }
+
+  void _showCommentDialog(BuildContext context) {
     final controller = TextEditingController();
+
     showDialog(
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: Text(parentCommentId == null ? 'Add Comment' : 'Reply'),
+            backgroundColor: Colors.white,
+            title: Text(
+              'Add Comment',
+              style: GoogleFonts.beVietnamPro(
+                color: const Color(0xFF121416),
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             content: TextField(
               controller: controller,
-              decoration: const InputDecoration(hintText: 'Write a comment...'),
+              style: GoogleFonts.beVietnamPro(color: const Color(0xFF121416)),
+              decoration: InputDecoration(
+                hintText: 'Write a comment...',
+                hintStyle: GoogleFonts.beVietnamPro(
+                  color: const Color(0xFF6A7681),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF6A7681)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF6A7681)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF121416)),
+                ),
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Cancel'),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.beVietnamPro(
+                    color: const Color(0xFF6A7681),
+                  ),
+                ),
               ),
               TextButton(
                 onPressed: () {
                   final content = controller.text.trim();
                   if (content.isNotEmpty) {
                     context.read<HomeCubit>().addComment(
-                      postId: postId,
-                      userId: userId,
-                      userName: userName,
+                      postId: post.id,
+                      userId: currentUserId,
+                      userName: currentUserName,
                       content: content,
-                      parentCommentId: parentCommentId,
                     );
                   }
                   Navigator.of(ctx).pop();
                 },
-                child: const Text('Post'),
+                child: Text(
+                  'Post',
+                  style: GoogleFonts.beVietnamPro(
+                    color: const Color(0xFF121416),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -213,12 +296,17 @@ class PostTile extends StatelessWidget {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date);
-    if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}m ago';
+
+    if (diff.inMinutes < 1) {
+      return 'Just now';
+    } else if (diff.inMinutes < 60) {
+      return '${diff.inMinutes}m';
     } else if (diff.inHours < 24) {
-      return '${diff.inHours}h ago';
+      return '${diff.inHours}h';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays}d';
     } else {
-      return '${diff.inDays}d ago';
+      return '${date.day}/${date.month}/${date.year}';
     }
   }
 }

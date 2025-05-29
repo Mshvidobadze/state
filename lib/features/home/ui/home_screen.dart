@@ -7,6 +7,7 @@ import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/bloc/home_state.dart';
 import 'package:state/features/home/ui/post_tile.dart';
 import 'package:state/app/app_router.dart';
+import 'package:state/features/home/ui/filters_row.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String selectedRegion = kRegions.first;
   String selectedSort = 'hot';
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -26,6 +28,12 @@ class _HomeScreenState extends State<HomeScreen> {
       region: selectedRegion,
       sort: selectedSort,
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _onRefresh() async {
@@ -47,111 +55,99 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const logoColor = Color(0xFF800020);
-    final backgroundColor = const Color(0xFFF8F4F6);
+    final theme = Theme.of(context);
+    const primaryColor = Color(0xFF1A237E); // Deep Indigo
+    final isLightMode = theme.brightness == Brightness.light;
+    final backgroundColor =
+        isLightMode ? const Color(0xFFF8F9FA) : const Color(0xFF1A1A1A);
+    final cardColor = isLightMode ? Colors.white : const Color(0xFF2D2D2D);
+    final textColor = isLightMode ? Colors.black87 : Colors.white;
 
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
         return Scaffold(
+          backgroundColor: backgroundColor,
           appBar: AppBar(
-            title: const Text('State'),
-            backgroundColor: logoColor,
+            automaticallyImplyLeading: false,
+            elevation: 0,
+            backgroundColor: Colors.white,
+            title: const Text(
+              'State',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+                color: Colors.black87,
+              ),
+            ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.search),
+                icon: const Icon(Icons.search, size: 22, color: Colors.black54),
                 onPressed: () {
                   // TODO: Implement search
                 },
               ),
             ],
           ),
-          backgroundColor: backgroundColor,
           body: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    // Region filter
-                    DropdownButton<String>(
-                      value: selectedRegion,
-                      dropdownColor: Colors.white,
-                      style: const TextStyle(color: logoColor),
-                      items:
-                          kRegions
-                              .map(
-                                (region) => DropdownMenuItem(
-                                  value: region,
-                                  child: Text(region),
-                                ),
-                              )
-                              .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => selectedRegion = value);
-                          context.read<HomeCubit>().loadPosts(
-                            region: selectedRegion,
-                            sort: selectedSort,
-                          );
-                        }
-                      },
+              Container(
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  border: Border(
+                    bottom: BorderSide(
+                      color:
+                          isLightMode
+                              ? Colors.grey.withOpacity(0.2)
+                              : Colors.grey.withOpacity(0.1),
                     ),
-                    const SizedBox(width: 12),
-                    // Sort filter
-                    DropdownButton<String>(
-                      value: selectedSort,
-                      dropdownColor: Colors.white,
-                      style: const TextStyle(color: logoColor),
-                      items: const [
-                        DropdownMenuItem(value: 'hot', child: Text('Hot')),
-                        DropdownMenuItem(value: 'new', child: Text('New')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => selectedSort = value);
-                          context.read<HomeCubit>().loadPosts(
-                            region: selectedRegion,
-                            sort: selectedSort,
-                          );
-                        }
-                      },
-                    ),
-                    const Spacer(),
-                    // Create button
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: logoColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                      ),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Create'),
-                      onPressed: _onCreatePost,
-                    ),
-                  ],
+                  ),
+                ),
+                child: FiltersRow(
+                  selectedRegion: selectedRegion,
+                  selectedSort: selectedSort,
+                  onRegionChanged: (value) {
+                    setState(() => selectedRegion = value);
+                    context.read<HomeCubit>().loadPosts(
+                      region: selectedRegion,
+                      sort: selectedSort,
+                    );
+                  },
+                  onSortChanged: (value) {
+                    setState(() => selectedSort = value);
+                    context.read<HomeCubit>().loadPosts(
+                      region: selectedRegion,
+                      sort: selectedSort,
+                    );
+                  },
+                  onCreatePost: _onCreatePost,
                 ),
               ),
-              const SizedBox(height: 8),
-              // Posts list with pull-to-refresh
               Expanded(
                 child: BlocBuilder<HomeCubit, HomeState>(
                   builder: (context, state) {
                     if (state is HomeLoading) {
-                      return const Center(child: CircularProgressIndicator());
+                      return Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            primaryColor,
+                          ),
+                        ),
+                      );
                     } else if (state is HomeLoaded) {
                       if (state.posts.isEmpty) {
-                        return const Center(child: Text('No posts found.'));
+                        return Center(
+                          child: Text(
+                            'No posts found.',
+                            style: TextStyle(color: textColor),
+                          ),
+                        );
                       }
                       return RefreshIndicator(
-                        color: logoColor,
+                        color: primaryColor,
                         onRefresh: _onRefresh,
                         child: ListView.builder(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
                           itemCount: state.posts.length,
                           itemBuilder: (context, index) {
                             final post = state.posts[index];
@@ -164,7 +160,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     } else if (state is HomeError) {
-                      return Center(child: Text(state.message));
+                      return Center(
+                        child: Text(
+                          state.message,
+                          style: TextStyle(color: textColor),
+                        ),
+                      );
                     }
                     return const SizedBox.shrink();
                   },
