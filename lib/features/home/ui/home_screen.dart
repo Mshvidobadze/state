@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/core/constants/regions.dart';
+import 'package:state/core/widgets/error_state.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
@@ -160,11 +161,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     } else if (state is HomeError) {
-                      return Center(
-                        child: Text(
-                          state.message,
-                          style: TextStyle(color: textColor),
-                        ),
+                      return ErrorState(
+                        message: state.message,
+                        textColor: textColor,
                       );
                     }
                     return const SizedBox.shrink();

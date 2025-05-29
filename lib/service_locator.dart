@@ -13,6 +13,9 @@ import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/data/repository/home_repository_impl.dart';
 import 'package:state/features/home/domain/home_repository.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
+import 'package:state/features/postDetails/bloc/post_details_cubit.dart';
+import 'package:state/features/postDetails/data/repository/post_details_repository_impl.dart';
+import 'package:state/features/postDetails/domain/post_details_repository.dart';
 import 'package:state/features/splash/bloc/splash_cubit.dart';
 
 final sl = GetIt.instance;
@@ -62,5 +65,13 @@ Future<void> initInjections() async {
       sl<HomeRepository>(),
       sl<FirebaseAuth>(),
     ),
+  );
+
+  // Post Details
+  sl.registerLazySingleton<PostDetailsRepository>(
+    () => PostDetailsRepositoryImpl(firestore: sl()),
+  );
+  sl.registerFactory(
+    () => PostDetailsCubit(sl<PostDetailsRepository>(), sl<FirebaseAuth>()),
   );
 }

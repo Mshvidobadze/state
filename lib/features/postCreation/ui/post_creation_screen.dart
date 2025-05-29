@@ -9,6 +9,7 @@ import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postCreation/bloc/post_creation_state.dart';
 import 'package:state/features/home/ui/filters_row.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:state/core/widgets/error_state.dart';
 
 class PostCreationScreen extends StatefulWidget {
   const PostCreationScreen({super.key});
@@ -56,9 +57,13 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
         if (state is PostCreationSuccess) {
           Navigator.of(context).pop(true);
         } else if (state is PostCreationError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       },
       builder: (context, state) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:state/app/app_router.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,7 +28,7 @@ class PostTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with author info
+          // Header with author info (not navigable)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -117,34 +118,45 @@ class PostTile extends StatelessWidget {
             ),
           ),
 
-          // Post content
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: Text(
-              post.content,
-              style: GoogleFonts.beVietnamPro(
-                color: const Color(0xFF121416),
-                fontSize: 16,
-                fontWeight: FontWeight.normal,
-                height: 1.5,
-              ),
-            ),
-          ),
-
-          // Post image if exists
-          if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 3 / 2,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage(post.imageUrl!),
-                    fit: BoxFit.cover,
+          // Post content area (navigable)
+          GestureDetector(
+            behavior: HitTestBehavior.opaque, // Makes empty spaces clickable
+            onTap: () => AppRouter.goToPostDetails(context, post.id),
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.stretch, // Makes full width clickable
+              children: [
+                // Post content
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                  child: Text(
+                    post.content,
+                    style: GoogleFonts.beVietnamPro(
+                      color: const Color(0xFF121416),
+                      fontSize: 16,
+                      fontWeight: FontWeight.normal,
+                      height: 1.5,
+                    ),
                   ),
                 ),
-              ),
+
+                // Post image if exists
+                if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+                  AspectRatio(
+                    aspectRatio: 3 / 2,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: NetworkImage(post.imageUrl!),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
 
           // Actions row
           Padding(
@@ -162,7 +174,7 @@ class PostTile extends StatelessWidget {
                   icon: Icons.chat_bubble_outline,
                   label: post.commentsCount.toString(),
                   isActive: false,
-                  onPressed: () => _showCommentDialog(context),
+                  onPressed: () => AppRouter.goToPostDetails(context, post.id),
                 ),
               ],
             ),
