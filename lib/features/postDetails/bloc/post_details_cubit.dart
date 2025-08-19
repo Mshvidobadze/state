@@ -42,8 +42,19 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
     required String content,
     String? parentCommentId,
   }) async {
+    if (state is! PostDetailsLoaded) return;
+    final currentState = state as PostDetailsLoaded;
+
     try {
-      emit(PostDetailsLoading());
+      // Emit commenting state to show UI is updating
+      emit(
+        PostDetailsCommenting(
+          post: currentState.post,
+          comments: currentState.comments,
+          isUpvoted: currentState.isUpvoted,
+          isFollowing: currentState.isFollowing,
+        ),
+      );
 
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
@@ -58,8 +69,16 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
         parentCommentId: parentCommentId,
       );
 
-      // Reload full state
-      await loadPostDetails(postId);
+      // Fetch updated comments and update state directly
+      final updatedComments = await _repository.fetchComments(postId);
+      emit(
+        PostDetailsLoaded(
+          post: currentState.post,
+          comments: updatedComments,
+          isUpvoted: currentState.isUpvoted,
+          isFollowing: currentState.isFollowing,
+        ),
+      );
     } catch (e) {
       emit(PostDetailsError(e.toString()));
     }
@@ -70,13 +89,46 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
     final currentState = state as PostDetailsLoaded;
 
     try {
+      // Emit upvoting state to show UI is updating
+      emit(
+        PostDetailsUpvoting(
+          post: currentState.post,
+          comments: currentState.comments,
+          isUpvoted: currentState.isUpvoted,
+          isFollowing: currentState.isFollowing,
+        ),
+      );
+
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
         throw Exception('User must be logged in to upvote');
       }
 
       await _repository.toggleUpvote(postId, currentUser.uid);
-      await loadPostDetails(postId);
+
+      // Update state directly with new upvote status
+      final newIsUpvoted = !currentState.isUpvoted;
+      final updatedPost = currentState.post.copyWith(
+        upvotes:
+            newIsUpvoted
+                ? currentState.post.upvotes + 1
+                : currentState.post.upvotes - 1,
+        upvoters:
+            newIsUpvoted
+                ? [...currentState.post.upvoters, currentUser.uid]
+                : currentState.post.upvoters
+                    .where((id) => id != currentUser.uid)
+                    .toList(),
+      );
+
+      emit(
+        PostDetailsLoaded(
+          post: updatedPost,
+          comments: currentState.comments,
+          isUpvoted: newIsUpvoted,
+          isFollowing: currentState.isFollowing,
+        ),
+      );
     } catch (e) {
       emit(PostDetailsError(e.toString()));
     }
@@ -87,13 +139,42 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
     final currentState = state as PostDetailsLoaded;
 
     try {
+      // Emit following state to show UI is updating
+      emit(
+        PostDetailsFollowing(
+          post: currentState.post,
+          comments: currentState.comments,
+          isUpvoted: currentState.isUpvoted,
+          isFollowing: currentState.isFollowing,
+        ),
+      );
+
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
         throw Exception('User must be logged in to follow');
       }
 
       await _repository.toggleFollow(postId, currentUser.uid);
-      await loadPostDetails(postId);
+
+      // Update state directly with new follow status
+      final newIsFollowing = !currentState.isFollowing;
+      final updatedPost = currentState.post.copyWith(
+        followers:
+            newIsFollowing
+                ? [...currentState.post.followers, currentUser.uid]
+                : currentState.post.followers
+                    .where((id) => id != currentUser.uid)
+                    .toList(),
+      );
+
+      emit(
+        PostDetailsLoaded(
+          post: updatedPost,
+          comments: currentState.comments,
+          isUpvoted: currentState.isUpvoted,
+          isFollowing: newIsFollowing,
+        ),
+      );
     } catch (e) {
       emit(PostDetailsError(e.toString()));
     }

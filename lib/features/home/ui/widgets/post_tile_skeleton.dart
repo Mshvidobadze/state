@@ -173,7 +173,6 @@ class PostTileSkeleton extends StatelessWidget {
   }
 
   bool _shouldShowImage() {
-    // Randomly show image skeleton 50% of the time
     return DateTime.now().millisecondsSinceEpoch % 2 == 0;
   }
 }

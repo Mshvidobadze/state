@@ -14,11 +14,8 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    FollowingScreen(),
-    UserScreen(),
-  ];
+  // Home screen is kept alive, others are recreated
+  final Widget _homeScreen = const HomeScreen();
 
   void _onTabTapped(int index) {
     setState(() => _currentIndex = index);
@@ -27,7 +24,14 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _homeScreen, // Home screen - preserved
+          const FollowingScreen(), // Following screen - always reloads
+          const UserScreen(), // User screen - always reloads
+        ],
+      ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,

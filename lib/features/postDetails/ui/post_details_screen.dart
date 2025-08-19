@@ -79,94 +79,129 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
             );
           }
 
-          if (state is PostDetailsLoaded) {
-            final post = state.post;
-            final currentUserId =
-                context.read<PostDetailsCubit>().currentUserId;
-            if (currentUserId == null) return const SizedBox.shrink();
+          // Handle all loaded states (including interaction states)
+          if (state is PostDetailsLoaded ||
+              state is PostDetailsUpvoting ||
+              state is PostDetailsCommenting ||
+              state is PostDetailsFollowing) {
+            // Extract data from any of the loaded states
+            final post =
+                state is PostDetailsLoaded
+                    ? state.post
+                    : state is PostDetailsUpvoting
+                    ? state.post
+                    : state is PostDetailsCommenting
+                    ? state.post
+                    : state is PostDetailsFollowing
+                    ? state.post
+                    : null;
+
+            final comments =
+                state is PostDetailsLoaded
+                    ? state.comments
+                    : state is PostDetailsUpvoting
+                    ? state.comments
+                    : state is PostDetailsCommenting
+                    ? state.comments
+                    : state is PostDetailsFollowing
+                    ? state.comments
+                    : [];
+
+            final isUpvoted =
+                state is PostDetailsLoaded
+                    ? state.isUpvoted
+                    : state is PostDetailsUpvoting
+                    ? state.isUpvoted
+                    : state is PostDetailsCommenting
+                    ? state.isUpvoted
+                    : state is PostDetailsFollowing
+                    ? state.isUpvoted
+                    : false;
+
+            final isFollowing =
+                state is PostDetailsLoaded
+                    ? state.isFollowing
+                    : state is PostDetailsUpvoting
+                    ? state.isFollowing
+                    : state is PostDetailsCommenting
+                    ? state.isFollowing
+                    : state is PostDetailsFollowing
+                    ? state.isFollowing
+                    : false;
+
+            if (post == null) return const SizedBox.shrink();
 
             return Column(
               children: [
                 Expanded(
-                  child: CustomScrollView(
-                    slivers: [
-                      // Post Content
-                      SliverToBoxAdapter(
-                        child: PostContentSection(
-                          post: post,
-                          isUpvoted: state.isUpvoted,
-                          isFollowing: state.isFollowing,
-                          commentsCount: state.comments.length,
-                        ),
-                      ),
-                      // Comments
-                      SliverPadding(
-                        padding: const EdgeInsets.only(top: 8),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate((
-                            context,
-                            index,
-                          ) {
-                            final comment = state.comments[index];
-                            return Container(
-                              color: theme.cardColor,
-                              margin: const EdgeInsets.only(bottom: 1),
-                              child: CommentItem(
-                                comment: comment,
-                                currentUserId: currentUserId,
-                                onReply:
-                                    (commentId) => _handleReply(
-                                      commentId,
-                                      comment.userName,
-                                    ),
-                              ),
-                            );
-                          }, childCount: state.comments.length),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Comment Input
-                if (_replyingToUserName != null)
-                  Container(
-                    color: theme.cardColor,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          'Replying to ${_replyingToUserName}',
-                          style: GoogleFonts.beVietnamPro(
-                            color: theme.subtleColor,
-                            fontSize: 14,
+                  child: RefreshIndicator(
+                    color: Theme.of(context).primaryColor,
+                    onRefresh: () async {
+                      await context.read<PostDetailsCubit>().loadPostDetails(
+                        post.id,
+                      );
+                    },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        // Post Content
+                        SliverToBoxAdapter(
+                          child: PostContentSection(
+                            post: post,
+                            isUpvoted: isUpvoted,
+                            isFollowing: isFollowing,
+                            commentsCount: comments.length,
                           ),
                         ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: _cancelReply,
-                          color: theme.subtleColor,
-                          iconSize: 20,
+                        // Comments
+                        SliverPadding(
+                          padding: const EdgeInsets.only(top: 8),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final comment = comments[index];
+                              final currentUserId =
+                                  context
+                                      .read<PostDetailsCubit>()
+                                      .currentUserId;
+                              if (currentUserId == null)
+                                return const SizedBox.shrink();
+
+                              return Container(
+                                color: theme.cardColor,
+                                margin: const EdgeInsets.only(bottom: 1),
+                                child: CommentItem(
+                                  comment: comment,
+                                  currentUserId: currentUserId,
+                                  onReply:
+                                      (commentId) => _handleReply(
+                                        commentId,
+                                        comment.userName,
+                                      ),
+                                ),
+                              );
+                            }, childCount: comments.length),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                Container(
-                  color: theme.cardColor,
-                  padding: const EdgeInsets.all(16),
-                  child: CommentInput(
-                    onSubmit: (content) {
-                      context.read<PostDetailsCubit>().addComment(
-                        postId: post.id,
-                        content: content,
-                        parentCommentId: _replyingToCommentId,
-                      );
-                      _cancelReply();
-                    },
-                  ),
+                ),
+                // Comment Input
+                CommentInput(
+                  onSubmit: (content) {
+                    context.read<PostDetailsCubit>().addComment(
+                      postId: post.id,
+                      content: content,
+                      parentCommentId: _replyingToCommentId,
+                    );
+                    _cancelReply();
+                  },
+                  replyingTo:
+                      _replyingToCommentId != null ? _replyingToUserName : null,
+                  onCancelReply: _cancelReply,
                 ),
               ],
             );

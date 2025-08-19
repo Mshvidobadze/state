@@ -27,7 +27,6 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> upvotePost(String postId, String userId) async {
     if (state is! HomeLoaded) return;
     try {
-      // Optimistically update UI before awaiting the backend
       final posts =
           (state as HomeLoaded).posts.map((post) {
             if (post.id == postId) {
@@ -55,7 +54,6 @@ class HomeCubit extends Cubit<HomeState> {
       final user = firebaseAuth.currentUser;
       emit(HomeLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
 
-      // Await backend update (if it fails, you may want to reload posts)
       await homeRepository.upvotePost(postId, userId);
     } catch (e) {
       emit(HomeError(e.toString()));

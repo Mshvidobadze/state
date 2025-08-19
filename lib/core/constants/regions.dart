@@ -1,6 +1,5 @@
 const List<String> kRegions = ['Global', 'Europe', 'USA'];
 
-// Time filter constants for Reddit-style "Top" filter
 class TimeFilter {
   static const String pastHour = 'past_hour';
   static const String past24Hours = 'past_24_hours';
@@ -33,6 +32,6 @@ class TimeFilter {
     pastWeek: Duration(days: 7),
     pastMonth: Duration(days: 30),
     pastYear: Duration(days: 365),
-    allTime: Duration.zero, // No time limit
+    allTime: Duration.zero,
   };
 }

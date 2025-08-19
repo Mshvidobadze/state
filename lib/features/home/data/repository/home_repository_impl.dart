@@ -21,7 +21,6 @@ class HomeRepositoryImpl implements HomeRepository {
           .collection('posts')
           .where('region', isEqualTo: filter.region);
 
-      // Apply time filter if not "all time"
       if (filter.timeFilter != TimeFilter.allTime) {
         final duration = TimeFilter.timeFilterDurations[filter.timeFilter];
         if (duration != null && duration != Duration.zero) {
@@ -30,7 +29,6 @@ class HomeRepositoryImpl implements HomeRepository {
         }
       }
 
-      // Always sort by upvotes for "top" filter (which replaces "hot")
       query = query.orderBy('upvotes', descending: true);
 
       final snapshot = await query.limit(50).get();
@@ -51,7 +49,6 @@ class HomeRepositoryImpl implements HomeRepository {
     }
   }
 
-  /// Toggle upvote: if user has upvoted, remove upvote; else, add upvote.
   @override
   Future<void> upvotePost(String postId, String userId) async {
     try {
@@ -64,13 +61,11 @@ class HomeRepositoryImpl implements HomeRepository {
         final int upvotes = data['upvotes'] ?? 0;
 
         if (upvoters.contains(userId)) {
-          // User already upvoted, remove upvote
           tx.update(postRef, {
             'upvotes': upvotes > 0 ? upvotes - 1 : 0,
             'upvoters': FieldValue.arrayRemove([userId]),
           });
         } else {
-          // User has not upvoted, add upvote
           tx.update(postRef, {
             'upvotes': upvotes + 1,
             'upvoters': FieldValue.arrayUnion([userId]),
