@@ -7,41 +7,82 @@ class FiltersRowSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       child: Row(
         children: [
-          // Region dropdown skeleton
-          Shimmer(
+          Expanded(
             child: Container(
-              width: 120,
-              height: 36,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.black12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Shimmer(
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Shimmer(
+                          child: Container(
+                            width: 80,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Shimmer(
+                          child: Container(
+                            width: 120,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Shimmer(
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
           const SizedBox(width: 12),
-          // Sort dropdown skeleton
-          Shimmer(
-            child: Container(
-              width: 80,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-          ),
           const Spacer(),
-          // Create post button skeleton
           Shimmer(
             child: Container(
-              width: 100,
-              height: 36,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
           ),

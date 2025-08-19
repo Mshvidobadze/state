@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:state/core/constants/regions.dart';
+
 import 'package:state/core/widgets/error_state.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
@@ -11,6 +11,8 @@ import 'package:state/app/app_router.dart';
 import 'package:state/features/home/ui/filters_row.dart';
 import 'package:state/features/home/ui/widgets/filters_row_skeleton.dart';
 import 'package:state/features/home/ui/widgets/post_tile_skeleton.dart';
+import 'package:state/features/home/data/models/filter_model.dart';
+import 'package:state/core/services/preferences_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,17 +22,27 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String selectedRegion = kRegions.first;
-  String selectedSort = 'hot';
+  late FilterModel _currentFilter;
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    context.read<HomeCubit>().loadPosts(
-      region: selectedRegion,
-      sort: selectedSort,
+    _initializeFilter();
+  }
+
+  Future<void> _initializeFilter() async {
+    // Load persisted region, default time filter to Past 24 Hours
+    final savedRegion = await PreferencesService.getRegion();
+    _currentFilter = FilterModel(
+      region: savedRegion,
+      timeFilter: 'past_24_hours',
     );
+
+    if (mounted) {
+      setState(() {});
+      context.read<HomeCubit>().loadPosts(filter: _currentFilter);
+    }
   }
 
   @override
@@ -40,20 +52,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onRefresh() async {
-    await context.read<HomeCubit>().loadPosts(
-      region: selectedRegion,
-      sort: selectedSort,
-    );
+    await context.read<HomeCubit>().loadPosts(filter: _currentFilter);
   }
 
   Future<void> _onCreatePost() async {
     final result = await AppRouter.goToPostCreation(context);
     if (result == true) {
-      context.read<HomeCubit>().loadPosts(
-        region: selectedRegion,
-        sort: selectedSort,
-      );
+      context.read<HomeCubit>().loadPosts(filter: _currentFilter);
     }
+  }
+
+  void _onFilterChanged(FilterModel newFilter) async {
+    setState(() => _currentFilter = newFilter);
+
+    // Save the new region to preferences
+    await PreferencesService.saveRegion(newFilter.region);
+
+    context.read<HomeCubit>().loadPosts(filter: newFilter);
   }
 
   @override
@@ -111,22 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       return const FiltersRowSkeleton();
                     }
                     return FiltersRow(
-                      selectedRegion: selectedRegion,
-                      selectedSort: selectedSort,
-                      onRegionChanged: (value) {
-                        setState(() => selectedRegion = value);
-                        context.read<HomeCubit>().loadPosts(
-                          region: selectedRegion,
-                          sort: selectedSort,
-                        );
-                      },
-                      onSortChanged: (value) {
-                        setState(() => selectedSort = value);
-                        context.read<HomeCubit>().loadPosts(
-                          region: selectedRegion,
-                          sort: selectedSort,
-                        );
-                      },
+                      currentFilter: _currentFilter,
+                      onFilterChanged: _onFilterChanged,
                       onCreatePost: _onCreatePost,
                     );
                   },
