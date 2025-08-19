@@ -8,6 +8,7 @@ import 'package:state/features/following/bloc/following_state.dart';
 import 'package:state/features/home/ui/post_tile.dart';
 import 'package:state/service_locator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:state/features/following/ui/widgets/following_skeleton.dart';
 
 class FollowingScreen extends StatefulWidget {
   const FollowingScreen({super.key});
@@ -65,11 +66,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
             body: BlocBuilder<FollowingCubit, FollowingState>(
               builder: (context, state) {
                 if (state is FollowingLoading) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                    ),
-                  );
+                  return const FollowingSkeleton();
                 } else if (state is FollowingLoaded) {
                   if (state.posts.isEmpty) {
                     return Center(

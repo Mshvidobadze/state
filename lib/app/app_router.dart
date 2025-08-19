@@ -47,7 +47,7 @@ class AppRouter {
       case Routes.signin:
         return MaterialPageRoute(builder: (_) => const SignInScreen());
       case Routes.postCreation:
-        return MaterialPageRoute(
+        return MaterialPageRoute<bool?>(
           builder:
               (_) => BlocProvider<PostCreationCubit>(
                 create: (_) => sl<PostCreationCubit>(),

@@ -8,6 +8,7 @@ import 'package:state/features/postDetails/ui/widgets/comment_input.dart';
 import 'package:state/features/postDetails/ui/widgets/comment_item.dart';
 import 'package:state/features/postDetails/ui/widgets/post_content_section.dart';
 import 'package:state/features/postDetails/ui/widgets/post_details_theme.dart';
+import 'package:state/features/postDetails/ui/widgets/post_details_skeleton.dart';
 
 class PostDetailsScreen extends StatefulWidget {
   final String postId;
@@ -68,11 +69,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
       body: BlocBuilder<PostDetailsCubit, PostDetailsState>(
         builder: (context, state) {
           if (state is PostDetailsLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A237E)),
-              ),
-            );
+            return const PostDetailsSkeleton();
           }
 
           if (state is PostDetailsError) {
@@ -131,17 +128,45 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                   ),
                 ),
                 // Comment Input
-                CommentInput(
-                  replyingTo: _replyingToUserName,
-                  onCancelReply: _cancelReply,
-                  onSubmit: (content) {
-                    context.read<PostDetailsCubit>().addComment(
-                      postId: post.id,
-                      content: content,
-                      parentCommentId: _replyingToCommentId,
-                    );
-                    _cancelReply();
-                  },
+                if (_replyingToUserName != null)
+                  Container(
+                    color: theme.cardColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Replying to ${_replyingToUserName}',
+                          style: GoogleFonts.beVietnamPro(
+                            color: theme.subtleColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: _cancelReply,
+                          color: theme.subtleColor,
+                          iconSize: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                Container(
+                  color: theme.cardColor,
+                  padding: const EdgeInsets.all(16),
+                  child: CommentInput(
+                    onSubmit: (content) {
+                      context.read<PostDetailsCubit>().addComment(
+                        postId: post.id,
+                        content: content,
+                        parentCommentId: _replyingToCommentId,
+                      );
+                      _cancelReply();
+                    },
+                  ),
                 ),
               ],
             );
