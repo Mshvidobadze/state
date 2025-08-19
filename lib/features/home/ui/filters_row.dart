@@ -19,9 +19,8 @@ class FiltersRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const logoColor = Color(0xFF800020);
-
-    return Padding(
+    return Container(
+      color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       child: Row(
         children: [
@@ -30,7 +29,6 @@ class FiltersRow extends StatelessWidget {
             items: kRegions,
             icon: Icons.public,
             onChanged: onRegionChanged,
-            color: logoColor,
           ),
           const SizedBox(width: 12),
           FancyDropdown(
@@ -38,21 +36,15 @@ class FiltersRow extends StatelessWidget {
             items: const ['hot', 'new'],
             icon: Icons.local_fire_department,
             onChanged: onSortChanged,
-            color: logoColor,
             labels: const {'hot': 'Hot', 'new': 'New'},
           ),
           const Spacer(),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: logoColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.black87,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              elevation: 0,
             ),
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add, size: 20),
             label: const Text('Create'),
             onPressed: onCreatePost,
           ),
@@ -67,7 +59,6 @@ class FancyDropdown extends StatelessWidget {
   final List<String> items;
   final IconData icon;
   final ValueChanged<String> onChanged;
-  final Color color;
   final Map<String, String>? labels;
 
   const FancyDropdown({
@@ -75,7 +66,6 @@ class FancyDropdown extends StatelessWidget {
     required this.items,
     required this.icon,
     required this.onChanged,
-    required this.color,
     this.labels,
     super.key,
   });
@@ -84,17 +74,21 @@ class FancyDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: Colors.black12),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          icon: Icon(icon, color: color),
+          icon: Icon(icon, color: Colors.black54, size: 20),
           dropdownColor: Colors.white,
-          style: TextStyle(color: color, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.normal,
+          ),
           items:
               items
                   .map(

@@ -8,6 +8,7 @@ import 'package:state/core/constants/regions.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postCreation/bloc/post_creation_state.dart';
 import 'package:state/features/home/ui/filters_row.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PostCreationScreen extends StatefulWidget {
   const PostCreationScreen({super.key});
@@ -50,8 +51,6 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final logoColor = const Color(0xFF800020);
-
     return BlocConsumer<PostCreationCubit, PostCreationState>(
       listener: (context, state) {
         if (state is PostCreationSuccess) {
@@ -64,46 +63,119 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
       },
       builder: (context, state) {
         return Scaffold(
+          backgroundColor: Colors.white,
           appBar: AppBar(
-            title: const Text('Create Post'),
-            backgroundColor: logoColor,
+            elevation: 0,
+            backgroundColor: Colors.white,
+            iconTheme: const IconThemeData(color: Colors.black87),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.black87,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  onPressed:
+                      state is PostCreationLoading
+                          ? null
+                          : () {
+                            final content = contentController.text.trim();
+                            if (content.isNotEmpty) {
+                              context.read<PostCreationCubit>().createPost(
+                                region: selectedRegion,
+                                content: content,
+                                imageFile: _selectedImage,
+                              );
+                            }
+                          },
+                  child:
+                      state is PostCreationLoading
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black54,
+                              ),
+                            ),
+                          )
+                          : const Text('Post'),
+                ),
+              ),
+            ],
           ),
           body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  FancyDropdown(
-                    value: selectedRegion,
-                    items: kRegions,
-                    icon: Icons.public,
-                    onChanged:
-                        (region) => setState(() => selectedRegion = region),
-                    color: logoColor,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: contentController,
-                    maxLines: 8,
-                    decoration: const InputDecoration(
-                      hintText: "What's on your mind?",
-                      border: OutlineInputBorder(),
+            child: Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  if (_selectedImage != null)
-                    Stack(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      FancyDropdown(
+                        value: selectedRegion,
+                        items: kRegions,
+                        icon: Icons.public,
+                        onChanged:
+                            (region) => setState(() => selectedRegion = region),
+                      ),
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.add, size: 20, color: Colors.black87),
+                              SizedBox(width: 8),
+                              Text(
+                                'Add Image',
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_selectedImage != null)
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                      ),
+                    ),
+                    child: Stack(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(_selectedImage!, height: 180),
+                        AspectRatio(
+                          aspectRatio: 3 / 2,
+                          child: Image.file(
+                            _selectedImage!,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                         Positioned(
-                          top: 4,
-                          right: 4,
+                          top: 8,
+                          right: 8,
                           child: GestureDetector(
                             onTap: () => setState(() => _selectedImage = null),
                             child: Container(
+                              padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
                                 color: Colors.black54,
                                 borderRadius: BorderRadius.circular(12),
@@ -118,52 +190,43 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                         ),
                       ],
                     ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: logoColor,
-                          foregroundColor: Colors.white,
-                        ),
-                        icon: const Icon(Icons.image),
-                        label: const Text('Add Image'),
-                        onPressed: _pickImage,
-                      ),
-                      const Spacer(),
-                    ],
                   ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: logoColor,
-                        foregroundColor: Colors.white,
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextField(
+                    controller: contentController,
+                    maxLines: 8,
+                    style: GoogleFonts.beVietnamPro(
+                      color: const Color(0xFF121416),
+                      fontSize: 16,
+                      height: 1.5,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: "What's on your mind?",
+                      hintStyle: GoogleFonts.beVietnamPro(
+                        color: const Color(0xFF6A7681),
+                        fontSize: 16,
                       ),
-                      onPressed:
-                          state is PostCreationLoading
-                              ? null
-                              : () {
-                                final content = contentController.text.trim();
-                                if (content.isNotEmpty) {
-                                  context.read<PostCreationCubit>().createPost(
-                                    region: selectedRegion,
-                                    content: content,
-                                    imageFile: _selectedImage,
-                                  );
-                                }
-                              },
-                      child:
-                          state is PostCreationLoading
-                              ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                              : const Text('Post'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey.withOpacity(0.3),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: Colors.grey.withOpacity(0.3),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Colors.black54),
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
