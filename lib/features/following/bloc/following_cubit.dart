@@ -37,7 +37,6 @@ class FollowingCubit extends Cubit<FollowingState> {
       final user = firebaseAuth.currentUser;
       if (user == null) throw Exception('User not signed in');
       await homeRepository.unfollowPost(postId, user.uid);
-      // Remove the post from the local list
       final updatedPosts =
           (state as FollowingLoaded).posts
               .where((post) => post.id != postId)

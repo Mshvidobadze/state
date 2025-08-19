@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/app/app_router.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/data/models/post_model.dart';
+import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PostTile extends StatelessWidget {
@@ -29,93 +30,88 @@ class PostTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with author info (not navigable)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+          Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
                   children: [
-                    // Author avatar
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        image:
-                            post.authorPhotoUrl != null
-                                ? DecorationImage(
-                                  image: NetworkImage(post.authorPhotoUrl!),
-                                  fit: BoxFit.cover,
-                                )
-                                : null,
-                      ),
-                      child:
-                          post.authorPhotoUrl == null
-                              ? const Icon(
-                                Icons.person,
-                                size: 30,
-                                color: Colors.grey,
-                              )
-                              : null,
-                    ),
-                    const SizedBox(width: 16),
-                    // Author name and date
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          post.authorName,
-                          style: GoogleFonts.beVietnamPro(
-                            color: const Color(0xFF121416),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                        // Author avatar
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            image:
+                                post.authorPhotoUrl != null
+                                    ? DecorationImage(
+                                      image: NetworkImage(post.authorPhotoUrl!),
+                                      fit: BoxFit.cover,
+                                    )
+                                    : null,
                           ),
-                          overflow: TextOverflow.ellipsis,
+                          child:
+                              post.authorPhotoUrl == null
+                                  ? const Icon(
+                                    Icons.person,
+                                    size: 30,
+                                    color: Colors.grey,
+                                  )
+                                  : null,
                         ),
-                        Text(
-                          _formatDate(post.createdAt),
-                          style: GoogleFonts.beVietnamPro(
-                            color: const Color(0xFF6A7681),
-                            fontSize: 13,
-                            fontWeight: FontWeight.normal,
-                          ),
+                        const SizedBox(width: 16),
+                        // Author name and date
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              post.authorName,
+                              style: GoogleFonts.beVietnamPro(
+                                color: const Color(0xFF121416),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              _formatDate(post.createdAt),
+                              style: GoogleFonts.beVietnamPro(
+                                color: const Color(0xFF6A7681),
+                                fontSize: 13,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ],
                 ),
-                // Follow button
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: IconButton(
+                    onPressed: () => _showPostOptions(context),
+                    icon: const Icon(
+                      Icons.more_vert,
+                      color: Color(0xFF121416),
+                      size: 24,
                     ),
-                    onPressed:
-                        () => _handleFollowToggle(
-                          context,
-                          post.followers.contains(currentUserId),
-                        ),
-                    child: Text(
-                      post.followers.contains(currentUserId)
-                          ? 'Following'
-                          : 'Follow',
-                      style: GoogleFonts.beVietnamPro(
-                        color: const Color(0xFF6A7681),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
 
           // Post content area (navigable)
@@ -160,7 +156,7 @@ class PostTile extends StatelessWidget {
 
           // Actions row
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
             child: Row(
               children: [
                 _buildActionButton(
@@ -169,7 +165,7 @@ class PostTile extends StatelessWidget {
                   isActive: isUpvoted,
                   onPressed: () => _handleUpvote(context),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 4),
                 _buildActionButton(
                   icon: Icons.chat_bubble_outline,
                   label: post.commentsCount.toString(),
@@ -191,19 +187,24 @@ class PostTile extends StatelessWidget {
     required String label,
     required bool isActive,
     required VoidCallback onPressed,
+    double horizontalPadding = 12,
+    double verticalPadding = 8,
   }) {
     return InkWell(
       onTap: onPressed,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
+        ),
         child: Row(
           children: [
-            Icon(icon, size: 24, color: const Color(0xFF6A7681)),
+            Icon(icon, size: 16, color: const Color(0xFF121416)),
             const SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.beVietnamPro(
-                color: const Color(0xFF6A7681),
+                color: const Color(0xFF121416),
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.015,
@@ -320,5 +321,31 @@ class PostTile extends StatelessWidget {
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
+  }
+
+  void _showPostOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => PostOptionsBottomSheet(
+            isFollowing: post.followers.contains(currentUserId),
+            onFollowToggle:
+                () => _handleFollowToggle(
+                  context,
+                  post.followers.contains(currentUserId),
+                ),
+            onReport: () {
+              // TODO: Implement report functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Report functionality coming soon'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+    );
   }
 }

@@ -32,7 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initializeFilter() async {
-    // Load persisted region, default time filter to Past 24 Hours
     final savedRegion = await PreferencesService.getRegion();
     _currentFilter = FilterModel(
       region: savedRegion,
@@ -65,7 +64,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onFilterChanged(FilterModel newFilter) async {
     setState(() => _currentFilter = newFilter);
 
-    // Save the new region to preferences
     await PreferencesService.saveRegion(newFilter.region);
 
     context.read<HomeCubit>().loadPosts(filter: newFilter);
@@ -139,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (state is HomeLoading) {
                       return ListView.builder(
                         padding: const EdgeInsets.only(top: 8),
-                        itemCount: 5, // Show 5 skeleton items
+                        itemCount: 5,
                         itemBuilder: (context, index) {
                           return const PostTileSkeleton();
                         },

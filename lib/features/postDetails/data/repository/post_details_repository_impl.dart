@@ -108,7 +108,6 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
 
       batch.set(commentsRef.doc(), commentData);
 
-      // Increment comments count in the post
       final postRef = firestore.collection('posts').doc(postId);
       batch.update(postRef, {'commentsCount': FieldValue.increment(1)});
 

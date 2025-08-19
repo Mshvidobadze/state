@@ -71,36 +71,67 @@ class PostContentSection extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 16),
-          // Actions Row
-          Row(
-            children: [
-              _ActionButton(
-                icon: isUpvoted ? Icons.thumb_up : Icons.thumb_up_outlined,
-                label: '${post.upvotes}',
-                onPressed:
-                    () =>
-                        context.read<PostDetailsCubit>().toggleUpvote(post.id),
-                isActive: isUpvoted,
-              ),
-              const SizedBox(width: 16),
-              _ActionButton(
-                icon: Icons.comment_outlined,
-                label: '$commentsCount',
-                onPressed: null,
-              ),
-              const Spacer(),
-              _ActionButton(
-                icon: isFollowing ? Icons.bookmark : Icons.bookmark_outline,
-                label: isFollowing ? 'Following' : 'Follow',
-                onPressed:
-                    () =>
-                        context.read<PostDetailsCubit>().toggleFollow(post.id),
-                isActive: isFollowing,
-              ),
-            ],
+
+          // const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(),
+            child: Row(
+              children: [
+                _buildActionButton(
+                  icon: Icons.arrow_upward,
+                  label: post.upvotes.toString(),
+                  isActive: isUpvoted,
+                  onPressed:
+                      () => context.read<PostDetailsCubit>().toggleUpvote(
+                        post.id,
+                      ),
+                  horizontalPadding: 0,
+                ),
+                const SizedBox(width: 4),
+                _buildActionButton(
+                  icon: Icons.chat_bubble_outline,
+                  label: commentsCount.toString(),
+                  isActive: false,
+                  onPressed: null,
+                ),
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback? onPressed,
+    double horizontalPadding = 12,
+    double verticalPadding = 8,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: const Color(0xFF121416)),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.beVietnamPro(
+                color: const Color(0xFF121416),
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.015,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -120,46 +151,5 @@ class PostContentSection extends StatelessWidget {
     } else {
       return 'now';
     }
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback? onPressed;
-  final bool isActive;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    this.onPressed,
-    this.isActive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = PostDetailsTheme.of(context);
-    final color = isActive ? const Color(0xFF1A237E) : theme.subtleColor;
-
-    return InkWell(
-      onTap: onPressed,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: GoogleFonts.beVietnamPro(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
