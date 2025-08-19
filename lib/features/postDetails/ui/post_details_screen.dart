@@ -83,7 +83,8 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
           if (state is PostDetailsLoaded ||
               state is PostDetailsUpvoting ||
               state is PostDetailsCommenting ||
-              state is PostDetailsFollowing) {
+              state is PostDetailsFollowing ||
+              state is PostDetailsLoadingMore) {
             // Extract data from any of the loaded states
             final post =
                 state is PostDetailsLoaded
@@ -93,6 +94,8 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                     : state is PostDetailsCommenting
                     ? state.post
                     : state is PostDetailsFollowing
+                    ? state.post
+                    : state is PostDetailsLoadingMore
                     ? state.post
                     : null;
 
@@ -105,6 +108,8 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                     ? state.comments
                     : state is PostDetailsFollowing
                     ? state.comments
+                    : state is PostDetailsLoadingMore
+                    ? state.comments
                     : [];
 
             final isUpvoted =
@@ -115,6 +120,8 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                     : state is PostDetailsCommenting
                     ? state.isUpvoted
                     : state is PostDetailsFollowing
+                    ? state.isUpvoted
+                    : state is PostDetailsLoadingMore
                     ? state.isUpvoted
                     : false;
 
@@ -127,6 +134,21 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                     ? state.isFollowing
                     : state is PostDetailsFollowing
                     ? state.isFollowing
+                    : state is PostDetailsLoadingMore
+                    ? state.isFollowing
+                    : false;
+
+            final hasMoreComments =
+                state is PostDetailsLoaded
+                    ? state.hasMoreComments
+                    : state is PostDetailsUpvoting
+                    ? state.hasMoreComments
+                    : state is PostDetailsCommenting
+                    ? state.hasMoreComments
+                    : state is PostDetailsFollowing
+                    ? state.hasMoreComments
+                    : state is PostDetailsLoadingMore
+                    ? state.hasMoreComments
                     : false;
 
             if (post == null) return const SizedBox.shrink();
@@ -141,51 +163,76 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                         post.id,
                       );
                     },
-                    child: CustomScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      slivers: [
-                        // Post Content
-                        SliverToBoxAdapter(
-                          child: PostContentSection(
-                            post: post,
-                            isUpvoted: isUpvoted,
-                            isFollowing: isFollowing,
-                            commentsCount: comments.length,
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (ScrollNotification scrollInfo) {
+                        // Load more comments when user scrolls to 75% of current content
+                        if (scrollInfo.metrics.pixels >=
+                            scrollInfo.metrics.maxScrollExtent * 0.75) {
+                          // Check if we have more comments to load
+                          if (hasMoreComments) {
+                            context.read<PostDetailsCubit>().loadMoreComments(
+                              post.id,
+                            );
+                          }
+                        }
+                        return false;
+                      },
+                      child: CustomScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          // Post Content
+                          SliverToBoxAdapter(
+                            child: PostContentSection(
+                              post: post,
+                              isUpvoted: isUpvoted,
+                              isFollowing: isFollowing,
+                              commentsCount: post.commentsCount,
+                            ),
                           ),
-                        ),
-                        // Comments
-                        SliverPadding(
-                          padding: const EdgeInsets.only(top: 8),
-                          sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              final comment = comments[index];
-                              final currentUserId =
-                                  context
-                                      .read<PostDetailsCubit>()
-                                      .currentUserId;
-                              if (currentUserId == null)
-                                return const SizedBox.shrink();
+                          // Comments
+                          SliverPadding(
+                            padding: const EdgeInsets.only(top: 8),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                final comment = comments[index];
+                                final currentUserId =
+                                    context
+                                        .read<PostDetailsCubit>()
+                                        .currentUserId;
+                                if (currentUserId == null)
+                                  return const SizedBox.shrink();
 
-                              return Container(
-                                color: theme.cardColor,
-                                margin: const EdgeInsets.only(bottom: 1),
-                                child: CommentItem(
-                                  comment: comment,
-                                  currentUserId: currentUserId,
-                                  onReply:
-                                      (commentId) => _handleReply(
-                                        commentId,
-                                        comment.userName,
-                                      ),
-                                ),
-                              );
-                            }, childCount: comments.length),
+                                return Container(
+                                  color: theme.cardColor,
+                                  margin: const EdgeInsets.only(bottom: 1),
+                                  child: CommentItem(
+                                    comment: comment,
+                                    currentUserId: currentUserId,
+                                    onReply:
+                                        (commentId) => _handleReply(
+                                          commentId,
+                                          comment.userName,
+                                        ),
+                                  ),
+                                );
+                              }, childCount: comments.length),
+                            ),
                           ),
-                        ),
-                      ],
+                          // Load more indicator
+                          if (hasMoreComments)
+                            const SliverToBoxAdapter(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

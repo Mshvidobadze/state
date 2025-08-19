@@ -84,6 +84,109 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> fetchCommentsWithPagination({
+    required String postId,
+    required int limit,
+    DocumentSnapshot? lastDocument,
+  }) async {
+    try {
+      // First, get only parent comments (no replies) with pagination
+      Query parentQuery = firestore
+          .collection('posts')
+          .doc(postId)
+          .collection('comments')
+          .where('parentCommentId', isNull: true)
+          .orderBy('createdAt', descending: true)
+          .limit(limit);
+
+      if (lastDocument != null) {
+        parentQuery = parentQuery.startAfterDocument(lastDocument);
+      }
+
+      final parentSnapshot = await parentQuery.get();
+
+      // If no parent comments, return empty
+      if (parentSnapshot.docs.isEmpty) {
+        return {'comments': <CommentModel>[], 'lastDocument': null};
+      }
+
+      // Get all comment IDs we need (parent comments from this page)
+      final parentCommentIds =
+          parentSnapshot.docs.map((doc) => doc.id).toList();
+
+      // Now fetch ALL comments (including replies) for the entire post
+      final allCommentsSnapshot =
+          await firestore
+              .collection('posts')
+              .doc(postId)
+              .collection('comments')
+              .orderBy('createdAt', descending: true)
+              .get();
+
+      final List<CommentModel> allComments = [];
+      for (final doc in allCommentsSnapshot.docs) {
+        final data = doc.data();
+        if (data['createdAt'] != null) {
+          data['createdAt'] = (data['createdAt'] as Timestamp).toDate();
+        }
+        allComments.add(CommentModel.fromMap(data, doc.id));
+      }
+
+      // Group comments by parent to build the reply tree
+      final Map<String?, List<CommentModel>> commentsByParent = {};
+      for (final comment in allComments) {
+        final parentId = comment.parentCommentId;
+        commentsByParent.putIfAbsent(parentId, () => []).add(comment);
+      }
+
+      // Get only the root comments that are in our paginated set
+      final paginatedRootComments =
+          (commentsByParent[null] ?? [])
+              .where((comment) => parentCommentIds.contains(comment.id))
+              .toList();
+
+      // Recursively add replies to each comment
+      List<CommentModel> addReplies(CommentModel comment) {
+        final replies = commentsByParent[comment.id] ?? [];
+        return replies.map((reply) {
+          return CommentModel(
+            id: reply.id,
+            userId: reply.userId,
+            userName: reply.userName,
+            content: reply.content,
+            createdAt: reply.createdAt,
+            parentCommentId: reply.parentCommentId,
+            replies: addReplies(reply),
+          );
+        }).toList();
+      }
+
+      // Build the final tree structure with all replies included
+      final structuredComments =
+          paginatedRootComments.map((comment) {
+            return CommentModel(
+              id: comment.id,
+              userId: comment.userId,
+              userName: comment.userName,
+              content: comment.content,
+              createdAt: comment.createdAt,
+              parentCommentId: comment.parentCommentId,
+              replies: addReplies(comment),
+            );
+          }).toList();
+
+      // Return both structured comments and the last document for next pagination
+      return {
+        'comments': structuredComments,
+        'lastDocument':
+            parentSnapshot.docs.isNotEmpty ? parentSnapshot.docs.last : null,
+      };
+    } catch (e) {
+      throw Exception('Failed to fetch comments with pagination: $e');
+    }
+  }
+
+  @override
   Future<void> addComment({
     required String postId,
     required String userId,

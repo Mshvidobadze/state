@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/postDetails/bloc/post_details_state.dart';
 import 'package:state/features/postDetails/domain/post_details_repository.dart';
+import 'package:state/features/postDetails/data/models/comment_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostDetailsCubit extends Cubit<PostDetailsState> {
   final PostDetailsRepository _repository;
@@ -12,11 +14,20 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
   String? get currentUserId => _auth.currentUser?.uid;
   String? get currentUserName => _auth.currentUser?.displayName ?? '';
 
+  static const int _commentsPerPage = 10;
+
   Future<void> loadPostDetails(String postId) async {
     emit(PostDetailsLoading());
     try {
       final post = await _repository.fetchPostById(postId);
-      final comments = await _repository.fetchComments(postId);
+      final result = await _repository.fetchCommentsWithPagination(
+        postId: postId,
+        limit: _commentsPerPage,
+        lastDocument: null,
+      );
+
+      final comments = result['comments'] as List<CommentModel>;
+      final lastDocument = result['lastDocument'] as DocumentSnapshot?;
 
       final currentUser = _auth.currentUser;
       final isUpvoted =
@@ -30,10 +41,82 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: comments,
           isUpvoted: isUpvoted,
           isFollowing: isFollowing,
+          hasMoreComments: comments.length >= _commentsPerPage,
+          lastCommentDocument: lastDocument,
         ),
       );
     } catch (e) {
       emit(PostDetailsError(e.toString()));
+    }
+  }
+
+  Future<void> loadMoreComments(String postId) async {
+    if (state is! PostDetailsLoaded) return;
+
+    final currentState = state as PostDetailsLoaded;
+    if (!currentState.hasMoreComments) return;
+
+    try {
+      // Emit loading more state
+      emit(
+        PostDetailsLoadingMore(
+          post: currentState.post,
+          comments: currentState.comments,
+          isUpvoted: currentState.isUpvoted,
+          isFollowing: currentState.isFollowing,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
+        ),
+      );
+
+      // Use pagination method to fetch next batch
+      final result = await _repository.fetchCommentsWithPagination(
+        postId: postId,
+        limit: _commentsPerPage,
+        lastDocument: currentState.lastCommentDocument,
+      );
+
+      final newComments = result['comments'] as List<CommentModel>;
+      final lastDocument = result['lastDocument'] as DocumentSnapshot?;
+
+      if (newComments.isNotEmpty) {
+        // Add new comments to existing ones (avoid duplicates)
+        final existingIds = currentState.comments.map((c) => c.id).toSet();
+        final uniqueNewComments =
+            newComments
+                .where((c) => c.id != null && !existingIds.contains(c.id))
+                .toList();
+
+        final updatedComments = [
+          ...currentState.comments,
+          ...uniqueNewComments,
+        ];
+
+        emit(
+          PostDetailsLoaded(
+            post: currentState.post,
+            comments: updatedComments,
+            isUpvoted: currentState.isUpvoted,
+            isFollowing: currentState.isFollowing,
+            hasMoreComments: newComments.length >= _commentsPerPage,
+            lastCommentDocument: lastDocument,
+          ),
+        );
+      } else {
+        emit(currentState.copyWith(hasMoreComments: false));
+      }
+    } catch (e) {
+      // Revert to previous state on error
+      emit(
+        PostDetailsLoaded(
+          post: currentState.post,
+          comments: currentState.comments,
+          isUpvoted: currentState.isUpvoted,
+          isFollowing: currentState.isFollowing,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
+        ),
+      );
     }
   }
 
@@ -53,6 +136,8 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: currentState.isFollowing,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
         ),
       );
 
@@ -71,12 +156,20 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
 
       // Fetch updated comments and update state directly
       final updatedComments = await _repository.fetchComments(postId);
+
+      // Update post model with incremented comments count
+      final updatedPost = currentState.post.copyWith(
+        commentsCount: currentState.post.commentsCount + 1,
+      );
+
       emit(
         PostDetailsLoaded(
-          post: currentState.post,
+          post: updatedPost,
           comments: updatedComments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: currentState.isFollowing,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
         ),
       );
     } catch (e) {
@@ -96,6 +189,8 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: currentState.isFollowing,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
         ),
       );
 
@@ -127,6 +222,8 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: newIsUpvoted,
           isFollowing: currentState.isFollowing,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
         ),
       );
     } catch (e) {
@@ -146,6 +243,8 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: currentState.isFollowing,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
         ),
       );
 
@@ -173,6 +272,8 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: newIsFollowing,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
         ),
       );
     } catch (e) {
