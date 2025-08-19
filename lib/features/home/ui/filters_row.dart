@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:state/core/constants/regions.dart';
+import 'package:state/features/home/data/models/filter_model.dart';
+import 'package:state/features/home/ui/widgets/feed_options_bottom_sheet.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class FiltersRow extends StatelessWidget {
-  final String selectedRegion;
-  final String selectedSort;
-  final ValueChanged<String> onRegionChanged;
-  final ValueChanged<String> onSortChanged;
+  final FilterModel currentFilter;
+  final ValueChanged<FilterModel> onFilterChanged;
   final VoidCallback onCreatePost;
 
   const FiltersRow({
-    required this.selectedRegion,
-    required this.selectedSort,
-    required this.onRegionChanged,
-    required this.onSortChanged,
+    required this.currentFilter,
+    required this.onFilterChanged,
     required this.onCreatePost,
     super.key,
   });
@@ -24,85 +22,89 @@ class FiltersRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       child: Row(
         children: [
-          FancyDropdown(
-            value: selectedRegion,
-            items: kRegions,
-            icon: Icons.public,
-            onChanged: onRegionChanged,
+          InkWell(
+            onTap: () => _showFeedOptions(context),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.tune, color: Colors.black54, size: 20),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Feed Options',
+                        style: GoogleFonts.beVietnamPro(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        '${currentFilter.region} • ${_getTimeFilterLabel(currentFilter.timeFilter)}',
+                        style: GoogleFonts.beVietnamPro(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(width: 12),
-          FancyDropdown(
-            value: selectedSort,
-            items: const ['hot', 'new'],
-            icon: Icons.local_fire_department,
-            onChanged: onSortChanged,
-            labels: const {'hot': 'Hot', 'new': 'New'},
-          ),
           const Spacer(),
-          TextButton.icon(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.black87,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-            icon: const Icon(Icons.add, size: 20),
-            label: const Text('Create'),
+          IconButton(
             onPressed: onCreatePost,
+            icon: const Icon(
+              Icons.add,
+              size: 32,
+              color: Colors.black87,
+              weight: 900,
+            ),
+            style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
           ),
         ],
       ),
     );
   }
-}
 
-class FancyDropdown extends StatelessWidget {
-  final String value;
-  final List<String> items;
-  final IconData icon;
-  final ValueChanged<String> onChanged;
-  final Map<String, String>? labels;
-
-  const FancyDropdown({
-    required this.value,
-    required this.items,
-    required this.icon,
-    required this.onChanged,
-    this.labels,
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black12),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          icon: Icon(icon, color: Colors.black54, size: 20),
-          dropdownColor: Colors.white,
-          style: const TextStyle(
-            color: Colors.black87,
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
+  void _showFeedOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => FeedOptionsBottomSheet(
+            currentFilter: currentFilter,
+            onFilterChanged: onFilterChanged,
           ),
-          items:
-              items
-                  .map(
-                    (item) => DropdownMenuItem(
-                      value: item,
-                      child: Text(labels?[item] ?? item),
-                    ),
-                  )
-                  .toList(),
-          onChanged: (val) {
-            if (val != null) onChanged(val);
-          },
-        ),
-      ),
     );
+  }
+
+  String _getTimeFilterLabel(String timeFilter) {
+    switch (timeFilter) {
+      case 'past_hour':
+        return 'Past Hour';
+      case 'past_24_hours':
+        return 'Past 24 Hours';
+      case 'past_week':
+        return 'Past Week';
+      case 'past_month':
+        return 'Past Month';
+      case 'past_year':
+        return 'Past Year';
+      case 'all_time':
+        return 'All Time';
+      default:
+        return 'Past 24 Hours';
+    }
   }
 }

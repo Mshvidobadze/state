@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/home/bloc/home_state.dart';
 import 'package:state/features/home/domain/home_repository.dart';
+import 'package:state/features/home/data/models/filter_model.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository homeRepository;
@@ -12,10 +13,10 @@ class HomeCubit extends Cubit<HomeState> {
   String? get currentUserId => firebaseAuth.currentUser?.uid;
   String? get currentUserName => firebaseAuth.currentUser?.displayName ?? '';
 
-  Future<void> loadPosts({required String region, required String sort}) async {
+  Future<void> loadPosts({required FilterModel filter}) async {
     emit(HomeLoading());
     try {
-      final posts = await homeRepository.fetchPosts(region: region, sort: sort);
+      final posts = await homeRepository.fetchPosts(filter: filter);
       final user = firebaseAuth.currentUser;
       emit(HomeLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
     } catch (e) {

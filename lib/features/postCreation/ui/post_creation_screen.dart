@@ -7,9 +7,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:state/core/constants/regions.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postCreation/bloc/post_creation_state.dart';
-import 'package:state/features/home/ui/filters_row.dart';
+import 'package:state/features/postCreation/ui/widgets/simple_dropdown.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:state/core/widgets/error_state.dart';
 
 class PostCreationScreen extends StatefulWidget {
   const PostCreationScreen({super.key});
@@ -124,7 +123,7 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      FancyDropdown(
+                      SimpleDropdown(
                         value: selectedRegion,
                         items: kRegions,
                         icon: Icons.public,

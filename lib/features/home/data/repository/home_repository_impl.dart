@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:state/features/home/data/models/post_model.dart';
+import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/features/home/domain/home_repository.dart';
+import 'package:state/core/constants/regions.dart';
 
 class HomeRepositoryImpl implements HomeRepository {
   final FirebaseFirestore firestore;
@@ -9,21 +11,27 @@ class HomeRepositoryImpl implements HomeRepository {
     : firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
-  Future<List<PostModel>> fetchPosts({
-    required String region,
-    required String sort,
-  }) async {
+  Future<List<PostModel>> fetchPosts({required FilterModel filter}) async {
     try {
-      if (region.isEmpty) throw Exception('Region filter cannot be empty');
+      if (filter.region.isEmpty) {
+        throw Exception('Region filter cannot be empty');
+      }
+
       Query query = firestore
           .collection('posts')
-          .where('region', isEqualTo: region);
+          .where('region', isEqualTo: filter.region);
 
-      if (sort == 'hot') {
-        query = query.orderBy('upvotes', descending: true);
-      } else {
-        query = query.orderBy('createdAt', descending: true);
+      // Apply time filter if not "all time"
+      if (filter.timeFilter != TimeFilter.allTime) {
+        final duration = TimeFilter.timeFilterDurations[filter.timeFilter];
+        if (duration != null && duration != Duration.zero) {
+          final cutoffTime = DateTime.now().subtract(duration);
+          query = query.where('createdAt', isGreaterThanOrEqualTo: cutoffTime);
+        }
       }
+
+      // Always sort by upvotes for "top" filter (which replaces "hot")
+      query = query.orderBy('upvotes', descending: true);
 
       final snapshot = await query.limit(50).get();
       return snapshot.docs.map((doc) => PostModel.fromDoc(doc)).toList();
