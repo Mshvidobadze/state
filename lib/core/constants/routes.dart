@@ -5,4 +5,5 @@ class Routes {
   static const splash = '/splash';
   static const signin = '/signin';
   static const postCreation = '/postCreation';
+  static const postDetails = '/postDetails';
 }

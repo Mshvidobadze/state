@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/core/constants/regions.dart';
+import 'package:state/core/widgets/error_state.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
@@ -8,6 +9,8 @@ import 'package:state/features/home/bloc/home_state.dart';
 import 'package:state/features/home/ui/post_tile.dart';
 import 'package:state/app/app_router.dart';
 import 'package:state/features/home/ui/filters_row.dart';
+import 'package:state/features/home/ui/widgets/filters_row_skeleton.dart';
+import 'package:state/features/home/ui/widgets/post_tile_skeleton.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -102,36 +105,43 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                child: FiltersRow(
-                  selectedRegion: selectedRegion,
-                  selectedSort: selectedSort,
-                  onRegionChanged: (value) {
-                    setState(() => selectedRegion = value);
-                    context.read<HomeCubit>().loadPosts(
-                      region: selectedRegion,
-                      sort: selectedSort,
+                child: BlocBuilder<HomeCubit, HomeState>(
+                  builder: (context, state) {
+                    if (state is HomeLoading) {
+                      return const FiltersRowSkeleton();
+                    }
+                    return FiltersRow(
+                      selectedRegion: selectedRegion,
+                      selectedSort: selectedSort,
+                      onRegionChanged: (value) {
+                        setState(() => selectedRegion = value);
+                        context.read<HomeCubit>().loadPosts(
+                          region: selectedRegion,
+                          sort: selectedSort,
+                        );
+                      },
+                      onSortChanged: (value) {
+                        setState(() => selectedSort = value);
+                        context.read<HomeCubit>().loadPosts(
+                          region: selectedRegion,
+                          sort: selectedSort,
+                        );
+                      },
+                      onCreatePost: _onCreatePost,
                     );
                   },
-                  onSortChanged: (value) {
-                    setState(() => selectedSort = value);
-                    context.read<HomeCubit>().loadPosts(
-                      region: selectedRegion,
-                      sort: selectedSort,
-                    );
-                  },
-                  onCreatePost: _onCreatePost,
                 ),
               ),
               Expanded(
                 child: BlocBuilder<HomeCubit, HomeState>(
                   builder: (context, state) {
                     if (state is HomeLoading) {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            primaryColor,
-                          ),
-                        ),
+                      return ListView.builder(
+                        padding: const EdgeInsets.only(top: 8),
+                        itemCount: 5, // Show 5 skeleton items
+                        itemBuilder: (context, index) {
+                          return const PostTileSkeleton();
+                        },
                       );
                     } else if (state is HomeLoaded) {
                       if (state.posts.isEmpty) {
@@ -160,11 +170,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     } else if (state is HomeError) {
-                      return Center(
-                        child: Text(
-                          state.message,
-                          style: TextStyle(color: textColor),
-                        ),
+                      return ErrorState(
+                        message: state.message,
+                        textColor: textColor,
                       );
                     }
                     return const SizedBox.shrink();
