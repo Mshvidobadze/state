@@ -7,6 +7,8 @@ abstract class INavigationService {
   Future<void> goToSignIn(BuildContext context);
   Future<bool?> goToPostCreation(BuildContext context);
   Future<void> goToPostDetails(BuildContext context, String postId);
+  Future<void> goToUserProfile(BuildContext context, String userId);
+  Future<void> goToSearch(BuildContext context);
   void goToHomeTab(BuildContext context);
   void goToFollowingTab(BuildContext context);
   void goToUserTab(BuildContext context);
@@ -58,6 +60,24 @@ class NavigationService implements INavigationService {
       await AppRouter.goToPostDetails(context, postId);
     } catch (e) {
       _handleNavigationError('goToPostDetails', e);
+    }
+  }
+
+  @override
+  Future<void> goToUserProfile(BuildContext context, String userId) async {
+    try {
+      AppRouter.goToUserProfile(context, userId);
+    } catch (e) {
+      _handleNavigationError('goToUserProfile', e);
+    }
+  }
+
+  @override
+  Future<void> goToSearch(BuildContext context) async {
+    try {
+      AppRouter.goToSearch(context);
+    } catch (e) {
+      _handleNavigationError('goToSearch', e);
     }
   }
 
@@ -181,6 +201,16 @@ class MockNavigationService implements INavigationService {
   @override
   Future<void> goToPostDetails(BuildContext context, String postId) async {
     _navigationCalls.add('goToPostDetails:$postId');
+  }
+
+  @override
+  Future<void> goToUserProfile(BuildContext context, String userId) async {
+    _navigationCalls.add('goToUserProfile:$userId');
+  }
+
+  @override
+  Future<void> goToSearch(BuildContext context) async {
+    _navigationCalls.add('goToSearch');
   }
 
   @override

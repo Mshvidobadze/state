@@ -13,6 +13,8 @@ import 'package:state/features/home/ui/widgets/filters_row_skeleton.dart';
 import 'package:state/features/home/ui/widgets/post_tile_skeleton.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/core/services/preferences_service.dart';
+import 'package:state/core/services/navigation_service.dart';
+import 'package:state/service_locator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -99,7 +101,8 @@ class _HomeScreenState extends State<HomeScreen> {
               IconButton(
                 icon: const Icon(Icons.search, size: 22, color: Colors.black54),
                 onPressed: () {
-                  // TODO: Implement search
+                  final navigationService = sl<INavigationService>();
+                  navigationService.goToSearch(context);
                 },
               ),
             ],

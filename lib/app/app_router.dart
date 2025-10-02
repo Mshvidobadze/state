@@ -14,6 +14,10 @@ import 'package:state/features/postDetails/bloc/post_details_cubit.dart';
 import 'package:state/features/postDetails/ui/post_details_screen.dart';
 import 'package:state/features/splash/ui/splash_screen.dart';
 import 'package:state/features/user/ui/user_screen.dart';
+import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
+import 'package:state/features/userProfile/ui/user_profile_screen.dart';
+import 'package:state/features/search/bloc/search_cubit.dart';
+import 'package:state/features/search/ui/search_screen.dart';
 import 'package:state/service_locator.dart';
 
 class AppRouter {
@@ -154,6 +158,31 @@ class AppRouter {
           );
         },
       ),
+
+      // User profile route with parameter
+      GoRoute(
+        path: '${Routes.userProfile}/:userId',
+        name: 'userProfile',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          return BlocProvider<UserProfileCubit>(
+            create: (_) => sl<UserProfileCubit>(),
+            child: UserProfileScreen(userId: userId),
+          );
+        },
+      ),
+
+      // Search route
+      GoRoute(
+        path: Routes.search,
+        name: 'search',
+        builder: (context, state) {
+          return BlocProvider<SearchCubit>(
+            create: (_) => sl<SearchCubit>(),
+            child: const SearchScreen(),
+          );
+        },
+      ),
     ],
   );
 
@@ -179,6 +208,14 @@ class AppRouter {
     String postId,
   ) async {
     context.push('${Routes.postDetails}/$postId');
+  }
+
+  static void goToUserProfile(BuildContext context, String userId) {
+    context.push('${Routes.userProfile}/$userId');
+  }
+
+  static void goToSearch(BuildContext context) {
+    context.push(Routes.search);
   }
 
   /// Tab navigation methods

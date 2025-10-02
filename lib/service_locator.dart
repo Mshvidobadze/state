@@ -21,6 +21,12 @@ import 'package:state/features/postDetails/bloc/post_details_cubit.dart';
 import 'package:state/features/postDetails/data/repository/post_details_repository_impl.dart';
 import 'package:state/features/postDetails/domain/post_details_repository.dart';
 import 'package:state/features/splash/bloc/splash_cubit.dart';
+import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
+import 'package:state/features/userProfile/data/repository/user_profile_repository_impl.dart';
+import 'package:state/features/userProfile/domain/user_profile_repository.dart';
+import 'package:state/features/search/bloc/search_cubit.dart';
+import 'package:state/features/search/data/repository/search_repository_impl.dart';
+import 'package:state/features/search/domain/search_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -87,4 +93,18 @@ Future<void> initInjections() async {
   sl.registerFactory(
     () => PostDetailsCubit(sl<PostDetailsRepository>(), sl<FirebaseAuth>()),
   );
+
+  // User Profile
+  sl.registerLazySingleton<UserProfileRepository>(
+    () => UserProfileRepositoryImpl(firestore: sl()),
+  );
+  sl.registerFactory(
+    () => UserProfileCubit(sl<UserProfileRepository>(), sl<FirebaseAuth>()),
+  );
+
+  // Search
+  sl.registerLazySingleton<SearchRepository>(
+    () => SearchRepositoryImpl(firestore: sl()),
+  );
+  sl.registerFactory(() => SearchCubit(sl<SearchRepository>()));
 }

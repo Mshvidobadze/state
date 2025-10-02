@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/following/domain/following_repository.dart';
 import 'package:state/features/home/domain/home_repository.dart';
 import 'following_state.dart';
