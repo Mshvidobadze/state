@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "230214864870-ev3ve4uq7h2l9le6bv9ihp6v72np4jld.apps.googleusercontent.com",
+          "client_id": "230214864870-vpkk0pc01lu4edcknln0p50ibda16qoq.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.stateapp",
-            "certificate_hash": "b36120952d12c74b5f8a6a3e1b9be3e498e5133a"
+            "certificate_hash": "9969275995f17dbe6e880b9740b953538a22879e"
           }
         },
         {

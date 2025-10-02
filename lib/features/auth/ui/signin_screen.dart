@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:state/app/app_router.dart';
 import 'package:state/core/configs/assets/app_vectors.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
@@ -8,6 +9,13 @@ import 'package:state/features/auth/bloc/auth_state.dart';
 
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
+
+  Future<void> _launchUrl(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,14 +114,56 @@ class SignInScreen extends StatelessWidget {
                 // Bottom legal text
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'By continuing, you agree to our Terms of Service and Privacy Policy.',
-                    style: TextStyle(
-                      color: const Color(0xFF637488),
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                    ),
+                  child: RichText(
                     textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: TextStyle(
+                        color: const Color(0xFF637488),
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                      ),
+                      children: [
+                        const TextSpan(
+                          text: 'By continuing, you agree to our ',
+                        ),
+                        WidgetSpan(
+                          child: GestureDetector(
+                            onTap:
+                                () => _launchUrl(
+                                  'https://stateapp.net/terms-and-conditions',
+                                ),
+                            child: Text(
+                              'Terms of Service',
+                              style: TextStyle(
+                                color: const Color(0xFF637488),
+                                fontSize: 14,
+                                fontWeight: FontWeight.normal,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const TextSpan(text: ' and '),
+                        WidgetSpan(
+                          child: GestureDetector(
+                            onTap:
+                                () => _launchUrl(
+                                  'https://stateapp.net/privacy-policy',
+                                ),
+                            child: Text(
+                              'Privacy Policy',
+                              style: TextStyle(
+                                color: const Color(0xFF637488),
+                                fontSize: 14,
+                                fontWeight: FontWeight.normal,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const TextSpan(text: '.'),
+                      ],
+                    ),
                   ),
                 ),
 
