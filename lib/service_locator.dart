@@ -4,6 +4,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
+import 'package:state/app/app_router.dart';
+import 'package:state/core/services/navigation_service.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/data/auth_repository_impl.dart';
 import 'package:state/features/auth/domain/auth_repository.dart';
@@ -28,6 +31,14 @@ Future<void> initInjections() async {
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
   sl.registerLazySingleton(() => FirebaseStorage.instance);
   sl.registerLazySingletonAsync(() => SharedPreferences.getInstance());
+
+  // Router
+  sl.registerLazySingleton(() => AppRouter.router);
+
+  // Navigation Service
+  sl.registerLazySingleton<INavigationService>(
+    () => NavigationService(sl<GoRouter>()),
+  );
 
   // Splash
   sl.registerFactory(() => SplashCubit(sl<AuthRepository>()));

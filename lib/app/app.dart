@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/app/app_router.dart';
-import 'package:state/core/constants/routes.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/following/bloc/following_cubit.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
@@ -24,11 +23,10 @@ class App extends StatelessWidget {
         BlocProvider(create: (_) => sl<FollowingCubit>()),
         BlocProvider(create: (_) => sl<PostDetailsCubit>()),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'State',
         debugShowCheckedModeBanner: false,
-        initialRoute: Routes.splash,
-        onGenerateRoute: AppRouter.generateRoute,
+        routerConfig: AppRouter.router,
       ),
     );
   }

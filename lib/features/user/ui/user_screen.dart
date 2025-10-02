@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:state/core/services/navigation_service.dart';
+import 'package:state/service_locator.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
-import 'package:state/app/app_router.dart';
 
 class UserScreen extends StatelessWidget {
   const UserScreen({super.key});
@@ -13,7 +14,8 @@ class UserScreen extends StatelessWidget {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is Unauthenticated) {
-          AppRouter.goToSignIn(context);
+          final navigationService = sl<INavigationService>();
+          navigationService.goToSignIn(context);
         }
       },
       builder: (context, state) {
