@@ -11,10 +11,22 @@ import 'package:state/features/auth/bloc/auth_state.dart';
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
 
-  Future<void> _launchUrl(String url) async {
+  Future<void> _launchUrl(String url, BuildContext context) async {
     final Uri uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    } else {
+      // Fallback: try to launch with external application mode
+      try {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        // If both fail, show an error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open link. Please try again.'),
+          ),
+        );
+      }
     }
   }
 
@@ -133,6 +145,7 @@ class SignInScreen extends StatelessWidget {
                             onTap:
                                 () => _launchUrl(
                                   'https://stateapp.net/terms-and-conditions',
+                                  context,
                                 ),
                             child: Text(
                               'Terms of Service',
@@ -151,6 +164,7 @@ class SignInScreen extends StatelessWidget {
                             onTap:
                                 () => _launchUrl(
                                   'https://stateapp.net/privacy-policy',
+                                  context,
                                 ),
                             child: Text(
                               'Privacy Policy',
