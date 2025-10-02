@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:state/core/constants/regions.dart';
 import 'package:state/core/widgets/error_state.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
@@ -37,7 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final savedRegion = await PreferencesService.getRegion();
     _currentFilter = FilterModel(
       region: savedRegion,
-      timeFilter: 'past_24_hours',
+      filterType: FilterType.newest, // Default to "New" filter
+      timeFilter: TimeFilter.past24Hours, // Default time filter for "top"
     );
 
     if (mounted) {

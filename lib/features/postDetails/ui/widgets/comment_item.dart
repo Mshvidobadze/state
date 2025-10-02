@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/features/postDetails/data/models/comment_model.dart';
 
 class CommentItem extends StatelessWidget {
@@ -43,20 +44,50 @@ class CommentItem extends StatelessWidget {
               // Comment Header
               Row(
                 children: [
-                  Text(
-                    comment.userName,
-                    style: GoogleFonts.beVietnamPro(
-                      color: textColor,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                  // Comment author avatar
+                  Container(
+                    width: UIConstants.avatarSmall,
+                    height: UIConstants.avatarSmall,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      image:
+                          comment.userPhotoUrl != null
+                              ? DecorationImage(
+                                image: NetworkImage(comment.userPhotoUrl!),
+                                fit: BoxFit.cover,
+                              )
+                              : null,
                     ),
+                    child:
+                        comment.userPhotoUrl == null
+                            ? const Icon(
+                              Icons.person,
+                              size: UIConstants.iconSmall,
+                              color: Colors.grey,
+                            )
+                            : null,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '• ${_getTimeAgo(comment.createdAt)}',
-                    style: GoogleFonts.beVietnamPro(
-                      color: subtleColor,
-                      fontSize: 12,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Text(
+                          comment.userName,
+                          style: GoogleFonts.beVietnamPro(
+                            color: textColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '• ${_getTimeAgo(comment.createdAt)}',
+                          style: GoogleFonts.beVietnamPro(
+                            color: subtleColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

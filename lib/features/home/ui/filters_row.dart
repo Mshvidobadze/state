@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:state/core/constants/regions.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/features/home/ui/widgets/feed_options_bottom_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -45,7 +46,7 @@ class FiltersRow extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${currentFilter.region} • ${_getTimeFilterLabel(currentFilter.timeFilter)}',
+                        '${currentFilter.region} • ${_getFilterLabel(currentFilter)}',
                         style: GoogleFonts.beVietnamPro(
                           fontSize: 12,
                           color: Colors.black54,
@@ -87,6 +88,14 @@ class FiltersRow extends StatelessWidget {
             onFilterChanged: onFilterChanged,
           ),
     );
+  }
+
+  String _getFilterLabel(FilterModel filter) {
+    if (filter.filterType == FilterType.newest) {
+      return 'New';
+    } else {
+      return _getTimeFilterLabel(filter.timeFilter);
+    }
   }
 
   String _getTimeFilterLabel(String timeFilter) {

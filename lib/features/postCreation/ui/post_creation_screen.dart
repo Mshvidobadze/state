@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:state/core/constants/regions.dart';
+import 'package:state/core/services/preferences_service.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postCreation/bloc/post_creation_state.dart';
 import 'package:state/features/postCreation/ui/widgets/simple_dropdown.dart';
@@ -18,9 +19,24 @@ class PostCreationScreen extends StatefulWidget {
 }
 
 class _PostCreationScreenState extends State<PostCreationScreen> {
-  String selectedRegion = kRegions.first;
+  String selectedRegion = kRegions.first; // Will be updated in initState
   final TextEditingController contentController = TextEditingController();
   File? _selectedImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeRegion();
+  }
+
+  Future<void> _initializeRegion() async {
+    final savedRegion = await PreferencesService.getRegion();
+    if (mounted) {
+      setState(() {
+        selectedRegion = savedRegion;
+      });
+    }
+  }
 
   Future<void> _pickImage() async {
     PermissionStatus status;
