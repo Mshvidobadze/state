@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:state/app/app_router.dart';
+import 'package:state/core/services/navigation_service.dart';
+import 'package:state/service_locator.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
@@ -117,7 +118,10 @@ class PostTile extends StatelessWidget {
           // Post content area (navigable)
           GestureDetector(
             behavior: HitTestBehavior.opaque, // Makes empty spaces clickable
-            onTap: () => AppRouter.goToPostDetails(context, post.id),
+            onTap: () {
+              final navigationService = sl<INavigationService>();
+              navigationService.goToPostDetails(context, post.id);
+            },
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.stretch, // Makes full width clickable
@@ -170,7 +174,10 @@ class PostTile extends StatelessWidget {
                   icon: Icons.chat_bubble_outline,
                   label: post.commentsCount.toString(),
                   isActive: false,
-                  onPressed: () => AppRouter.goToPostDetails(context, post.id),
+                  onPressed: () {
+                    final navigationService = sl<INavigationService>();
+                    navigationService.goToPostDetails(context, post.id);
+                  },
                 ),
               ],
             ),

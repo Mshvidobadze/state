@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:state/app/app_router.dart';
+import 'package:state/core/services/navigation_service.dart';
+import 'package:state/service_locator.dart';
 import 'package:state/core/configs/assets/app_vectors.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
@@ -22,7 +23,8 @@ class SignInScreen extends StatelessWidget {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is Authenticated) {
-          AppRouter.goToMainScaffold(context);
+          final navigationService = sl<INavigationService>();
+          navigationService.goToMainScaffold(context);
         }
         if (state is AuthError) {
           ScaffoldMessenger.of(
