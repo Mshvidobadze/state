@@ -68,57 +68,67 @@ class _FollowingScreenState extends State<FollowingScreen> {
                 if (state is FollowingLoading) {
                   return const FollowingSkeleton();
                 } else if (state is FollowingLoaded) {
-                  if (state.posts.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.bookmark_border,
-                            size: 48,
-                            color: textColor.withOpacity(0.5),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No followed posts yet',
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Posts you follow will appear here',
-                            style: TextStyle(
-                              color: textColor.withOpacity(0.7),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
                   return RefreshIndicator(
                     color: primaryColor,
                     onRefresh: () => _onRefresh(context),
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: state.posts.length,
-                      itemBuilder: (context, index) {
-                        final post = state.posts[index];
-                        return PostTile(
-                          post: post,
-                          currentUserId: state.currentUserId,
-                          currentUserName: state.currentUserName,
-                          onUnfollow:
-                              () => context.read<FollowingCubit>().unfollowPost(
-                                post.id,
-                              ),
-                        );
-                      },
-                    ),
+                    child:
+                        state.posts.isEmpty
+                            ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.6,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.bookmark_border,
+                                          size: 48,
+                                          color: textColor.withOpacity(0.5),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'No followed posts yet',
+                                          style: TextStyle(
+                                            color: textColor,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Posts you follow will appear here',
+                                          style: TextStyle(
+                                            color: textColor.withOpacity(0.7),
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                            : ListView.builder(
+                              controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: state.posts.length,
+                              itemBuilder: (context, index) {
+                                final post = state.posts[index];
+                                return PostTile(
+                                  post: post,
+                                  currentUserId: state.currentUserId,
+                                  currentUserName: state.currentUserName,
+                                  onUnfollow:
+                                      () => context
+                                          .read<FollowingCubit>()
+                                          .unfollowPost(post.id),
+                                );
+                              },
+                            ),
                   );
                 } else if (state is FollowingError) {
                   return ErrorState(

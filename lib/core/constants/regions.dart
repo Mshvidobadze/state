@@ -1,5 +1,10 @@
 const List<String> kRegions = ['Global', 'Europe', 'USA'];
 
+class FilterType {
+  static const String newest = 'new';
+  static const String top = 'top';
+}
+
 class TimeFilter {
   static const String pastHour = 'past_hour';
   static const String past24Hours = 'past_24_hours';

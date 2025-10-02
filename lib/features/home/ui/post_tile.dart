@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/services/navigation_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
@@ -45,8 +47,8 @@ class PostTile extends StatelessWidget {
                       children: [
                         // Author avatar
                         Container(
-                          width: 56,
-                          height: 56,
+                          width: UIConstants.avatarXLarge,
+                          height: UIConstants.avatarXLarge,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             image:
@@ -61,7 +63,7 @@ class PostTile extends StatelessWidget {
                               post.authorPhotoUrl == null
                                   ? const Icon(
                                     Icons.person,
-                                    size: 30,
+                                    size: UIConstants.iconXLarge,
                                     color: Colors.grey,
                                   )
                                   : null,
@@ -152,17 +154,28 @@ class PostTile extends StatelessWidget {
 
                 // Post image if exists
                 if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
-                  AspectRatio(
-                    aspectRatio: 3 / 2,
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        image: DecorationImage(
-                          image: NetworkImage(post.imageUrl!),
-                          fit: BoxFit.cover,
+                  Image.network(
+                    post.imageUrl!,
+                    width: double.infinity,
+                    fit: BoxFit.contain, // Show original size
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: UIConstants.loadingPlaceholderHeight,
+                        color: Colors.grey[100],
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/vectors/logo.svg',
+                            width: UIConstants.loadingPlaceholderSize,
+                            height: UIConstants.loadingPlaceholderSize,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.grey,
+                              BlendMode.srcIn,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
               ],
             ),

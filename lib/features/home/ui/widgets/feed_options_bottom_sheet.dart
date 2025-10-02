@@ -71,11 +71,25 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
               onTap: () => setState(() => _selectedOption = 'region'),
             ),
             _buildOptionItem(
+              icon: Icons.new_releases,
+              title: 'New',
+              subtitle: 'Latest posts',
+              isSelected: _currentFilter.filterType == FilterType.newest,
+              onTap: () {
+                final newFilter = _currentFilter.copyWith(
+                  filterType: FilterType.newest,
+                );
+                widget.onFilterChanged(newFilter);
+                Navigator.pop(context);
+              },
+            ),
+            _buildOptionItem(
               icon: Icons.trending_up,
               title: 'Top',
               subtitle:
                   TimeFilter.timeFilterLabels[_currentFilter.timeFilter] ??
                   'Past 24 Hours',
+              isSelected: _currentFilter.filterType == FilterType.top,
               onTap: () => setState(() => _selectedOption = 'time'),
             ),
           ] else if (_selectedOption == 'region') ...[
@@ -101,6 +115,7 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
                 isSelected: _currentFilter.timeFilter == timeFilter,
                 onTap: () {
                   final newFilter = _currentFilter.copyWith(
+                    filterType: FilterType.top,
                     timeFilter: timeFilter,
                   );
                   widget.onFilterChanged(newFilter);
@@ -121,6 +136,7 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    bool isSelected = false,
   }) {
     return InkWell(
       onTap: onTap,
@@ -128,7 +144,11 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, color: Colors.black54, size: 24),
+            Icon(
+              icon,
+              color: isSelected ? Colors.black87 : Colors.black54,
+              size: 24,
+            ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -138,7 +158,8 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
                     title,
                     style: GoogleFonts.beVietnamPro(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: Colors.black87,
                     ),
                   ),
@@ -152,7 +173,10 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.black54),
+            if (isSelected)
+              const Icon(Icons.check, color: Colors.black87, size: 20)
+            else
+              const Icon(Icons.chevron_right, color: Colors.black54),
           ],
         ),
       ),

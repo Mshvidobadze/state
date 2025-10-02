@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/features/home/domain/home_repository.dart';
@@ -21,7 +22,9 @@ class HomeRepositoryImpl implements HomeRepository {
           .collection('posts')
           .where('region', isEqualTo: filter.region);
 
-      if (filter.timeFilter != TimeFilter.allTime) {
+      // Apply time filter only for "top" filter type
+      if (filter.filterType == FilterType.top &&
+          filter.timeFilter != TimeFilter.allTime) {
         final duration = TimeFilter.timeFilterDurations[filter.timeFilter];
         if (duration != null && duration != Duration.zero) {
           final cutoffTime = DateTime.now().subtract(duration);
@@ -29,9 +32,14 @@ class HomeRepositoryImpl implements HomeRepository {
         }
       }
 
-      query = query.orderBy('upvotes', descending: true);
+      // Sort by creation date for "new" filter, otherwise by upvotes
+      if (filter.filterType == FilterType.newest) {
+        query = query.orderBy('createdAt', descending: true);
+      } else {
+        query = query.orderBy('upvotes', descending: true);
+      }
 
-      final snapshot = await query.limit(50).get();
+      final snapshot = await query.limit(UIConstants.postsLimit).get();
       return snapshot.docs.map((doc) => PostModel.fromDoc(doc)).toList();
     } catch (e) {
       throw Exception('Failed to fetch posts: $e');
