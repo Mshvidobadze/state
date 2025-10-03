@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:state/core/constants/regions.dart';
 import 'package:state/core/services/preferences_service.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postCreation/bloc/post_creation_state.dart';
 import 'package:state/features/postCreation/ui/widgets/simple_dropdown.dart';
+import 'package:state/features/postCreation/ui/widgets/image_source_selector.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PostCreationScreen extends StatefulWidget {
@@ -39,81 +39,31 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
   }
 
   Future<void> _pickImage() async {
-    PermissionStatus status;
-
-    if (Platform.isIOS) {
-      // On iOS, just request permission directly - let the system handle it
-      status = await Permission.photos.request();
-    } else {
-      // Android 13+ uses READ_MEDIA_IMAGES, older uses storage
-      status = await Permission.storage.request();
-      if (!status.isGranted) {
-        status = await Permission.photos.request();
-      }
-    }
-
-    if (!status.isGranted) {
-      if (mounted) {
-        String message;
-        if (Platform.isIOS) {
-          if (status == PermissionStatus.permanentlyDenied) {
-            message =
-                'Photo access permanently denied. Please enable it in Settings > Privacy & Security > Photos.';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(message),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 4),
-                action: SnackBarAction(
-                  label: 'Settings',
-                  textColor: Colors.white,
-                  onPressed: () => openAppSettings(),
-                ),
-              ),
-            );
-          } else {
-            message =
-                'Photo access denied. Please enable it in Settings > Privacy & Security > Photos.';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(message),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 4),
-              ),
-            );
-          }
-        } else {
-          message =
-              'Photo access denied. Please enable it in Settings > Apps > State > Permissions.';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-      }
-      return;
-    }
-
-    try {
+    final result = await ImageSourceSelector.show(context);
+    if (result != null && mounted) {
       final picker = ImagePicker();
-      final picked = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-      );
-      if (picked != null && mounted) {
-        setState(() => _selectedImage = File(picked.path));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to pick image: $e'),
-            backgroundColor: Colors.red,
-          ),
+      XFile? image;
+
+      // Opens camera or gallery based on user selection from ImageSourceSelector
+      if (result == true) {
+        image = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 80,
+          maxWidth: 1920,
+          maxHeight: 1080,
         );
+      } else if (result == false) {
+        image = await picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 80,
+          maxWidth: 1920,
+          maxHeight: 1080,
+        );
+      }
+
+      // Updates the selected image if an image was selected
+      if (image != null && mounted) {
+        setState(() => _selectedImage = File(image!.path));
       }
     }
   }
@@ -185,7 +135,9 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                 Container(
                   decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                      bottom: BorderSide(
+                        color: Colors.grey.withValues(alpha: 0.2),
+                      ),
                     ),
                   ),
                   padding: const EdgeInsets.all(16.0),
@@ -229,7 +181,9 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                        bottom: BorderSide(
+                          color: Colors.grey.withValues(alpha: 0.2),
+                        ),
                       ),
                     ),
                     child: Stack(
@@ -283,13 +237,13 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: Colors.grey.withValues(alpha: 0.3),
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: Colors.grey.withValues(alpha: 0.3),
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(

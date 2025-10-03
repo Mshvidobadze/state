@@ -112,7 +112,7 @@ class _SearchScreenState extends State<SearchScreen> {
         controller: _searchController,
         focusNode: _searchFocusNode,
         decoration: InputDecoration(
-          hintText: 'Search by display name...',
+          hintText: 'Search by name...',
           prefixIcon: const Icon(Icons.search, color: Colors.grey),
           suffixIcon:
               _searchController.text.isNotEmpty
