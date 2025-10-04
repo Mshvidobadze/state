@@ -141,6 +141,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           post: post,
                           currentUserId: currentUser?.uid ?? '',
                           currentUserName: currentUser?.displayName ?? '',
+                          // No onAuthorTap callback - author name won't be clickable
                         );
                       }, childCount: posts.length),
                     ),

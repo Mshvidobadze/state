@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/widgets/error_state.dart';
+import 'package:state/core/services/navigation_service.dart';
 import 'package:state/features/postDetails/bloc/post_details_cubit.dart';
 import 'package:state/features/postDetails/bloc/post_details_state.dart';
 import 'package:state/features/postDetails/ui/widgets/comment_input.dart';
@@ -9,6 +10,7 @@ import 'package:state/features/postDetails/ui/widgets/comment_item.dart';
 import 'package:state/features/postDetails/ui/widgets/post_content_section.dart';
 import 'package:state/features/postDetails/ui/widgets/post_details_theme.dart';
 import 'package:state/features/postDetails/ui/widgets/post_details_skeleton.dart';
+import 'package:state/service_locator.dart';
 
 class PostDetailsScreen extends StatefulWidget {
   final String postId;
@@ -216,6 +218,14 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                                           commentId,
                                           comment.userName,
                                         ),
+                                    onAuthorTap: () {
+                                      final navigationService =
+                                          sl<INavigationService>();
+                                      navigationService.goToUserProfile(
+                                        context,
+                                        comment.userId,
+                                      );
+                                    },
                                   ),
                                 );
                               }, childCount: comments.length),

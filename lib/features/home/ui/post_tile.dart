@@ -14,12 +14,14 @@ class PostTile extends StatelessWidget {
   final String currentUserId;
   final String currentUserName;
   final VoidCallback? onUnfollow;
+  final VoidCallback? onAuthorTap;
 
   const PostTile({
     required this.post,
     required this.currentUserId,
     required this.currentUserName,
     this.onUnfollow,
+    this.onAuthorTap,
     super.key,
   });
 
@@ -74,25 +76,28 @@ class PostTile extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            GestureDetector(
-                              onTap: () {
-                                final navigationService =
-                                    sl<INavigationService>();
-                                navigationService.goToUserProfile(
-                                  context,
-                                  post.authorId,
-                                );
-                              },
-                              child: Text(
-                                post.authorName,
-                                style: GoogleFonts.beVietnamPro(
-                                  color: const Color(0xFF121416),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                            onAuthorTap != null
+                                ? GestureDetector(
+                                  onTap: onAuthorTap,
+                                  child: Text(
+                                    post.authorName,
+                                    style: GoogleFonts.beVietnamPro(
+                                      color: const Color(0xFF121416),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                )
+                                : Text(
+                                  post.authorName,
+                                  style: GoogleFonts.beVietnamPro(
+                                    color: const Color(0xFF121416),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
                             Text(
                               _formatDate(post.createdAt),
                               style: GoogleFonts.beVietnamPro(
