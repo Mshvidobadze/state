@@ -26,7 +26,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late FilterModel _currentFilter;
-  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -46,12 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {});
       context.read<HomeCubit>().loadPosts(filter: _currentFilter);
     }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   Future<void> _onRefresh() async {
@@ -87,97 +80,96 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, authState) {
         return Scaffold(
           backgroundColor: backgroundColor,
-          body: Column(
-            children: [
-              Container(
-                padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top,
-                ),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  border: Border(
-                    bottom: BorderSide(
-                      color:
-                          isLightMode
-                              ? Colors.grey.withOpacity(0.2)
-                              : Colors.grey.withOpacity(0.1),
+          body: Padding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+            child: Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    border: Border(
+                      bottom: BorderSide(
+                        color:
+                            isLightMode
+                                ? Colors.grey.withOpacity(0.2)
+                                : Colors.grey.withOpacity(0.1),
+                      ),
                     ),
                   ),
-                ),
-                child: BlocBuilder<HomeCubit, HomeState>(
-                  builder: (context, state) {
-                    if (state is HomeLoading) {
-                      return const FiltersRowSkeleton();
-                    }
-                    return FiltersRow(
-                      currentFilter: _currentFilter,
-                      onFilterChanged: _onFilterChanged,
-                      onCreatePost: _onCreatePost,
-                      onSearch: () {
-                        final navigationService = sl<INavigationService>();
-                        navigationService.goToSearch(context);
-                      },
-                    );
-                  },
-                ),
-              ),
-              Expanded(
-                child: BlocBuilder<HomeCubit, HomeState>(
-                  builder: (context, state) {
-                    if (state is HomeLoading) {
-                      return ListView.builder(
-                        padding: EdgeInsets.zero,
-                        itemCount: 5,
-                        itemBuilder: (context, index) {
-                          return const PostTileSkeleton();
+                  child: BlocBuilder<HomeCubit, HomeState>(
+                    builder: (context, state) {
+                      if (state is HomeLoading) {
+                        return const FiltersRowSkeleton();
+                      }
+                      return FiltersRow(
+                        currentFilter: _currentFilter,
+                        onFilterChanged: _onFilterChanged,
+                        onCreatePost: _onCreatePost,
+                        onSearch: () {
+                          final navigationService = sl<INavigationService>();
+                          navigationService.goToSearch(context);
                         },
                       );
-                    } else if (state is HomeLoaded) {
-                      if (state.posts.isEmpty) {
-                        return Center(
-                          child: Text(
-                            'No posts found.',
-                            style: TextStyle(color: textColor),
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: BlocBuilder<HomeCubit, HomeState>(
+                    builder: (context, state) {
+                      if (state is HomeLoading) {
+                        return ListView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount: 5,
+                          itemBuilder: (context, index) {
+                            return const PostTileSkeleton();
+                          },
+                        );
+                      } else if (state is HomeLoaded) {
+                        if (state.posts.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'No posts found.',
+                              style: TextStyle(color: textColor),
+                            ),
+                          );
+                        }
+                        return RefreshIndicator(
+                          color: primaryColor,
+                          onRefresh: _onRefresh,
+                          child: ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.zero,
+                            itemCount: state.posts.length,
+                            itemBuilder: (context, index) {
+                              final post = state.posts[index];
+                              return PostTile(
+                                post: post,
+                                currentUserId: state.currentUserId,
+                                currentUserName: state.currentUserName,
+                                onAuthorTap: () {
+                                  final navigationService =
+                                      sl<INavigationService>();
+                                  navigationService.goToUserProfile(
+                                    context,
+                                    post.authorId,
+                                  );
+                                },
+                              );
+                            },
                           ),
                         );
+                      } else if (state is HomeError) {
+                        return ErrorState(
+                          message: state.message,
+                          textColor: textColor,
+                        );
                       }
-                      return RefreshIndicator(
-                        color: primaryColor,
-                        onRefresh: _onRefresh,
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.zero,
-                          itemCount: state.posts.length,
-                          itemBuilder: (context, index) {
-                            final post = state.posts[index];
-                            return PostTile(
-                              post: post,
-                              currentUserId: state.currentUserId,
-                              currentUserName: state.currentUserName,
-                              onAuthorTap: () {
-                                final navigationService =
-                                    sl<INavigationService>();
-                                navigationService.goToUserProfile(
-                                  context,
-                                  post.authorId,
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      );
-                    } else if (state is HomeError) {
-                      return ErrorState(
-                        message: state.message,
-                        textColor: textColor,
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
