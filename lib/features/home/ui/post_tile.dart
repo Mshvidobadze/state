@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:state/core/constants/ui_constants.dart';
+import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/core/services/navigation_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
@@ -15,6 +16,7 @@ class PostTile extends StatelessWidget {
   final String currentUserName;
   final VoidCallback? onUnfollow;
   final VoidCallback? onAuthorTap;
+  final dynamic cubit; // Can be HomeCubit or FollowingCubit
 
   const PostTile({
     required this.post,
@@ -22,6 +24,7 @@ class PostTile extends StatelessWidget {
     required this.currentUserName,
     this.onUnfollow,
     this.onAuthorTap,
+    this.cubit,
     super.key,
   });
 
@@ -43,72 +46,53 @@ class PostTile extends StatelessWidget {
                   vertical: 8,
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Author avatar
-                        Container(
-                          width: UIConstants.avatarXLarge,
-                          height: UIConstants.avatarXLarge,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            image:
-                                post.authorPhotoUrl != null
-                                    ? DecorationImage(
-                                      image: NetworkImage(post.authorPhotoUrl!),
-                                      fit: BoxFit.cover,
-                                    )
-                                    : null,
-                          ),
-                          child:
-                              post.authorPhotoUrl == null
-                                  ? const Icon(
-                                    Icons.person,
-                                    size: UIConstants.iconXLarge,
-                                    color: Colors.grey,
-                                  )
-                                  : null,
-                        ),
-                        const SizedBox(width: 16),
-                        // Author name and date
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            onAuthorTap != null
-                                ? GestureDetector(
-                                  onTap: onAuthorTap,
-                                  child: Text(
-                                    post.authorName,
-                                    style: GoogleFonts.beVietnamPro(
-                                      color: const Color(0xFF121416),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                )
-                                : Text(
+                    // Author avatar
+                    AvatarWidget(
+                      imageUrl: post.authorPhotoUrl,
+                      size: UIConstants.avatarSmall,
+                      displayName: post.authorName,
+                      onTap: onAuthorTap,
+                    ),
+                    const SizedBox(width: 8),
+                    // Author name and date
+                    Expanded(
+                      child: Row(
+                        children: [
+                          onAuthorTap != null
+                              ? GestureDetector(
+                                onTap: onAuthorTap,
+                                child: Text(
                                   post.authorName,
                                   style: GoogleFonts.beVietnamPro(
                                     color: const Color(0xFF121416),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                            Text(
-                              _formatDate(post.createdAt),
-                              style: GoogleFonts.beVietnamPro(
-                                color: const Color(0xFF6A7681),
-                                fontSize: 13,
-                                fontWeight: FontWeight.normal,
+                              )
+                              : Text(
+                                post.authorName,
+                                style: GoogleFonts.beVietnamPro(
+                                  color: const Color(0xFF121416),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _formatDate(post.createdAt),
+                            style: GoogleFonts.beVietnamPro(
+                              color: const Color(0xFF6A7681),
+                              fontSize: 12,
+                              fontWeight: FontWeight.normal,
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -145,7 +129,7 @@ class PostTile extends StatelessWidget {
               children: [
                 // Post content
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Text(
                     post.content,
                     style: GoogleFonts.beVietnamPro(
@@ -252,7 +236,11 @@ class PostTile extends StatelessWidget {
   }
 
   void _handleUpvote(BuildContext context) {
-    context.read<HomeCubit>().upvotePost(post.id, currentUserId);
+    if (cubit != null) {
+      cubit.upvotePost(post.id, currentUserId);
+    } else {
+      context.read<HomeCubit>().upvotePost(post.id, currentUserId);
+    }
   }
 
   void _handleFollowToggle(BuildContext context, bool isFollowing) {

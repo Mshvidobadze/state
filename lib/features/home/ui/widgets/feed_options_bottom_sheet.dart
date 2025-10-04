@@ -78,6 +78,8 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
               onTap: () {
                 final newFilter = _currentFilter.copyWith(
                   filterType: FilterType.newest,
+                  timeFilter:
+                      '', // Clear time filter for "New" - no sub-options selected
                 );
                 widget.onFilterChanged(newFilter);
                 Navigator.pop(context);
@@ -87,8 +89,7 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
               icon: Icons.trending_up,
               title: 'Top',
               subtitle:
-                  TimeFilter.timeFilterLabels[_currentFilter.timeFilter] ??
-                  'Past 24 Hours',
+                  TimeFilter.timeFilterLabels[_currentFilter.timeFilter] ?? '',
               isSelected: _currentFilter.filterType == FilterType.top,
               onTap: () => setState(() => _selectedOption = 'time'),
             ),
@@ -112,7 +113,9 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
             ...TimeFilter.allTimeFilters.map(
               (timeFilter) => _buildSubOptionItem(
                 title: TimeFilter.timeFilterLabels[timeFilter] ?? timeFilter,
-                isSelected: _currentFilter.timeFilter == timeFilter,
+                isSelected:
+                    _currentFilter.filterType == FilterType.top &&
+                    _currentFilter.timeFilter == timeFilter,
                 onTap: () {
                   final newFilter = _currentFilter.copyWith(
                     filterType: FilterType.top,
@@ -163,13 +166,14 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
                       color: Colors.black87,
                     ),
                   ),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.beVietnamPro(
-                      fontSize: 14,
-                      color: Colors.black54,
+                  if (subtitle.isNotEmpty)
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.beVietnamPro(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),

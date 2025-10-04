@@ -8,11 +8,13 @@ class FiltersRow extends StatelessWidget {
   final FilterModel currentFilter;
   final ValueChanged<FilterModel> onFilterChanged;
   final VoidCallback onCreatePost;
+  final VoidCallback onSearch;
 
   const FiltersRow({
     required this.currentFilter,
     required this.onFilterChanged,
     required this.onCreatePost,
+    required this.onSearch,
     super.key,
   });
 
@@ -60,16 +62,16 @@ class FiltersRow extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
           const Spacer(),
           IconButton(
             onPressed: onCreatePost,
-            icon: const Icon(
-              Icons.add,
-              size: 32,
-              color: Colors.black87,
-              weight: 900,
-            ),
+            icon: const Icon(Icons.add, size: 28, color: Colors.black87),
+            style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: onSearch,
+            icon: const Icon(Icons.search, size: 24, color: Colors.black54),
             style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
           ),
         ],

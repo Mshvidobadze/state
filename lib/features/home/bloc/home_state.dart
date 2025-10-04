@@ -10,7 +10,36 @@ class HomeLoaded extends HomeState {
   final List<PostModel> posts;
   final String currentUserId;
   final String currentUserName;
-  HomeLoaded(this.posts, this.currentUserId, this.currentUserName);
+  final bool hasMorePosts;
+  final bool isLoadingMore;
+  final String? lastDocumentId;
+
+  HomeLoaded(
+    this.posts,
+    this.currentUserId,
+    this.currentUserName, {
+    this.hasMorePosts = true,
+    this.isLoadingMore = false,
+    this.lastDocumentId,
+  });
+
+  HomeLoaded copyWith({
+    List<PostModel>? posts,
+    String? currentUserId,
+    String? currentUserName,
+    bool? hasMorePosts,
+    bool? isLoadingMore,
+    String? lastDocumentId,
+  }) {
+    return HomeLoaded(
+      posts ?? this.posts,
+      currentUserId ?? this.currentUserId,
+      currentUserName ?? this.currentUserName,
+      hasMorePosts: hasMorePosts ?? this.hasMorePosts,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      lastDocumentId: lastDocumentId ?? this.lastDocumentId,
+    );
+  }
 }
 
 class HomeError extends HomeState {

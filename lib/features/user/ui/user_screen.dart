@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/core/services/navigation_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
@@ -67,37 +68,10 @@ class UserScreen extends StatelessWidget {
                         Column(
                           children: [
                             // Profile picture
-                            Container(
-                              width: 128,
-                              height: 128,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: const Color(0xFFF0F2F5),
-                              ),
-                              child:
-                                  user.photoURL != null
-                                      ? ClipOval(
-                                        child: Image.network(
-                                          user.photoURL!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (
-                                            context,
-                                            error,
-                                            stackTrace,
-                                          ) {
-                                            return Icon(
-                                              Icons.person,
-                                              size: 64,
-                                              color: const Color(0xFF60748A),
-                                            );
-                                          },
-                                        ),
-                                      )
-                                      : Icon(
-                                        Icons.person,
-                                        size: 64,
-                                        color: const Color(0xFF60748A),
-                                      ),
+                            AvatarWidget(
+                              imageUrl: user.photoURL,
+                              size: 128,
+                              displayName: user.displayName ?? 'User',
                             ),
 
                             const SizedBox(height: 16),

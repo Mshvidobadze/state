@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/services/navigation_service.dart';
+import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/core/widgets/error_state.dart';
 import 'package:state/features/search/bloc/search_cubit.dart';
 import 'package:state/features/search/bloc/search_state.dart';
@@ -206,25 +207,10 @@ class _SearchUserTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.grey[200],
-        ),
-        child: ClipOval(
-          child:
-              user.photoUrl != null
-                  ? Image.network(
-                    user.photoUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder:
-                        (context, error, stackTrace) =>
-                            _DefaultAvatar(displayName: user.displayName),
-                  )
-                  : _DefaultAvatar(displayName: user.displayName),
-        ),
+      leading: AvatarWidget(
+        imageUrl: user.photoUrl,
+        size: 48,
+        displayName: user.displayName,
       ),
       title: Text(
         user.displayName,
@@ -235,32 +221,6 @@ class _SearchUserTile extends StatelessWidget {
         ),
       ),
       onTap: onTap,
-    );
-  }
-}
-
-/// Default avatar widget when no photo is available
-class _DefaultAvatar extends StatelessWidget {
-  final String displayName;
-
-  const _DefaultAvatar({required this.displayName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.blueGrey[100],
-      ),
-      child: Text(
-        displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-        style: GoogleFonts.beVietnamPro(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
     );
   }
 }

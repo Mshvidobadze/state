@@ -25,8 +25,8 @@ class UIConstants {
   static const double loadingPlaceholderHeight = 200.0;
 
   // Post limits
-  static const int postsLimit = 50;
-  static const int searchLimit = 20;
+  static const int postsPerPage = 10;
+  static const int paginationTriggerIndex = 7;
   static const int searchMinCharacters = 2;
 
   // Debounce timing

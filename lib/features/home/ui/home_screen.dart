@@ -32,6 +32,23 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initializeFilter();
+    _setupScrollListener();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _setupScrollListener() {
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        final homeCubit = context.read<HomeCubit>();
+        homeCubit.loadMorePosts();
+      }
+    });
   }
 
   Future<void> _initializeFilter() async {
@@ -39,19 +56,13 @@ class _HomeScreenState extends State<HomeScreen> {
     _currentFilter = FilterModel(
       region: savedRegion,
       filterType: FilterType.newest, // Default to "New" filter
-      timeFilter: TimeFilter.past24Hours, // Default time filter for "top"
+      timeFilter: '', // Empty time filter for "New" filter type
     );
 
     if (mounted) {
       setState(() {});
       context.read<HomeCubit>().loadPosts(filter: _currentFilter);
     }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   Future<void> _onRefresh() async {
@@ -87,111 +98,109 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, authState) {
         return Scaffold(
           backgroundColor: backgroundColor,
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            elevation: 0,
-            backgroundColor: Colors.white,
-            title: const Text(
-              'State',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-                color: Colors.black87,
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search, size: 22, color: Colors.black54),
-                onPressed: () {
-                  final navigationService = sl<INavigationService>();
-                  navigationService.goToSearch(context);
-                },
-              ),
-            ],
-          ),
-          body: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  border: Border(
-                    bottom: BorderSide(
-                      color:
-                          isLightMode
-                              ? Colors.grey.withOpacity(0.2)
-                              : Colors.grey.withOpacity(0.1),
+          body: Padding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+            child: Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    border: Border(
+                      bottom: BorderSide(
+                        color:
+                            isLightMode
+                                ? Colors.grey.withOpacity(0.2)
+                                : Colors.grey.withOpacity(0.1),
+                      ),
                     ),
                   ),
-                ),
-                child: BlocBuilder<HomeCubit, HomeState>(
-                  builder: (context, state) {
-                    if (state is HomeLoading) {
-                      return const FiltersRowSkeleton();
-                    }
-                    return FiltersRow(
-                      currentFilter: _currentFilter,
-                      onFilterChanged: _onFilterChanged,
-                      onCreatePost: _onCreatePost,
-                    );
-                  },
-                ),
-              ),
-              Expanded(
-                child: BlocBuilder<HomeCubit, HomeState>(
-                  builder: (context, state) {
-                    if (state is HomeLoading) {
-                      return ListView.builder(
-                        padding: const EdgeInsets.only(top: 8),
-                        itemCount: 5,
-                        itemBuilder: (context, index) {
-                          return const PostTileSkeleton();
+                  child: BlocBuilder<HomeCubit, HomeState>(
+                    builder: (context, state) {
+                      if (state is HomeLoading) {
+                        return const FiltersRowSkeleton();
+                      }
+                      return FiltersRow(
+                        currentFilter: _currentFilter,
+                        onFilterChanged: _onFilterChanged,
+                        onCreatePost: _onCreatePost,
+                        onSearch: () {
+                          final navigationService = sl<INavigationService>();
+                          navigationService.goToSearch(context);
                         },
                       );
-                    } else if (state is HomeLoaded) {
-                      if (state.posts.isEmpty) {
-                        return Center(
-                          child: Text(
-                            'No posts found.',
-                            style: TextStyle(color: textColor),
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: BlocBuilder<HomeCubit, HomeState>(
+                    builder: (context, state) {
+                      if (state is HomeLoading) {
+                        return ListView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount: 5,
+                          itemBuilder: (context, index) {
+                            return const PostTileSkeleton();
+                          },
+                        );
+                      } else if (state is HomeLoaded) {
+                        if (state.posts.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'No posts found.',
+                              style: TextStyle(color: textColor),
+                            ),
+                          );
+                        }
+                        return RefreshIndicator(
+                          color: primaryColor,
+                          onRefresh: _onRefresh,
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.zero,
+                            itemCount:
+                                state.posts.length +
+                                (state.isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              // Show loading indicator at the end when loading more
+                              if (index == state.posts.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+
+                              final post = state.posts[index];
+                              return PostTile(
+                                post: post,
+                                currentUserId: state.currentUserId,
+                                currentUserName: state.currentUserName,
+                                onAuthorTap: () {
+                                  final navigationService =
+                                      sl<INavigationService>();
+                                  navigationService.goToUserProfile(
+                                    context,
+                                    post.authorId,
+                                  );
+                                },
+                              );
+                            },
                           ),
                         );
+                      } else if (state is HomeError) {
+                        return ErrorState(
+                          message: state.message,
+                          textColor: textColor,
+                        );
                       }
-                      return RefreshIndicator(
-                        color: primaryColor,
-                        onRefresh: _onRefresh,
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: state.posts.length,
-                          itemBuilder: (context, index) {
-                            final post = state.posts[index];
-                            return PostTile(
-                              post: post,
-                              currentUserId: state.currentUserId,
-                              currentUserName: state.currentUserName,
-                              onAuthorTap: () {
-                                final navigationService =
-                                    sl<INavigationService>();
-                                navigationService.goToUserProfile(
-                                  context,
-                                  post.authorId,
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      );
-                    } else if (state is HomeError) {
-                      return ErrorState(
-                        message: state.message,
-                        textColor: textColor,
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

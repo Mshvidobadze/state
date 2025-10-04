@@ -3,10 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/home/bloc/home_state.dart';
 import 'package:state/features/home/domain/home_repository.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
+import 'package:state/core/constants/ui_constants.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository homeRepository;
   final FirebaseAuth firebaseAuth;
+  FilterModel? _currentFilter;
 
   HomeCubit(this.homeRepository, this.firebaseAuth) : super(HomeInitial());
 
@@ -14,11 +16,65 @@ class HomeCubit extends Cubit<HomeState> {
   String? get currentUserName => firebaseAuth.currentUser?.displayName ?? '';
 
   Future<void> loadPosts({required FilterModel filter}) async {
+    _currentFilter = filter;
     emit(HomeLoading());
     try {
-      final posts = await homeRepository.fetchPosts(filter: filter);
+      final posts = await homeRepository.fetchPosts(
+        filter: filter,
+        limit: UIConstants.postsPerPage,
+      );
       final user = firebaseAuth.currentUser;
-      emit(HomeLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
+      final hasMorePosts = posts.length == UIConstants.postsPerPage;
+      final lastDocumentId = posts.isNotEmpty ? posts.last.id : null;
+
+      emit(
+        HomeLoaded(
+          posts,
+          user?.uid ?? '',
+          user?.displayName ?? '',
+          hasMorePosts: hasMorePosts,
+          lastDocumentId: lastDocumentId,
+        ),
+      );
+    } catch (e) {
+      emit(HomeError(e.toString()));
+    }
+  }
+
+  Future<void> loadMorePosts() async {
+    if (_currentFilter == null) return;
+
+    final currentState = state;
+    if (currentState is! HomeLoaded ||
+        currentState.isLoadingMore ||
+        !currentState.hasMorePosts) {
+      return;
+    }
+
+    emit(currentState.copyWith(isLoadingMore: true));
+
+    try {
+      final newPosts = await homeRepository.fetchPosts(
+        filter: _currentFilter!,
+        limit: UIConstants.postsPerPage,
+        lastDocumentId: currentState.lastDocumentId,
+      );
+
+      final user = firebaseAuth.currentUser;
+      final allPosts = [...currentState.posts, ...newPosts];
+      final hasMorePosts = newPosts.length == UIConstants.postsPerPage;
+      final lastDocumentId =
+          newPosts.isNotEmpty ? newPosts.last.id : currentState.lastDocumentId;
+
+      emit(
+        HomeLoaded(
+          allPosts,
+          user?.uid ?? '',
+          user?.displayName ?? '',
+          hasMorePosts: hasMorePosts,
+          lastDocumentId: lastDocumentId,
+        ),
+      );
     } catch (e) {
       emit(HomeError(e.toString()));
     }
@@ -27,8 +83,9 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> upvotePost(String postId, String userId) async {
     if (state is! HomeLoaded) return;
     try {
+      final currentState = state as HomeLoaded;
       final posts =
-          (state as HomeLoaded).posts.map((post) {
+          currentState.posts.map((post) {
             if (post.id == postId) {
               final upvoters = post.upvoters;
               bool hasUpvoted = upvoters.contains(userId);
@@ -51,8 +108,7 @@ class HomeCubit extends Cubit<HomeState> {
             return post;
           }).toList();
 
-      final user = firebaseAuth.currentUser;
-      emit(HomeLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
+      emit(currentState.copyWith(posts: posts));
 
       await homeRepository.upvotePost(postId, userId);
     } catch (e) {
@@ -64,8 +120,9 @@ class HomeCubit extends Cubit<HomeState> {
     if (state is! HomeLoaded) return;
     try {
       await homeRepository.followPost(postId, userId);
+      final currentState = state as HomeLoaded;
       final posts =
-          (state as HomeLoaded).posts.map((post) {
+          currentState.posts.map((post) {
             if (post.id == postId && !post.followers.contains(userId)) {
               final updatedFollowers = List<String>.from(post.followers)
                 ..add(userId);
@@ -74,8 +131,7 @@ class HomeCubit extends Cubit<HomeState> {
             return post;
           }).toList();
 
-      final user = firebaseAuth.currentUser;
-      emit(HomeLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
+      emit(currentState.copyWith(posts: posts));
     } catch (e) {
       emit(HomeError(e.toString()));
     }
@@ -85,8 +141,9 @@ class HomeCubit extends Cubit<HomeState> {
     if (state is! HomeLoaded) return;
     try {
       await homeRepository.unfollowPost(postId, userId);
+      final currentState = state as HomeLoaded;
       final posts =
-          (state as HomeLoaded).posts.map((post) {
+          currentState.posts.map((post) {
             if (post.id == postId && post.followers.contains(userId)) {
               final updatedFollowers = List<String>.from(post.followers)
                 ..remove(userId);
@@ -94,8 +151,8 @@ class HomeCubit extends Cubit<HomeState> {
             }
             return post;
           }).toList();
-      final user = firebaseAuth.currentUser;
-      emit(HomeLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
+
+      emit(currentState.copyWith(posts: posts));
     } catch (e) {
       emit(HomeError(e.toString()));
     }

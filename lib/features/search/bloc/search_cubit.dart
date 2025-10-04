@@ -86,10 +86,7 @@ class SearchCubit extends Cubit<SearchState> {
     if (currentState is! SearchLoaded || !currentState.hasMore) return;
 
     try {
-      final moreUsers = await searchRepository.searchUsers(
-        query: query,
-        limit: 20,
-      );
+      final moreUsers = await searchRepository.searchUsers(query: query);
 
       final allUsers = [...currentState.users, ...moreUsers];
 
@@ -97,7 +94,7 @@ class SearchCubit extends Cubit<SearchState> {
         SearchLoaded(
           users: allUsers,
           query: query,
-          hasMore: moreUsers.length >= 20,
+          hasMore: false, // No pagination needed since we get all results
         ),
       );
     } catch (e) {

@@ -2,7 +2,11 @@ import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 
 abstract class HomeRepository {
-  Future<List<PostModel>> fetchPosts({required FilterModel filter});
+  Future<List<PostModel>> fetchPosts({
+    required FilterModel filter,
+    int limit = 10,
+    String? lastDocumentId,
+  });
 
   Future<void> createPost(PostModel post);
 
@@ -17,6 +21,7 @@ abstract class HomeRepository {
     required String userId,
     required String userName,
     required String content,
+    String? userPhotoUrl,
     String? parentCommentId,
   });
 }

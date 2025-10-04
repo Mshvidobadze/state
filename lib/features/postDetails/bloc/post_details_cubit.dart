@@ -150,6 +150,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
         postId: postId,
         userId: currentUser.uid,
         userName: currentUser.displayName ?? 'Anonymous',
+        userPhotoUrl: currentUser.photoURL,
         content: content,
         parentCommentId: parentCommentId,
       );

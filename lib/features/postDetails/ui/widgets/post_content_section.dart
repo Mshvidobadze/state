@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/constants/ui_constants.dart';
+import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/postDetails/bloc/post_details_cubit.dart';
 import 'package:state/features/postDetails/ui/widgets/post_details_theme.dart';
@@ -11,6 +12,7 @@ class PostContentSection extends StatelessWidget {
   final bool isUpvoted;
   final bool isFollowing;
   final int commentsCount;
+  final VoidCallback? onAuthorTap;
 
   const PostContentSection({
     super.key,
@@ -18,6 +20,7 @@ class PostContentSection extends StatelessWidget {
     required this.isUpvoted,
     required this.isFollowing,
     required this.commentsCount,
+    this.onAuthorTap,
   });
 
   @override
@@ -34,43 +37,39 @@ class PostContentSection extends StatelessWidget {
           Row(
             children: [
               // Author avatar
-              Container(
-                width: UIConstants.avatarMedium,
-                height: UIConstants.avatarMedium,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  image:
-                      post.authorPhotoUrl != null
-                          ? DecorationImage(
-                            image: NetworkImage(post.authorPhotoUrl!),
-                            fit: BoxFit.cover,
-                          )
-                          : null,
-                ),
-                child:
-                    post.authorPhotoUrl == null
-                        ? const Icon(
-                          Icons.person,
-                          size: UIConstants.iconMedium,
-                          color: Colors.grey,
-                        )
-                        : null,
+              AvatarWidget(
+                imageUrl: post.authorPhotoUrl,
+                size: UIConstants.avatarMedium,
+                displayName: post.authorName,
+                onTap: onAuthorTap,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Row(
                   children: [
-                    Text(
-                      post.authorName,
-                      style: GoogleFonts.beVietnamPro(
-                        color: theme.textColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    onAuthorTap != null
+                        ? GestureDetector(
+                          onTap: onAuthorTap,
+                          child: Text(
+                            post.authorName,
+                            style: GoogleFonts.beVietnamPro(
+                              color: theme.textColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        )
+                        : Text(
+                          post.authorName,
+                          style: GoogleFonts.beVietnamPro(
+                            color: theme.textColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                     const SizedBox(width: 8),
                     Text(
-                      '• ${_getTimeAgo(post.createdAt)}',
+                      _getTimeAgo(post.createdAt),
                       style: GoogleFonts.beVietnamPro(
                         color: theme.subtleColor,
                         fontSize: 12,

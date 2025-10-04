@@ -123,6 +123,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
                                   post: post,
                                   currentUserId: state.currentUserId,
                                   currentUserName: state.currentUserName,
+                                  cubit: context.read<FollowingCubit>(),
                                   onUnfollow:
                                       () => context
                                           .read<FollowingCubit>()
