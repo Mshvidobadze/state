@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/features/home/domain/home_repository.dart';
@@ -12,7 +11,11 @@ class HomeRepositoryImpl implements HomeRepository {
     : firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
-  Future<List<PostModel>> fetchPosts({required FilterModel filter}) async {
+  Future<List<PostModel>> fetchPosts({
+    required FilterModel filter,
+    int limit = 10,
+    String? lastDocumentId,
+  }) async {
     try {
       if (filter.region.isEmpty) {
         throw Exception('Region filter cannot be empty');
@@ -39,7 +42,16 @@ class HomeRepositoryImpl implements HomeRepository {
         query = query.orderBy('upvotes', descending: true);
       }
 
-      final snapshot = await query.limit(UIConstants.postsLimit).get();
+      // Apply pagination
+      if (lastDocumentId != null) {
+        final lastDoc =
+            await firestore.collection('posts').doc(lastDocumentId).get();
+        if (lastDoc.exists) {
+          query = query.startAfterDocument(lastDoc);
+        }
+      }
+
+      final snapshot = await query.limit(limit).get();
       return snapshot.docs.map((doc) => PostModel.fromDoc(doc)).toList();
     } catch (e) {
       throw Exception('Failed to fetch posts: $e');

@@ -9,10 +9,6 @@ abstract class SearchRepository {
   /// Search users by display name
   ///
   /// [query] - The search query string
-  /// [limit] - Maximum number of results to return
   /// Returns list of users matching the search query
-  Future<List<SearchUserModel>> searchUsers({
-    required String query,
-    int limit = 20,
-  });
+  Future<List<SearchUserModel>> searchUsers({required String query});
 }

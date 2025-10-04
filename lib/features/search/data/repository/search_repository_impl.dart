@@ -14,10 +14,7 @@ class SearchRepositoryImpl implements SearchRepository {
     : firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
-  Future<List<SearchUserModel>> searchUsers({
-    required String query,
-    int limit = 20,
-  }) async {
+  Future<List<SearchUserModel>> searchUsers({required String query}) async {
     try {
       if (query.isEmpty) return [];
 
@@ -25,9 +22,7 @@ class SearchRepositoryImpl implements SearchRepository {
       final lowerCaseQuery = query.toLowerCase();
 
       // Get all users and filter client-side since Firestore doesn't support case-insensitive search
-      Query firestoreQuery = firestore
-          .collection('users')
-          .limit(100); // Get more users to filter from
+      Query firestoreQuery = firestore.collection('users');
 
       final snapshot = await firestoreQuery.get();
       final allUsers =
@@ -67,8 +62,8 @@ class SearchRepositoryImpl implements SearchRepository {
         return aName.compareTo(bName);
       });
 
-      // Return limited results
-      return filteredUsers.take(limit).toList();
+      // Return all matching results
+      return filteredUsers;
     } catch (e) {
       throw Exception('Failed to search users: $e');
     }

@@ -26,11 +26,29 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late FilterModel _currentFilter;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _initializeFilter();
+    _setupScrollListener();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _setupScrollListener() {
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        final homeCubit = context.read<HomeCubit>();
+        homeCubit.loadMorePosts();
+      }
+    });
   }
 
   Future<void> _initializeFilter() async {
@@ -137,10 +155,23 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: primaryColor,
                           onRefresh: _onRefresh,
                           child: ListView.builder(
+                            controller: _scrollController,
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: EdgeInsets.zero,
-                            itemCount: state.posts.length,
+                            itemCount:
+                                state.posts.length +
+                                (state.isLoadingMore ? 1 : 0),
                             itemBuilder: (context, index) {
+                              // Show loading indicator at the end when loading more
+                              if (index == state.posts.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+
                               final post = state.posts[index];
                               return PostTile(
                                 post: post,
