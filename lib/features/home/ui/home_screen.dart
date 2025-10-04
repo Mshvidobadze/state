@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _currentFilter = FilterModel(
       region: savedRegion,
       filterType: FilterType.newest, // Default to "New" filter
-      timeFilter: TimeFilter.past24Hours, // Default time filter for "top"
+      timeFilter: '', // Empty time filter for "New" filter type
     );
 
     if (mounted) {
