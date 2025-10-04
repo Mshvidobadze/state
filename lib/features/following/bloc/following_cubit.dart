@@ -45,4 +45,40 @@ class FollowingCubit extends Cubit<FollowingState> {
       emit(FollowingError(e.toString()));
     }
   }
+
+  Future<void> upvotePost(String postId, String userId) async {
+    if (state is! FollowingLoaded) return;
+    try {
+      final posts =
+          (state as FollowingLoaded).posts.map((post) {
+            if (post.id == postId) {
+              final upvoters = post.upvoters;
+              bool hasUpvoted = upvoters.contains(userId);
+              final updatedUpvoters = List<String>.from(upvoters);
+              int updatedUpvotes = post.upvotes;
+
+              if (hasUpvoted) {
+                updatedUpvoters.remove(userId);
+                updatedUpvotes = updatedUpvotes > 0 ? updatedUpvotes - 1 : 0;
+              } else {
+                updatedUpvoters.add(userId);
+                updatedUpvotes = updatedUpvotes + 1;
+              }
+
+              return post.copyWith(
+                upvoters: updatedUpvoters,
+                upvotes: updatedUpvotes,
+              );
+            }
+            return post;
+          }).toList();
+
+      final user = firebaseAuth.currentUser;
+      emit(FollowingLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
+
+      await homeRepository.upvotePost(postId, userId);
+    } catch (e) {
+      emit(FollowingError(e.toString()));
+    }
+  }
 }

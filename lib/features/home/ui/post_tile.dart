@@ -15,6 +15,7 @@ class PostTile extends StatelessWidget {
   final String currentUserName;
   final VoidCallback? onUnfollow;
   final VoidCallback? onAuthorTap;
+  final dynamic cubit; // Can be HomeCubit or FollowingCubit
 
   const PostTile({
     required this.post,
@@ -22,6 +23,7 @@ class PostTile extends StatelessWidget {
     required this.currentUserName,
     this.onUnfollow,
     this.onAuthorTap,
+    this.cubit,
     super.key,
   });
 
@@ -252,7 +254,11 @@ class PostTile extends StatelessWidget {
   }
 
   void _handleUpvote(BuildContext context) {
-    context.read<HomeCubit>().upvotePost(post.id, currentUserId);
+    if (cubit != null) {
+      cubit.upvotePost(post.id, currentUserId);
+    } else {
+      context.read<HomeCubit>().upvotePost(post.id, currentUserId);
+    }
   }
 
   void _handleFollowToggle(BuildContext context, bool isFollowing) {
