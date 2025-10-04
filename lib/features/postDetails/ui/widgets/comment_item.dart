@@ -8,6 +8,7 @@ class CommentItem extends StatelessWidget {
   final String currentUserId;
   final Function(String) onReply;
   final double indentLevel;
+  final VoidCallback? onAuthorTap;
 
   const CommentItem({
     super.key,
@@ -15,6 +16,7 @@ class CommentItem extends StatelessWidget {
     required this.currentUserId,
     required this.onReply,
     this.indentLevel = 0,
+    this.onAuthorTap,
   });
 
   @override
@@ -71,14 +73,26 @@ class CommentItem extends StatelessWidget {
                   Expanded(
                     child: Row(
                       children: [
-                        Text(
-                          comment.userName,
-                          style: GoogleFonts.beVietnamPro(
-                            color: textColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        onAuthorTap != null
+                            ? GestureDetector(
+                              onTap: onAuthorTap,
+                              child: Text(
+                                comment.userName,
+                                style: GoogleFonts.beVietnamPro(
+                                  color: textColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            )
+                            : Text(
+                              comment.userName,
+                              style: GoogleFonts.beVietnamPro(
+                                color: textColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                         const SizedBox(width: 8),
                         Text(
                           '• ${_getTimeAgo(comment.createdAt)}',
@@ -131,6 +145,7 @@ class CommentItem extends StatelessWidget {
               currentUserId: currentUserId,
               onReply: onReply,
               indentLevel: indentLevel + 1,
+              onAuthorTap: onAuthorTap,
             ),
           ),
       ],

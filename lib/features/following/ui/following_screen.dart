@@ -7,6 +7,7 @@ import 'package:state/features/following/bloc/following_cubit.dart';
 import 'package:state/features/following/bloc/following_state.dart';
 import 'package:state/features/home/ui/post_tile.dart';
 import 'package:state/service_locator.dart';
+import 'package:state/core/services/navigation_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/features/following/ui/widgets/following_skeleton.dart';
 
@@ -126,6 +127,14 @@ class _FollowingScreenState extends State<FollowingScreen> {
                                       () => context
                                           .read<FollowingCubit>()
                                           .unfollowPost(post.id),
+                                  onAuthorTap: () {
+                                    final navigationService =
+                                        sl<INavigationService>();
+                                    navigationService.goToUserProfile(
+                                      context,
+                                      post.authorId,
+                                    );
+                                  },
                                 );
                               },
                             ),

@@ -169,6 +169,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               post: post,
                               currentUserId: state.currentUserId,
                               currentUserName: state.currentUserName,
+                              onAuthorTap: () {
+                                final navigationService =
+                                    sl<INavigationService>();
+                                navigationService.goToUserProfile(
+                                  context,
+                                  post.authorId,
+                                );
+                              },
                             );
                           },
                         ),
