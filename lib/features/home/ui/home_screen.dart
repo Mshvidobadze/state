@@ -87,31 +87,12 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, authState) {
         return Scaffold(
           backgroundColor: backgroundColor,
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            elevation: 0,
-            backgroundColor: Colors.white,
-            title: const Text(
-              'State',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-                color: Colors.black87,
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search, size: 22, color: Colors.black54),
-                onPressed: () {
-                  final navigationService = sl<INavigationService>();
-                  navigationService.goToSearch(context);
-                },
-              ),
-            ],
-          ),
           body: Column(
             children: [
               Container(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top,
+                ),
                 decoration: BoxDecoration(
                   color: cardColor,
                   border: Border(
@@ -132,6 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       currentFilter: _currentFilter,
                       onFilterChanged: _onFilterChanged,
                       onCreatePost: _onCreatePost,
+                      onSearch: () {
+                        final navigationService = sl<INavigationService>();
+                        navigationService.goToSearch(context);
+                      },
                     );
                   },
                 ),
@@ -141,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (context, state) {
                     if (state is HomeLoading) {
                       return ListView.builder(
-                        padding: const EdgeInsets.only(top: 8),
+                        padding: EdgeInsets.zero,
                         itemCount: 5,
                         itemBuilder: (context, index) {
                           return const PostTileSkeleton();
@@ -162,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ListView.builder(
                           controller: _scrollController,
                           physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
                           itemCount: state.posts.length,
                           itemBuilder: (context, index) {
                             final post = state.posts[index];
