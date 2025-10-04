@@ -152,9 +152,10 @@ class AppRouter {
         name: 'postDetails',
         builder: (context, state) {
           final postId = state.pathParameters['postId']!;
+          final commentId = state.uri.queryParameters['commentId'];
           return BlocProvider<PostDetailsCubit>(
             create: (_) => sl<PostDetailsCubit>(),
-            child: PostDetailsScreen(postId: postId),
+            child: PostDetailsScreen(postId: postId, commentId: commentId),
           );
         },
       ),
@@ -205,9 +206,14 @@ class AppRouter {
 
   static Future<void> goToPostDetails(
     BuildContext context,
-    String postId,
-  ) async {
-    context.push('${Routes.postDetails}/$postId');
+    String postId, {
+    String? commentId,
+  }) async {
+    String path = '${Routes.postDetails}/$postId';
+    if (commentId != null && commentId.isNotEmpty) {
+      path += '?commentId=$commentId';
+    }
+    context.push(path);
   }
 
   static void goToUserProfile(BuildContext context, String userId) {

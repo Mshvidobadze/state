@@ -23,6 +23,35 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
   }
 
   @override
+  Future<CommentModel?> fetchCommentById(
+    String postId,
+    String commentId,
+  ) async {
+    try {
+      final doc =
+          await firestore
+              .collection('posts')
+              .doc(postId)
+              .collection('comments')
+              .doc(commentId)
+              .get();
+
+      if (!doc.exists) {
+        return null;
+      }
+
+      final data = doc.data()!;
+      if (data['createdAt'] != null) {
+        data['createdAt'] = (data['createdAt'] as Timestamp).toDate();
+      }
+
+      return CommentModel.fromMap(data, doc.id);
+    } catch (e) {
+      throw Exception('Failed to fetch comment by ID: $e');
+    }
+  }
+
+  @override
   Future<List<CommentModel>> fetchComments(String postId) async {
     try {
       final snapshot =

@@ -14,8 +14,9 @@ import 'package:state/service_locator.dart';
 
 class PostDetailsScreen extends StatefulWidget {
   final String postId;
+  final String? commentId;
 
-  const PostDetailsScreen({super.key, required this.postId});
+  const PostDetailsScreen({super.key, required this.postId, this.commentId});
 
   @override
   State<PostDetailsScreen> createState() => _PostDetailsScreenState();
@@ -28,7 +29,10 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<PostDetailsCubit>().loadPostDetails(widget.postId);
+    context.read<PostDetailsCubit>().loadPostDetails(
+      widget.postId,
+      commentId: widget.commentId,
+    );
   }
 
   void _handleReply(String commentId, String userName) {
@@ -153,6 +157,19 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                     ? state.hasMoreComments
                     : false;
 
+            final viewingSpecificComment =
+                state is PostDetailsLoaded
+                    ? state.viewingSpecificComment
+                    : state is PostDetailsUpvoting
+                    ? state.viewingSpecificComment
+                    : state is PostDetailsCommenting
+                    ? state.viewingSpecificComment
+                    : state is PostDetailsFollowing
+                    ? state.viewingSpecificComment
+                    : state is PostDetailsLoadingMore
+                    ? state.viewingSpecificComment
+                    : false;
+
             if (post == null) return const SizedBox.shrink();
 
             return Column(
@@ -199,6 +216,31 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                               },
                             ),
                           ),
+                          // Show "Load All Comments" button when viewing specific comment
+                          if (viewingSpecificComment)
+                            SliverToBoxAdapter(
+                              child: Container(
+                                margin: const EdgeInsets.all(16),
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    context
+                                        .read<PostDetailsCubit>()
+                                        .loadAllComments(post.id);
+                                  },
+                                  icon: const Icon(Icons.comment),
+                                  label: const Text('Load All Comments'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Theme.of(context).primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           // Comments
                           SliverPadding(
                             padding: const EdgeInsets.only(top: 8),

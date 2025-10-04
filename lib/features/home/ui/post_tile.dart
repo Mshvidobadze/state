@@ -58,40 +58,17 @@ class PostTile extends StatelessWidget {
                     const SizedBox(width: 8),
                     // Author name and date
                     Expanded(
-                      child: Row(
-                        children: [
-                          onAuthorTap != null
-                              ? GestureDetector(
-                                onTap: onAuthorTap,
-                                child: Text(
-                                  post.authorName,
-                                  style: GoogleFonts.beVietnamPro(
-                                    color: const Color(0xFF121416),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              )
-                              : Text(
-                                post.authorName,
-                                style: GoogleFonts.beVietnamPro(
-                                  color: const Color(0xFF121416),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _formatDate(post.createdAt),
-                            style: GoogleFonts.beVietnamPro(
-                              color: const Color(0xFF6A7681),
-                              fontSize: 12,
-                              fontWeight: FontWeight.normal,
-                            ),
+                      child: GestureDetector(
+                        onTap: onAuthorTap,
+                        child: Text(
+                          '${post.authorName} ${_formatDate(post.createdAt)}',
+                          style: GoogleFonts.beVietnamPro(
+                            color: const Color(0xFF121416),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],
@@ -253,80 +230,6 @@ class PostTile extends StatelessWidget {
     } else {
       context.read<HomeCubit>().followPost(post.id, currentUserId);
     }
-  }
-
-  void _showCommentDialog(BuildContext context) {
-    final controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder:
-          (ctx) => AlertDialog(
-            backgroundColor: Colors.white,
-            title: Text(
-              'Add Comment',
-              style: GoogleFonts.beVietnamPro(
-                color: const Color(0xFF121416),
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            content: TextField(
-              controller: controller,
-              style: GoogleFonts.beVietnamPro(color: const Color(0xFF121416)),
-              decoration: InputDecoration(
-                hintText: 'Write a comment...',
-                hintStyle: GoogleFonts.beVietnamPro(
-                  color: const Color(0xFF6A7681),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF6A7681)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF6A7681)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF121416)),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.beVietnamPro(
-                    color: const Color(0xFF6A7681),
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  final content = controller.text.trim();
-                  if (content.isNotEmpty) {
-                    context.read<HomeCubit>().addComment(
-                      postId: post.id,
-                      userId: currentUserId,
-                      userName: currentUserName,
-                      content: content,
-                    );
-                  }
-                  Navigator.of(ctx).pop();
-                },
-                child: Text(
-                  'Post',
-                  style: GoogleFonts.beVietnamPro(
-                    color: const Color(0xFF121416),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-    );
   }
 
   String _formatDate(DateTime date) {

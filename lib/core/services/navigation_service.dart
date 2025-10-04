@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:state/app/app_router.dart';
 
 abstract class INavigationService {
   Future<void> goToMainScaffold(BuildContext context);
   Future<void> goToSignIn(BuildContext context);
   Future<bool?> goToPostCreation(BuildContext context);
-  Future<void> goToPostDetails(BuildContext context, String postId);
+  Future<void> goToPostDetails(
+    BuildContext context,
+    String postId, {
+    String? commentId,
+  });
   Future<void> goToUserProfile(BuildContext context, String userId);
   Future<void> goToSearch(BuildContext context);
   void goToHomeTab(BuildContext context);
   void goToFollowingTab(BuildContext context);
+  void goToNotificationsTab(BuildContext context);
   void goToUserTab(BuildContext context);
   void pop<T>(BuildContext context, [T? result]);
   void popUntilRoot(BuildContext context);
@@ -21,9 +25,7 @@ abstract class INavigationService {
 }
 
 class NavigationService implements INavigationService {
-  final GoRouter _router;
-
-  NavigationService(this._router);
+  NavigationService();
 
   @override
   Future<void> goToMainScaffold(BuildContext context) async {
@@ -55,9 +57,13 @@ class NavigationService implements INavigationService {
   }
 
   @override
-  Future<void> goToPostDetails(BuildContext context, String postId) async {
+  Future<void> goToPostDetails(
+    BuildContext context,
+    String postId, {
+    String? commentId,
+  }) async {
     try {
-      await AppRouter.goToPostDetails(context, postId);
+      await AppRouter.goToPostDetails(context, postId, commentId: commentId);
     } catch (e) {
       _handleNavigationError('goToPostDetails', e);
     }
@@ -96,6 +102,16 @@ class NavigationService implements INavigationService {
       AppRouter.goToFollowingTab(context);
     } catch (e) {
       _handleNavigationError('goToFollowingTab', e);
+    }
+  }
+
+  @override
+  void goToNotificationsTab(BuildContext context) {
+    try {
+      // Navigate to user tab since notifications are now integrated there
+      AppRouter.goToUserTab(context);
+    } catch (e) {
+      _handleNavigationError('goToNotificationsTab', e);
     }
   }
 
@@ -199,8 +215,14 @@ class MockNavigationService implements INavigationService {
   }
 
   @override
-  Future<void> goToPostDetails(BuildContext context, String postId) async {
-    _navigationCalls.add('goToPostDetails:$postId');
+  Future<void> goToPostDetails(
+    BuildContext context,
+    String postId, {
+    String? commentId,
+  }) async {
+    _navigationCalls.add(
+      'goToPostDetails:$postId${commentId != null ? ':$commentId' : ''}',
+    );
   }
 
   @override
@@ -221,6 +243,11 @@ class MockNavigationService implements INavigationService {
   @override
   void goToFollowingTab(BuildContext context) {
     _navigationCalls.add('goToFollowingTab');
+  }
+
+  @override
+  void goToNotificationsTab(BuildContext context) {
+    _navigationCalls.add('goToNotificationsTab');
   }
 
   @override

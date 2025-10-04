@@ -9,4 +9,5 @@ class Routes {
   static const postDetails = '/post-details';
   static const userProfile = '/user-profile';
   static const search = '/search';
+  static const notifications = '/notifications';
 }

@@ -15,6 +15,7 @@ class PostDetailsLoaded extends PostDetailsState {
   final bool isFollowing;
   final bool hasMoreComments;
   final DocumentSnapshot? lastCommentDocument;
+  final bool viewingSpecificComment;
 
   PostDetailsLoaded({
     required this.post,
@@ -23,6 +24,7 @@ class PostDetailsLoaded extends PostDetailsState {
     required this.isFollowing,
     required this.hasMoreComments,
     this.lastCommentDocument,
+    this.viewingSpecificComment = false,
   });
 
   PostDetailsLoaded copyWith({
@@ -32,6 +34,7 @@ class PostDetailsLoaded extends PostDetailsState {
     bool? isFollowing,
     bool? hasMoreComments,
     DocumentSnapshot? lastCommentDocument,
+    bool? viewingSpecificComment,
   }) {
     return PostDetailsLoaded(
       post: post ?? this.post,
@@ -40,6 +43,8 @@ class PostDetailsLoaded extends PostDetailsState {
       isFollowing: isFollowing ?? this.isFollowing,
       hasMoreComments: hasMoreComments ?? this.hasMoreComments,
       lastCommentDocument: lastCommentDocument ?? this.lastCommentDocument,
+      viewingSpecificComment:
+          viewingSpecificComment ?? this.viewingSpecificComment,
     );
   }
 }
@@ -56,6 +61,7 @@ class PostDetailsUpvoting extends PostDetailsState {
   final bool isFollowing;
   final bool hasMoreComments;
   final DocumentSnapshot? lastCommentDocument;
+  final bool viewingSpecificComment;
 
   PostDetailsUpvoting({
     required this.post,
@@ -64,6 +70,7 @@ class PostDetailsUpvoting extends PostDetailsState {
     required this.isFollowing,
     required this.hasMoreComments,
     this.lastCommentDocument,
+    this.viewingSpecificComment = false,
   });
 }
 
@@ -74,6 +81,7 @@ class PostDetailsCommenting extends PostDetailsState {
   final bool isFollowing;
   final bool hasMoreComments;
   final DocumentSnapshot? lastCommentDocument;
+  final bool viewingSpecificComment;
 
   PostDetailsCommenting({
     required this.post,
@@ -82,6 +90,7 @@ class PostDetailsCommenting extends PostDetailsState {
     required this.isFollowing,
     required this.hasMoreComments,
     this.lastCommentDocument,
+    this.viewingSpecificComment = false,
   });
 }
 
@@ -92,6 +101,7 @@ class PostDetailsFollowing extends PostDetailsState {
   final bool isFollowing;
   final bool hasMoreComments;
   final DocumentSnapshot? lastCommentDocument;
+  final bool viewingSpecificComment;
 
   PostDetailsFollowing({
     required this.post,
@@ -100,6 +110,7 @@ class PostDetailsFollowing extends PostDetailsState {
     required this.isFollowing,
     required this.hasMoreComments,
     this.lastCommentDocument,
+    this.viewingSpecificComment = false,
   });
 }
 
@@ -110,6 +121,7 @@ class PostDetailsLoadingMore extends PostDetailsState {
   final bool isFollowing;
   final bool hasMoreComments;
   final DocumentSnapshot? lastCommentDocument;
+  final bool viewingSpecificComment;
 
   PostDetailsLoadingMore({
     required this.post,
@@ -118,5 +130,6 @@ class PostDetailsLoadingMore extends PostDetailsState {
     required this.isFollowing,
     required this.hasMoreComments,
     this.lastCommentDocument,
+    this.viewingSpecificComment = false,
   });
 }

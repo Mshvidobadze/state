@@ -16,18 +16,36 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
 
   static const int _commentsPerPage = 10;
 
-  Future<void> loadPostDetails(String postId) async {
+  Future<void> loadPostDetails(String postId, {String? commentId}) async {
     emit(PostDetailsLoading());
     try {
       final post = await _repository.fetchPostById(postId);
-      final result = await _repository.fetchCommentsWithPagination(
-        postId: postId,
-        limit: _commentsPerPage,
-        lastDocument: null,
-      );
 
-      final comments = result['comments'] as List<CommentModel>;
-      final lastDocument = result['lastDocument'] as DocumentSnapshot?;
+      List<CommentModel> comments;
+      DocumentSnapshot? lastDocument;
+      bool hasMoreComments = false;
+
+      if (commentId != null && commentId.isNotEmpty) {
+        // Load only the specific comment
+        final specificComment = await _repository.fetchCommentById(
+          postId,
+          commentId,
+        );
+        comments = specificComment != null ? [specificComment] : [];
+        lastDocument = null; // No pagination for single comment
+        hasMoreComments = true; // Indicate there are more comments to load
+      } else {
+        // Load comments normally with pagination
+        final result = await _repository.fetchCommentsWithPagination(
+          postId: postId,
+          limit: _commentsPerPage,
+          lastDocument: null,
+        );
+
+        comments = result['comments'] as List<CommentModel>;
+        lastDocument = result['lastDocument'] as DocumentSnapshot?;
+        hasMoreComments = comments.length >= _commentsPerPage;
+      }
 
       final currentUser = _auth.currentUser;
       final isUpvoted =
@@ -41,8 +59,9 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: comments,
           isUpvoted: isUpvoted,
           isFollowing: isFollowing,
-          hasMoreComments: comments.length >= _commentsPerPage,
+          hasMoreComments: hasMoreComments,
           lastCommentDocument: lastDocument,
+          viewingSpecificComment: commentId != null && commentId.isNotEmpty,
         ),
       );
     } catch (e) {
@@ -66,6 +85,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           isFollowing: currentState.isFollowing,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
         ),
       );
 
@@ -83,9 +103,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
         // Add new comments to existing ones (avoid duplicates)
         final existingIds = currentState.comments.map((c) => c.id).toSet();
         final uniqueNewComments =
-            newComments
-                .where((c) => c.id != null && !existingIds.contains(c.id))
-                .toList();
+            newComments.where((c) => !existingIds.contains(c.id)).toList();
 
         final updatedComments = [
           ...currentState.comments,
@@ -100,6 +118,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
             isFollowing: currentState.isFollowing,
             hasMoreComments: newComments.length >= _commentsPerPage,
             lastCommentDocument: lastDocument,
+            viewingSpecificComment: currentState.viewingSpecificComment,
           ),
         );
       } else {
@@ -115,6 +134,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           isFollowing: currentState.isFollowing,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
         ),
       );
     }
@@ -138,6 +158,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           isFollowing: currentState.isFollowing,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
         ),
       );
 
@@ -171,6 +192,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           isFollowing: currentState.isFollowing,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
         ),
       );
     } catch (e) {
@@ -192,6 +214,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           isFollowing: currentState.isFollowing,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
         ),
       );
 
@@ -225,6 +248,38 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           isFollowing: currentState.isFollowing,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
+        ),
+      );
+    } catch (e) {
+      emit(PostDetailsError(e.toString()));
+    }
+  }
+
+  Future<void> loadAllComments(String postId) async {
+    if (state is! PostDetailsLoaded) return;
+    final currentState = state as PostDetailsLoaded;
+
+    try {
+      // Load all comments normally with pagination
+      final result = await _repository.fetchCommentsWithPagination(
+        postId: postId,
+        limit: _commentsPerPage,
+        lastDocument: null,
+      );
+
+      final comments = result['comments'] as List<CommentModel>;
+      final lastDocument = result['lastDocument'] as DocumentSnapshot?;
+
+      emit(
+        PostDetailsLoaded(
+          post: currentState.post,
+          comments: comments,
+          isUpvoted: currentState.isUpvoted,
+          isFollowing: currentState.isFollowing,
+          hasMoreComments: comments.length >= _commentsPerPage,
+          lastCommentDocument: lastDocument,
+          viewingSpecificComment: false, // Now viewing all comments
         ),
       );
     } catch (e) {
@@ -246,6 +301,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           isFollowing: currentState.isFollowing,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
         ),
       );
 
@@ -275,6 +331,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           isFollowing: newIsFollowing,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
         ),
       );
     } catch (e) {

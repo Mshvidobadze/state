@@ -7,6 +7,8 @@ abstract class PostDetailsRepository {
 
   Future<List<CommentModel>> fetchComments(String postId);
 
+  Future<CommentModel?> fetchCommentById(String postId, String commentId);
+
   Future<Map<String, dynamic>> fetchCommentsWithPagination({
     required String postId,
     required int limit,
