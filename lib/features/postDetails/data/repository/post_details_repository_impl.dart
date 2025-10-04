@@ -58,6 +58,7 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
             id: reply.id,
             userId: reply.userId,
             userName: reply.userName,
+            userPhotoUrl: reply.userPhotoUrl,
             content: reply.content,
             createdAt: reply.createdAt,
             parentCommentId: reply.parentCommentId,
@@ -72,6 +73,7 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
           id: comment.id,
           userId: comment.userId,
           userName: comment.userName,
+          userPhotoUrl: comment.userPhotoUrl,
           content: comment.content,
           createdAt: comment.createdAt,
           parentCommentId: comment.parentCommentId,
@@ -153,6 +155,7 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
             id: reply.id,
             userId: reply.userId,
             userName: reply.userName,
+            userPhotoUrl: reply.userPhotoUrl,
             content: reply.content,
             createdAt: reply.createdAt,
             parentCommentId: reply.parentCommentId,
@@ -168,6 +171,7 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
               id: comment.id,
               userId: comment.userId,
               userName: comment.userName,
+              userPhotoUrl: comment.userPhotoUrl,
               content: comment.content,
               createdAt: comment.createdAt,
               parentCommentId: comment.parentCommentId,
@@ -192,6 +196,7 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
     required String userId,
     required String userName,
     required String content,
+    String? userPhotoUrl,
     String? parentCommentId,
   }) async {
     try {
@@ -204,6 +209,7 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
       final commentData = {
         'userId': userId,
         'userName': userName,
+        'userPhotoUrl': userPhotoUrl,
         'content': content,
         'createdAt': FieldValue.serverTimestamp(),
         'parentCommentId': parentCommentId,

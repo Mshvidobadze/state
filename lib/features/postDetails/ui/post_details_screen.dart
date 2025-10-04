@@ -189,6 +189,14 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                               isUpvoted: isUpvoted,
                               isFollowing: isFollowing,
                               commentsCount: post.commentsCount,
+                              onAuthorTap: () {
+                                final navigationService =
+                                    sl<INavigationService>();
+                                navigationService.goToUserProfile(
+                                  context,
+                                  post.authorId,
+                                );
+                              },
                             ),
                           ),
                           // Comments

@@ -115,6 +115,7 @@ class HomeRepositoryImpl implements HomeRepository {
     required String userId,
     required String userName,
     required String content,
+    String? userPhotoUrl,
     String? parentCommentId,
   }) async {
     try {
@@ -126,6 +127,7 @@ class HomeRepositoryImpl implements HomeRepository {
       final commentData = {
         'userId': userId,
         'userName': userName,
+        'userPhotoUrl': userPhotoUrl,
         'content': content,
         'createdAt': FieldValue.serverTimestamp(),
         'parentCommentId': parentCommentId,

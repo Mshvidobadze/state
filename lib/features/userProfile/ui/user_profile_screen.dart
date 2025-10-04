@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/core/widgets/error_state.dart';
 import 'package:state/features/home/ui/post_tile.dart';
 import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
@@ -180,24 +181,14 @@ class _ProfileHeader extends StatelessWidget {
         children: [
           // Avatar
           Container(
-            width: 120,
-            height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: Colors.grey[300]!, width: 2),
             ),
-            child: ClipOval(
-              child:
-                  userProfile.photoUrl != null
-                      ? Image.network(
-                        userProfile.photoUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder:
-                            (context, error, stackTrace) => _DefaultAvatar(
-                              displayName: userProfile.displayName,
-                            ),
-                      )
-                      : _DefaultAvatar(displayName: userProfile.displayName),
+            child: AvatarWidget(
+              imageUrl: userProfile.photoUrl,
+              size: 120,
+              displayName: userProfile.displayName,
             ),
           ),
 
@@ -214,30 +205,6 @@ class _ProfileHeader extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Default avatar widget when no photo is available
-class _DefaultAvatar extends StatelessWidget {
-  final String displayName;
-
-  const _DefaultAvatar({required this.displayName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.grey[300],
-      child: Center(
-        child: Text(
-          displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-          style: GoogleFonts.beVietnamPro(
-            fontSize: 48,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[600],
-          ),
-        ),
       ),
     );
   }

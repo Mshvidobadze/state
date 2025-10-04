@@ -17,6 +17,7 @@ abstract class HomeRepository {
     required String userId,
     required String userName,
     required String content,
+    String? userPhotoUrl,
     String? parentCommentId,
   });
 }

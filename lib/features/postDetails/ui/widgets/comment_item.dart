@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/constants/ui_constants.dart';
+import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/features/postDetails/data/models/comment_model.dart';
 
 class CommentItem extends StatelessWidget {
@@ -47,27 +48,11 @@ class CommentItem extends StatelessWidget {
               Row(
                 children: [
                   // Comment author avatar
-                  Container(
-                    width: UIConstants.avatarSmall,
-                    height: UIConstants.avatarSmall,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      image:
-                          comment.userPhotoUrl != null
-                              ? DecorationImage(
-                                image: NetworkImage(comment.userPhotoUrl!),
-                                fit: BoxFit.cover,
-                              )
-                              : null,
-                    ),
-                    child:
-                        comment.userPhotoUrl == null
-                            ? const Icon(
-                              Icons.person,
-                              size: UIConstants.iconSmall,
-                              color: Colors.grey,
-                            )
-                            : null,
+                  AvatarWidget(
+                    imageUrl: comment.userPhotoUrl,
+                    size: UIConstants.avatarSmall,
+                    displayName: comment.userName,
+                    onTap: onAuthorTap,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -95,7 +80,7 @@ class CommentItem extends StatelessWidget {
                             ),
                         const SizedBox(width: 8),
                         Text(
-                          '• ${_getTimeAgo(comment.createdAt)}',
+                          _getTimeAgo(comment.createdAt),
                           style: GoogleFonts.beVietnamPro(
                             color: subtleColor,
                             fontSize: 12,

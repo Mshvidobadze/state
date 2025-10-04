@@ -18,6 +18,7 @@ abstract class PostDetailsRepository {
     required String userId,
     required String userName,
     required String content,
+    String? userPhotoUrl,
     String? parentCommentId,
   });
 
