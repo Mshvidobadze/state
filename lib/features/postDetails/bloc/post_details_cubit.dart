@@ -33,7 +33,8 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
         );
         comments = specificComment != null ? [specificComment] : [];
         lastDocument = null; // No pagination for single comment
-        hasMoreComments = true; // Indicate there are more comments to load
+        hasMoreComments =
+            false; // No more comments to load for single comment view
       } else {
         // Load comments normally with pagination
         final result = await _repository.fetchCommentsWithPagination(

@@ -29,16 +29,24 @@ import 'package:state/features/search/domain/search_repository.dart';
 import 'package:state/features/notifications/bloc/notification_cubit.dart';
 import 'package:state/features/notifications/data/repository/notification_repository_impl.dart';
 import 'package:state/features/notifications/domain/notification_repository.dart';
+import 'package:state/core/services/notification_service.dart';
+import 'package:state/core/services/fcm_token_service.dart';
 
 final sl = GetIt.instance;
 
 Future<void> initInjections() async {
   // Services
   sl.registerLazySingleton(() => FirebaseAuth.instance);
-  sl.registerLazySingleton(() => GoogleSignIn(scopes: ['email', 'profile']));
+  sl.registerLazySingleton(() => GoogleSignIn());
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
   sl.registerLazySingleton(() => FirebaseStorage.instance);
   sl.registerLazySingletonAsync(() => SharedPreferences.getInstance());
+
+  // Notification Service
+  sl.registerLazySingleton(() => NotificationService());
+
+  // FCM Token Service
+  sl.registerLazySingleton(() => FCMTokenService());
 
   // Router
   sl.registerLazySingleton(() => AppRouter.router);

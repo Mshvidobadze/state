@@ -68,5 +68,12 @@
     <string>We need access to your photo library to allow you to select and upload photos to personalize your posts and share your memories.</string>
     <key>NSCameraUsageDescription</key>
     <string>We need access to your camera to allow you to take and upload photos directly for creating or updating your posts.</string>
+    
+    <!-- Firebase Messaging Background Modes -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
 </dict>
 </plist>

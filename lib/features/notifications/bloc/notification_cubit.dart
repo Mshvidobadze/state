@@ -101,3 +101,4 @@ class NotificationCubit extends Cubit<NotificationState> {
     return super.close();
   }
 }
+

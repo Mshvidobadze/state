@@ -19,3 +19,4 @@ abstract class NotificationRepository {
   /// Delete a notification
   Future<void> deleteNotification(String notificationId);
 }
+

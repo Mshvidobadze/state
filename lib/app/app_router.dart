@@ -36,6 +36,13 @@ class AppRouter {
         return Routes.main;
       }
 
+      // Allow post details and user profile routes without authentication
+      // (for deep links from notifications)
+      if (state.matchedLocation.startsWith(Routes.postDetails) ||
+          state.matchedLocation.startsWith(Routes.userProfile)) {
+        return null; // Allow access
+      }
+
       if (state.matchedLocation.startsWith(Routes.main) &&
           authState is Unauthenticated) {
         return Routes.signin;
@@ -213,7 +220,7 @@ class AppRouter {
     if (commentId != null && commentId.isNotEmpty) {
       path += '?commentId=$commentId';
     }
-    context.push(path);
+    context.go(path);
   }
 
   static void goToUserProfile(BuildContext context, String userId) {
