@@ -8,9 +8,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:state/core/services/navigation_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/firebase_options.dart';
+import 'package:state/app/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// When using Flutter version 3.3.0 or higher, the background message handler must be annotated with @pragma('vm:entry-point')
@@ -189,7 +189,13 @@ class NotificationService {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     final initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) _handleNotificationData(remote: initialMessage);
+    if (initialMessage != null) {
+      log('Initial message received: ${initialMessage.data}');
+      // Delay handling initial message to ensure app is fully initialized
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        _handleNotificationData(remote: initialMessage);
+      });
+    }
   }
 
   /// Configures the local notifications plugin with platform-specific settings.
@@ -213,6 +219,7 @@ class NotificationService {
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (response) async {
+        log('Local notification tapped, payload: ${response.payload}');
         final notificationData = jsonDecode(response.payload ?? '{}');
         _handleNotificationData(local: notificationData);
       },
@@ -233,8 +240,10 @@ class NotificationService {
 
   /// Processes notification taps when the app is in the background by handling
   /// the notification data and adding it to the deeplink stream for navigation.
-  void _handleMessageOpenedApp(RemoteMessage message) =>
-      _handleNotificationData(remote: message);
+  void _handleMessageOpenedApp(RemoteMessage message) {
+    log('Message opened app: ${message.data}');
+    _handleNotificationData(remote: message);
+  }
 
   /// Processes raw notification data by converting it into a structured Map
   /// and adding it to the stream for handling deep linking functionality.
@@ -243,6 +252,13 @@ class NotificationService {
     Map<String, dynamic>? local,
   }) {
     final data = remote?.data ?? local ?? {};
+
+    log('=== NOTIFICATION DATA ===');
+    log('Remote message ID: ${remote?.messageId}');
+    log('Notification title: ${remote?.notification?.title}');
+    log('Notification body: ${remote?.notification?.body}');
+    log('Data payload: $data');
+    log('========================');
 
     // Add to stream for deep linking
     _deeplinkNotificationStream.add(data);
@@ -257,29 +273,43 @@ class NotificationService {
     final commentId = data['commentId'];
     final notificationType = data['type']; // 'comment' or 'upvote'
 
-    if (postId != null) {
+    log('=== NAVIGATION HANDLING ===');
+    log('Post ID: $postId');
+    log('Comment ID: $commentId');
+    log('Notification type: $notificationType');
+    log('===========================');
+
+    if (postId != null && postId.isNotEmpty) {
       // Delay navigation to ensure app is fully initialized
-      Future.delayed(const Duration(milliseconds: 500), () {
+      Future.delayed(const Duration(milliseconds: 1500), () {
         try {
-          final navigationService = sl<INavigationService>();
+          log('Attempting navigation to post: $postId');
 
-          if (notificationType == 'comment' && commentId != null) {
-            // Navigate to post details with specific comment highlighted
-            navigationService.handleDeepLink(
-              '/post-details/$postId?commentId=$commentId',
+          // First navigate to home to establish a base route
+          AppRouter.handleDeepLink('/main/home');
+
+          // Then navigate to post details using push to maintain navigation stack
+          Future.delayed(const Duration(milliseconds: 300), () {
+            String path = '/post-details/$postId';
+            if (notificationType == 'comment' &&
+                commentId != null &&
+                commentId.isNotEmpty) {
+              path += '?commentId=$commentId';
+            }
+            log('Pushing to path: $path');
+            // Use push instead of go to maintain navigation stack
+            AppRouter.router.push(path);
+
+            log(
+              'Successfully navigated to post: $postId${commentId != null && commentId.isNotEmpty ? ' with comment: $commentId' : ''}',
             );
-          } else {
-            // Navigate to post details showing all comments
-            navigationService.handleDeepLink('/post-details/$postId');
-          }
-
-          log(
-            'Navigated to post: $postId${commentId != null ? ' with comment: $commentId' : ''}',
-          );
+          });
         } catch (e) {
-          log('Error handling notification navigation: $e');
+          log('ERROR handling notification navigation: $e');
         }
       });
+    } else {
+      log('ERROR: Post ID is null or empty, cannot navigate');
     }
   }
 

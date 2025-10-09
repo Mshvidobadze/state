@@ -60,15 +60,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
         backgroundColor: theme.cardColor,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              // Navigate to home if no previous route exists
-              final navigationService = sl<INavigationService>();
-              navigationService.goToHomeTab(context);
-            }
-          },
+          onPressed: () => Navigator.pop(context),
           color: theme.textColor,
         ),
         title: Text(

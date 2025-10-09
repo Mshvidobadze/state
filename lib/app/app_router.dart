@@ -220,7 +220,7 @@ class AppRouter {
     if (commentId != null && commentId.isNotEmpty) {
       path += '?commentId=$commentId';
     }
-    context.go(path);
+    context.push(path);
   }
 
   static void goToUserProfile(BuildContext context, String userId) {
