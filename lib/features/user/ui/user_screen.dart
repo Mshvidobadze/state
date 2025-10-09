@@ -102,16 +102,6 @@ class UserScreen extends StatelessWidget {
 
                 const Spacer(),
 
-                // Profile settings placeholder
-                const Center(
-                  child: Text(
-                    'Profile settings coming soon...',
-                    style: TextStyle(color: Color(0xFF60748A), fontSize: 16),
-                  ),
-                ),
-
-                const Spacer(),
-
                 // Sign out button
                 Padding(
                   padding: const EdgeInsets.symmetric(

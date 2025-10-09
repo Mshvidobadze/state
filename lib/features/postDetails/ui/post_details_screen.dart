@@ -85,92 +85,14 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
             );
           }
 
-          // Handle all loaded states (including interaction states)
-          if (state is PostDetailsLoaded ||
-              state is PostDetailsUpvoting ||
-              state is PostDetailsCommenting ||
-              state is PostDetailsFollowing ||
-              state is PostDetailsLoadingMore) {
-            // Extract data from any of the loaded states
-            final post =
-                state is PostDetailsLoaded
-                    ? state.post
-                    : state is PostDetailsUpvoting
-                    ? state.post
-                    : state is PostDetailsCommenting
-                    ? state.post
-                    : state is PostDetailsFollowing
-                    ? state.post
-                    : state is PostDetailsLoadingMore
-                    ? state.post
-                    : null;
-
-            final comments =
-                state is PostDetailsLoaded
-                    ? state.comments
-                    : state is PostDetailsUpvoting
-                    ? state.comments
-                    : state is PostDetailsCommenting
-                    ? state.comments
-                    : state is PostDetailsFollowing
-                    ? state.comments
-                    : state is PostDetailsLoadingMore
-                    ? state.comments
-                    : [];
-
-            final isUpvoted =
-                state is PostDetailsLoaded
-                    ? state.isUpvoted
-                    : state is PostDetailsUpvoting
-                    ? state.isUpvoted
-                    : state is PostDetailsCommenting
-                    ? state.isUpvoted
-                    : state is PostDetailsFollowing
-                    ? state.isUpvoted
-                    : state is PostDetailsLoadingMore
-                    ? state.isUpvoted
-                    : false;
-
-            final isFollowing =
-                state is PostDetailsLoaded
-                    ? state.isFollowing
-                    : state is PostDetailsUpvoting
-                    ? state.isFollowing
-                    : state is PostDetailsCommenting
-                    ? state.isFollowing
-                    : state is PostDetailsFollowing
-                    ? state.isFollowing
-                    : state is PostDetailsLoadingMore
-                    ? state.isFollowing
-                    : false;
-
-            final hasMoreComments =
-                state is PostDetailsLoaded
-                    ? state.hasMoreComments
-                    : state is PostDetailsUpvoting
-                    ? state.hasMoreComments
-                    : state is PostDetailsCommenting
-                    ? state.hasMoreComments
-                    : state is PostDetailsFollowing
-                    ? state.hasMoreComments
-                    : state is PostDetailsLoadingMore
-                    ? state.hasMoreComments
-                    : false;
-
-            final viewingSpecificComment =
-                state is PostDetailsLoaded
-                    ? state.viewingSpecificComment
-                    : state is PostDetailsUpvoting
-                    ? state.viewingSpecificComment
-                    : state is PostDetailsCommenting
-                    ? state.viewingSpecificComment
-                    : state is PostDetailsFollowing
-                    ? state.viewingSpecificComment
-                    : state is PostDetailsLoadingMore
-                    ? state.viewingSpecificComment
-                    : false;
-
-            if (post == null) return const SizedBox.shrink();
+          // Handle all loaded states using the base class
+          if (state is PostDetailsWithData) {
+            final post = state.post;
+            final comments = state.comments;
+            final isUpvoted = state.isUpvoted;
+            final isFollowing = state.isFollowing;
+            final hasMoreComments = state.hasMoreComments;
+            final viewingSpecificComment = state.viewingSpecificComment;
 
             return Column(
               children: [
@@ -220,22 +142,36 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                           if (viewingSpecificComment)
                             SliverToBoxAdapter(
                               child: Container(
-                                margin: const EdgeInsets.all(16),
-                                child: ElevatedButton.icon(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
+                                ),
+                                child: OutlinedButton(
                                   onPressed: () {
                                     context
                                         .read<PostDetailsCubit>()
                                         .loadAllComments(post.id);
                                   },
-                                  icon: const Icon(Icons.comment),
-                                  label: const Text('Load All Comments'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        Theme.of(context).primaryColor,
-                                    foregroundColor: Colors.white,
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: const Color(0xFF111418),
+                                    side: const BorderSide(
+                                      color: Color(0xFFE5E7EB),
+                                      width: 1,
+                                    ),
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
+                                      horizontal: 16,
                                       vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Load All Comments',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),

@@ -20,6 +20,12 @@ class UIConstants {
   static const double spacingLarge = 16.0;
   static const double spacingXLarge = 24.0;
 
+  // Border radius
+  static const double radiusSmall = 4.0;
+  static const double radiusMedium = 8.0;
+  static const double radiusLarge = 12.0;
+  static const double radiusXLarge = 16.0;
+
   // Loading placeholder
   static const double loadingPlaceholderSize = 80.0;
   static const double loadingPlaceholderHeight = 200.0;

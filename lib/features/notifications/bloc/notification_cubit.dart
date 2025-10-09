@@ -83,13 +83,14 @@ class NotificationCubit extends Cubit<NotificationState> {
       final unreadCount = await notificationRepository.getUnreadCount(userId);
 
       emit(
-        NotificationLoaded(
+        currentState.copyWith(
           notifications: updatedNotifications,
           unreadCount: unreadCount,
           isLoadingMore: false,
         ),
       );
     } catch (e) {
+      // Silently handle error and stop loading indicator
       emit(currentState.copyWith(isLoadingMore: false));
     }
   }

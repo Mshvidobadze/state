@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/services/navigation_service.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/core/widgets/error_state.dart';
@@ -141,6 +142,7 @@ class _SearchScreenState extends State<SearchScreen> {
       return _buildEmptyState(_searchController.text);
     }
     return ListView.builder(
+      padding: EdgeInsets.zero,
       itemCount: users.length,
       itemBuilder: (context, index) {
         final user = users[index];
@@ -206,21 +208,47 @@ class _SearchUserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: AvatarWidget(
-        imageUrl: user.photoUrl,
-        size: 48,
-        displayName: user.displayName,
-      ),
-      title: Text(
-        user.displayName,
-        style: GoogleFonts.beVietnamPro(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: Colors.black87,
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: UIConstants.spacingLarge,
+          vertical: UIConstants.spacingMedium,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+          ),
+        ),
+        child: Row(
+          children: [
+            AvatarWidget(
+              imageUrl: user.photoUrl,
+              size: UIConstants.avatarLarge,
+              displayName: user.displayName,
+            ),
+            const SizedBox(width: UIConstants.spacingMedium),
+            Expanded(
+              child: Text(
+                user.displayName,
+                style: GoogleFonts.beVietnamPro(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF111418),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xFF6B7280),
+              size: UIConstants.iconLarge,
+            ),
+          ],
         ),
       ),
-      onTap: onTap,
     );
   }
 }

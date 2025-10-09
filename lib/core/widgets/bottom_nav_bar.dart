@@ -21,7 +21,7 @@ class BottomNavBar extends StatelessWidget {
       items: [
         const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         const BottomNavigationBarItem(
-          icon: Icon(Icons.favorite),
+          icon: Icon(Icons.bookmark),
           label: 'Following',
         ),
         BottomNavigationBarItem(

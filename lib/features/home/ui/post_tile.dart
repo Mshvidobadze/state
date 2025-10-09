@@ -133,28 +133,38 @@ class PostTile extends StatelessWidget {
 
                 // Post image if exists
                 if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
-                  Image.network(
-                    post.imageUrl!,
-                    width: double.infinity,
-                    fit: BoxFit.contain, // Show original size
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: UIConstants.loadingPlaceholderHeight,
-                        color: Colors.grey[100],
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/vectors/logo.svg',
-                            width: UIConstants.loadingPlaceholderSize,
-                            height: UIConstants.loadingPlaceholderSize,
-                            colorFilter: const ColorFilter.mode(
-                              Colors.grey,
-                              BlendMode.srcIn,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: UIConstants.spacingLarge,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        UIConstants.radiusMedium,
+                      ),
+                      child: Image.network(
+                        post.imageUrl!,
+                        width: double.infinity,
+                        fit: BoxFit.contain, // Show original size
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: UIConstants.loadingPlaceholderHeight,
+                            color: Colors.grey[100],
+                            child: Center(
+                              child: SvgPicture.asset(
+                                'assets/vectors/logo.svg',
+                                width: UIConstants.loadingPlaceholderSize,
+                                height: UIConstants.loadingPlaceholderSize,
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.grey,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
+                          );
+                        },
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -162,7 +172,10 @@ class PostTile extends StatelessWidget {
 
           // Actions row
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+            padding: const EdgeInsets.symmetric(
+              vertical: UIConstants.spacingXSmall,
+              horizontal: UIConstants.spacingXSmall,
+            ),
             child: Row(
               children: [
                 _buildActionButton(
@@ -171,7 +184,7 @@ class PostTile extends StatelessWidget {
                   isActive: isUpvoted,
                   onPressed: () => _handleUpvote(context),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: UIConstants.spacingXSmall),
                 _buildActionButton(
                   icon: Icons.chat_bubble_outline,
                   label: post.commentsCount.toString(),
@@ -185,7 +198,7 @@ class PostTile extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 20), // Bottom spacing
+          const SizedBox(height: UIConstants.spacingSmall), // Bottom spacing
         ],
       ),
     );

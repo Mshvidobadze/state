@@ -173,18 +173,26 @@ class _HomeScreenState extends State<HomeScreen> {
                               }
 
                               final post = state.posts[index];
-                              return PostTile(
-                                post: post,
-                                currentUserId: state.currentUserId,
-                                currentUserName: state.currentUserName,
-                                onAuthorTap: () {
-                                  final navigationService =
-                                      sl<INavigationService>();
-                                  navigationService.goToUserProfile(
-                                    context,
-                                    post.authorId,
-                                  );
-                                },
+                              return Column(
+                                children: [
+                                  PostTile(
+                                    post: post,
+                                    currentUserId: state.currentUserId,
+                                    currentUserName: state.currentUserName,
+                                    onAuthorTap: () {
+                                      final navigationService =
+                                          sl<INavigationService>();
+                                      navigationService.goToUserProfile(
+                                        context,
+                                        post.authorId,
+                                      );
+                                    },
+                                  ),
+                                  Container(
+                                    height: 1,
+                                    color: const Color(0xFFE5E7EB),
+                                  ),
+                                ],
                               );
                             },
                           ),
