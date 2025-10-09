@@ -203,7 +203,7 @@ class NotificationService {
   /// to be expanded in the future.
   Future<void> _initializeLocalNotifications() async {
     const androidInitializationSettings = AndroidInitializationSettings(
-      '@drawable/ic_stat_name',
+      '@mipmap/ic_stat_name',
     );
     const iosInitializationSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
@@ -285,25 +285,21 @@ class NotificationService {
         try {
           log('Attempting navigation to post: $postId');
 
-          // First navigate to home to establish a base route
-          AppRouter.handleDeepLink('/main/home');
+          // Navigate directly to post details using push to maintain any existing stack
+          String path = '/post-details/$postId';
+          if (notificationType == 'comment' &&
+              commentId != null &&
+              commentId.isNotEmpty) {
+            path += '?commentId=$commentId';
+          }
+          log('Pushing to path: $path');
 
-          // Then navigate to post details using push to maintain navigation stack
-          Future.delayed(const Duration(milliseconds: 300), () {
-            String path = '/post-details/$postId';
-            if (notificationType == 'comment' &&
-                commentId != null &&
-                commentId.isNotEmpty) {
-              path += '?commentId=$commentId';
-            }
-            log('Pushing to path: $path');
-            // Use push instead of go to maintain navigation stack
-            AppRouter.router.push(path);
+          // Use push to maintain existing navigation stack
+          AppRouter.router.push(path);
 
-            log(
-              'Successfully navigated to post: $postId${commentId != null && commentId.isNotEmpty ? ' with comment: $commentId' : ''}',
-            );
-          });
+          log(
+            'Successfully navigated to post: $postId${commentId != null && commentId.isNotEmpty ? ' with comment: $commentId' : ''}',
+          );
         } catch (e) {
           log('ERROR handling notification navigation: $e');
         }
