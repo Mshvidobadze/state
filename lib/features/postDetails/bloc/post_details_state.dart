@@ -8,21 +8,36 @@ class PostDetailsInitial extends PostDetailsState {}
 
 class PostDetailsLoading extends PostDetailsState {}
 
-class PostDetailsLoaded extends PostDetailsState {
+/// Base class for all states that contain post details data
+abstract class PostDetailsWithData extends PostDetailsState {
   final PostModel post;
   final List<CommentModel> comments;
   final bool isUpvoted;
   final bool isFollowing;
   final bool hasMoreComments;
   final DocumentSnapshot? lastCommentDocument;
+  final bool viewingSpecificComment;
 
-  PostDetailsLoaded({
+  PostDetailsWithData({
     required this.post,
     required this.comments,
     required this.isUpvoted,
     required this.isFollowing,
     required this.hasMoreComments,
     this.lastCommentDocument,
+    this.viewingSpecificComment = false,
+  });
+}
+
+class PostDetailsLoaded extends PostDetailsWithData {
+  PostDetailsLoaded({
+    required super.post,
+    required super.comments,
+    required super.isUpvoted,
+    required super.isFollowing,
+    required super.hasMoreComments,
+    super.lastCommentDocument,
+    super.viewingSpecificComment = false,
   });
 
   PostDetailsLoaded copyWith({
@@ -32,6 +47,7 @@ class PostDetailsLoaded extends PostDetailsState {
     bool? isFollowing,
     bool? hasMoreComments,
     DocumentSnapshot? lastCommentDocument,
+    bool? viewingSpecificComment,
   }) {
     return PostDetailsLoaded(
       post: post ?? this.post,
@@ -40,6 +56,8 @@ class PostDetailsLoaded extends PostDetailsState {
       isFollowing: isFollowing ?? this.isFollowing,
       hasMoreComments: hasMoreComments ?? this.hasMoreComments,
       lastCommentDocument: lastCommentDocument ?? this.lastCommentDocument,
+      viewingSpecificComment:
+          viewingSpecificComment ?? this.viewingSpecificComment,
     );
   }
 }
@@ -49,74 +67,50 @@ class PostDetailsError extends PostDetailsState {
   PostDetailsError(this.message);
 }
 
-class PostDetailsUpvoting extends PostDetailsState {
-  final PostModel post;
-  final List<CommentModel> comments;
-  final bool isUpvoted;
-  final bool isFollowing;
-  final bool hasMoreComments;
-  final DocumentSnapshot? lastCommentDocument;
-
+class PostDetailsUpvoting extends PostDetailsWithData {
   PostDetailsUpvoting({
-    required this.post,
-    required this.comments,
-    required this.isUpvoted,
-    required this.isFollowing,
-    required this.hasMoreComments,
-    this.lastCommentDocument,
+    required super.post,
+    required super.comments,
+    required super.isUpvoted,
+    required super.isFollowing,
+    required super.hasMoreComments,
+    super.lastCommentDocument,
+    super.viewingSpecificComment = false,
   });
 }
 
-class PostDetailsCommenting extends PostDetailsState {
-  final PostModel post;
-  final List<CommentModel> comments;
-  final bool isUpvoted;
-  final bool isFollowing;
-  final bool hasMoreComments;
-  final DocumentSnapshot? lastCommentDocument;
-
+class PostDetailsCommenting extends PostDetailsWithData {
   PostDetailsCommenting({
-    required this.post,
-    required this.comments,
-    required this.isUpvoted,
-    required this.isFollowing,
-    required this.hasMoreComments,
-    this.lastCommentDocument,
+    required super.post,
+    required super.comments,
+    required super.isUpvoted,
+    required super.isFollowing,
+    required super.hasMoreComments,
+    super.lastCommentDocument,
+    super.viewingSpecificComment = false,
   });
 }
 
-class PostDetailsFollowing extends PostDetailsState {
-  final PostModel post;
-  final List<CommentModel> comments;
-  final bool isUpvoted;
-  final bool isFollowing;
-  final bool hasMoreComments;
-  final DocumentSnapshot? lastCommentDocument;
-
+class PostDetailsFollowing extends PostDetailsWithData {
   PostDetailsFollowing({
-    required this.post,
-    required this.comments,
-    required this.isUpvoted,
-    required this.isFollowing,
-    required this.hasMoreComments,
-    this.lastCommentDocument,
+    required super.post,
+    required super.comments,
+    required super.isUpvoted,
+    required super.isFollowing,
+    required super.hasMoreComments,
+    super.lastCommentDocument,
+    super.viewingSpecificComment = false,
   });
 }
 
-class PostDetailsLoadingMore extends PostDetailsState {
-  final PostModel post;
-  final List<CommentModel> comments;
-  final bool isUpvoted;
-  final bool isFollowing;
-  final bool hasMoreComments;
-  final DocumentSnapshot? lastCommentDocument;
-
+class PostDetailsLoadingMore extends PostDetailsWithData {
   PostDetailsLoadingMore({
-    required this.post,
-    required this.comments,
-    required this.isUpvoted,
-    required this.isFollowing,
-    required this.hasMoreComments,
-    this.lastCommentDocument,
+    required super.post,
+    required super.comments,
+    required super.isUpvoted,
+    required super.isFollowing,
+    required super.hasMoreComments,
+    super.lastCommentDocument,
+    super.viewingSpecificComment = false,
   });
 }

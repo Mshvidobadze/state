@@ -91,13 +91,18 @@ class PostContentSection extends StatelessWidget {
             ),
           ),
           if (post.imageUrl != null) ...[
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                post.imageUrl!,
-                width: double.infinity,
-                fit: BoxFit.cover,
+            const SizedBox(height: UIConstants.spacingLarge),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: UIConstants.spacingLarge,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(UIConstants.radiusLarge),
+                child: Image.network(
+                  post.imageUrl!,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ],

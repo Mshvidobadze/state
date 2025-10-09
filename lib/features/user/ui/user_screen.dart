@@ -39,14 +39,14 @@ class UserScreen extends StatelessWidget {
                 // Header with Profile title
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Row(
+                  child: const Row(
                     children: [
                       // Profile title
                       Expanded(
                         child: Text(
                           'Profile',
                           style: TextStyle(
-                            color: const Color(0xFF111418),
+                            color: Color(0xFF111418),
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             letterSpacing: -0.015,
@@ -58,54 +58,49 @@ class UserScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Main profile content
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        // Profile picture and user info
-                        Column(
-                          children: [
-                            // Profile picture
-                            AvatarWidget(
-                              imageUrl: user.photoURL,
-                              size: 128,
-                              displayName: user.displayName ?? 'User',
-                            ),
+                // Profile picture and user info
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      // Profile picture
+                      AvatarWidget(
+                        imageUrl: user.photoURL,
+                        size: 80,
+                        displayName: user.displayName ?? 'User',
+                      ),
 
-                            const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
-                            // User name
-                            Text(
-                              user.displayName ?? 'Anonymous User',
-                              style: TextStyle(
-                                color: const Color(0xFF111418),
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.015,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-
-                            const SizedBox(height: 8),
-
-                            // User email
-                            Text(
-                              user.email ?? 'No email',
-                              style: TextStyle(
-                                color: const Color(0xFF60748A),
-                                fontSize: 16,
-                                fontWeight: FontWeight.normal,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                      // User name
+                      Text(
+                        user.displayName ?? 'Anonymous User',
+                        style: const TextStyle(
+                          color: Color(0xFF111418),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.015,
                         ),
-                      ],
-                    ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      // User email
+                      Text(
+                        user.email ?? 'No email',
+                        style: const TextStyle(
+                          color: Color(0xFF60748A),
+                          fontSize: 14,
+                          fontWeight: FontWeight.normal,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
+
+                const Spacer(),
 
                 // Sign out button
                 Padding(
@@ -113,12 +108,8 @@ class UserScreen extends StatelessWidget {
                     horizontal: 16,
                     vertical: 12,
                   ),
-                  child: Container(
+                  child: SizedBox(
                     width: double.infinity,
-                    constraints: const BoxConstraints(
-                      minWidth: 84,
-                      maxWidth: 480,
-                    ),
                     height: 40,
                     child: ElevatedButton(
                       onPressed: () => context.read<AuthCubit>().signOut(),
@@ -130,7 +121,7 @@ class UserScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Sign Out',
                         style: TextStyle(
                           fontSize: 14,

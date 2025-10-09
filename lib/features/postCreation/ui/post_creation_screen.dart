@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:state/core/constants/regions.dart';
+import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/services/preferences_service.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postCreation/bloc/post_creation_state.dart';
@@ -179,6 +180,10 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                 if (_selectedImage != null)
                   Container(
                     width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: UIConstants.spacingLarge,
+                      vertical: UIConstants.spacingLarge,
+                    ),
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
@@ -188,29 +193,35 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                     ),
                     child: Stack(
                       children: [
-                        AspectRatio(
-                          aspectRatio: 3 / 2,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            UIConstants.radiusMedium,
+                          ),
                           child: Image.file(
                             _selectedImage!,
                             width: double.infinity,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                           ),
                         ),
                         Positioned(
-                          top: 8,
-                          right: 8,
+                          top: UIConstants.spacingSmall,
+                          right: UIConstants.spacingSmall,
                           child: GestureDetector(
                             onTap: () => setState(() => _selectedImage = null),
                             child: Container(
-                              padding: const EdgeInsets.all(4),
+                              padding: const EdgeInsets.all(
+                                UIConstants.spacingXSmall,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.black54,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(
+                                  UIConstants.radiusLarge,
+                                ),
                               ),
                               child: const Icon(
                                 Icons.close,
                                 color: Colors.white,
-                                size: 20,
+                                size: UIConstants.iconMedium,
                               ),
                             ),
                           ),

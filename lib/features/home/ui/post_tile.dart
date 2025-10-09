@@ -56,42 +56,32 @@ class PostTile extends StatelessWidget {
                       onTap: onAuthorTap,
                     ),
                     const SizedBox(width: 8),
-                    // Author name and date
+                    // Author name and timestamp
                     Expanded(
-                      child: Row(
-                        children: [
-                          onAuthorTap != null
-                              ? GestureDetector(
-                                onTap: onAuthorTap,
-                                child: Text(
-                                  post.authorName,
-                                  style: GoogleFonts.beVietnamPro(
-                                    color: const Color(0xFF121416),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              )
-                              : Text(
-                                post.authorName,
-                                style: GoogleFonts.beVietnamPro(
-                                  color: const Color(0xFF121416),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                      child: GestureDetector(
+                        onTap: onAuthorTap,
+                        child: Row(
+                          children: [
+                            Text(
+                              post.authorName,
+                              style: GoogleFonts.beVietnamPro(
+                                color: const Color(0xFF121416),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _formatDate(post.createdAt),
-                            style: GoogleFonts.beVietnamPro(
-                              color: const Color(0xFF6A7681),
-                              fontSize: 12,
-                              fontWeight: FontWeight.normal,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              _formatDate(post.createdAt),
+                              style: GoogleFonts.beVietnamPro(
+                                color: const Color(0xFF6B7280),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -143,28 +133,38 @@ class PostTile extends StatelessWidget {
 
                 // Post image if exists
                 if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
-                  Image.network(
-                    post.imageUrl!,
-                    width: double.infinity,
-                    fit: BoxFit.contain, // Show original size
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: UIConstants.loadingPlaceholderHeight,
-                        color: Colors.grey[100],
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/vectors/logo.svg',
-                            width: UIConstants.loadingPlaceholderSize,
-                            height: UIConstants.loadingPlaceholderSize,
-                            colorFilter: const ColorFilter.mode(
-                              Colors.grey,
-                              BlendMode.srcIn,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: UIConstants.spacingLarge,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        UIConstants.radiusMedium,
+                      ),
+                      child: Image.network(
+                        post.imageUrl!,
+                        width: double.infinity,
+                        fit: BoxFit.contain, // Show original size
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: UIConstants.loadingPlaceholderHeight,
+                            color: Colors.grey[100],
+                            child: Center(
+                              child: SvgPicture.asset(
+                                'assets/vectors/logo.svg',
+                                width: UIConstants.loadingPlaceholderSize,
+                                height: UIConstants.loadingPlaceholderSize,
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.grey,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
+                          );
+                        },
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -172,7 +172,10 @@ class PostTile extends StatelessWidget {
 
           // Actions row
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+            padding: const EdgeInsets.symmetric(
+              vertical: UIConstants.spacingXSmall,
+              horizontal: UIConstants.spacingXSmall,
+            ),
             child: Row(
               children: [
                 _buildActionButton(
@@ -181,7 +184,7 @@ class PostTile extends StatelessWidget {
                   isActive: isUpvoted,
                   onPressed: () => _handleUpvote(context),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: UIConstants.spacingXSmall),
                 _buildActionButton(
                   icon: Icons.chat_bubble_outline,
                   label: post.commentsCount.toString(),
@@ -195,7 +198,7 @@ class PostTile extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 20), // Bottom spacing
+          const SizedBox(height: UIConstants.spacingSmall), // Bottom spacing
         ],
       ),
     );
@@ -253,80 +256,6 @@ class PostTile extends StatelessWidget {
     } else {
       context.read<HomeCubit>().followPost(post.id, currentUserId);
     }
-  }
-
-  void _showCommentDialog(BuildContext context) {
-    final controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder:
-          (ctx) => AlertDialog(
-            backgroundColor: Colors.white,
-            title: Text(
-              'Add Comment',
-              style: GoogleFonts.beVietnamPro(
-                color: const Color(0xFF121416),
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            content: TextField(
-              controller: controller,
-              style: GoogleFonts.beVietnamPro(color: const Color(0xFF121416)),
-              decoration: InputDecoration(
-                hintText: 'Write a comment...',
-                hintStyle: GoogleFonts.beVietnamPro(
-                  color: const Color(0xFF6A7681),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF6A7681)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF6A7681)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF121416)),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.beVietnamPro(
-                    color: const Color(0xFF6A7681),
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  final content = controller.text.trim();
-                  if (content.isNotEmpty) {
-                    context.read<HomeCubit>().addComment(
-                      postId: post.id,
-                      userId: currentUserId,
-                      userName: currentUserName,
-                      content: content,
-                    );
-                  }
-                  Navigator.of(ctx).pop();
-                },
-                child: Text(
-                  'Post',
-                  style: GoogleFonts.beVietnamPro(
-                    color: const Color(0xFF121416),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-    );
   }
 
   String _formatDate(DateTime date) {

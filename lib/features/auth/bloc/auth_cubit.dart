@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
 import 'package:state/features/auth/domain/auth_repository.dart';
+import 'package:state/core/services/fcm_token_service.dart';
+import 'package:state/service_locator.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository authRepository;
@@ -14,6 +16,11 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       await authRepository.signInWithGoogle();
       await authRepository.createUserEntry();
+
+      // Generate and save FCM token after successful authentication
+      final fcmTokenService = sl<FCMTokenService>();
+      await fcmTokenService.refreshAndSaveFCMToken();
+
       emit(
         Authenticated(
           userId: _firebaseAuth.currentUser?.uid ?? '',
@@ -33,13 +40,19 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> checkAuthStatus() async {
     final isSignedIn = await authRepository.isSignedIn();
-    emit(
-      isSignedIn
-          ? Authenticated(
-            userId: _firebaseAuth.currentUser?.uid ?? '',
-            userName: _firebaseAuth.currentUser?.displayName ?? '',
-          )
-          : Unauthenticated(),
-    );
+    if (isSignedIn) {
+      // Generate and save FCM token for already authenticated user
+      final fcmTokenService = sl<FCMTokenService>();
+      await fcmTokenService.refreshAndSaveFCMToken();
+
+      emit(
+        Authenticated(
+          userId: _firebaseAuth.currentUser?.uid ?? '',
+          userName: _firebaseAuth.currentUser?.displayName ?? '',
+        ),
+      );
+    } else {
+      emit(Unauthenticated());
+    }
   }
 }

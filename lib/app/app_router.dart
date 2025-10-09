@@ -18,6 +18,7 @@ import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:state/features/userProfile/ui/user_profile_screen.dart';
 import 'package:state/features/search/bloc/search_cubit.dart';
 import 'package:state/features/search/ui/search_screen.dart';
+import 'package:state/features/notifications/ui/notifications_screen.dart';
 import 'package:state/service_locator.dart';
 
 class AppRouter {
@@ -34,6 +35,13 @@ class AppRouter {
       if (state.matchedLocation == Routes.signin &&
           authState is Authenticated) {
         return Routes.main;
+      }
+
+      // Allow post details and user profile routes without authentication
+      // (for deep links from notifications)
+      if (state.matchedLocation.startsWith(Routes.postDetails) ||
+          state.matchedLocation.startsWith(Routes.userProfile)) {
+        return null; // Allow access
       }
 
       if (state.matchedLocation.startsWith(Routes.main) &&
@@ -107,6 +115,13 @@ class AppRouter {
             builder: (context, state) => const FollowingScreen(),
           ),
 
+          // Notifications tab
+          GoRoute(
+            path: Routes.notifications,
+            name: 'notifications',
+            builder: (context, state) => const NotificationsScreen(),
+          ),
+
           // User tab
           GoRoute(
             path: Routes.user,
@@ -152,9 +167,10 @@ class AppRouter {
         name: 'postDetails',
         builder: (context, state) {
           final postId = state.pathParameters['postId']!;
+          final commentId = state.uri.queryParameters['commentId'];
           return BlocProvider<PostDetailsCubit>(
             create: (_) => sl<PostDetailsCubit>(),
-            child: PostDetailsScreen(postId: postId),
+            child: PostDetailsScreen(postId: postId, commentId: commentId),
           );
         },
       ),
@@ -205,9 +221,14 @@ class AppRouter {
 
   static Future<void> goToPostDetails(
     BuildContext context,
-    String postId,
-  ) async {
-    context.push('${Routes.postDetails}/$postId');
+    String postId, {
+    String? commentId,
+  }) async {
+    String path = '${Routes.postDetails}/$postId';
+    if (commentId != null && commentId.isNotEmpty) {
+      path += '?commentId=$commentId';
+    }
+    context.push(path);
   }
 
   static void goToUserProfile(BuildContext context, String userId) {
@@ -225,6 +246,10 @@ class AppRouter {
 
   static void goToFollowingTab(BuildContext context) {
     context.go('${Routes.main}${Routes.following}');
+  }
+
+  static void goToNotificationsTab(BuildContext context) {
+    context.go('${Routes.main}${Routes.notifications}');
   }
 
   static void goToUserTab(BuildContext context) {

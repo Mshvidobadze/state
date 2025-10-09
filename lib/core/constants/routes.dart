@@ -4,6 +4,7 @@ class Routes {
   static const main = '/main';
   static const home = '/home';
   static const following = '/following';
+  static const notifications = '/notifications';
   static const user = '/user';
   static const postCreation = '/post-creation';
   static const postDetails = '/post-details';

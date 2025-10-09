@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/constants/regions.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/features/home/ui/widgets/feed_options_bottom_sheet.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class FiltersRow extends StatelessWidget {
   final FilterModel currentFilter;
@@ -68,10 +68,9 @@ class FiltersRow extends StatelessWidget {
             icon: const Icon(Icons.add, size: 28, color: Colors.black87),
             style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
           ),
-          const SizedBox(width: 8),
           IconButton(
             onPressed: onSearch,
-            icon: const Icon(Icons.search, size: 24, color: Colors.black54),
+            icon: const Icon(Icons.search, size: 24, color: Colors.black87),
             style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
           ),
         ],
@@ -115,7 +114,7 @@ class FiltersRow extends StatelessWidget {
       case 'all_time':
         return 'All Time';
       default:
-        return 'Past 24 Hours';
+        return '';
     }
   }
 }
