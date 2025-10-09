@@ -24,10 +24,7 @@ class BottomNavBar extends StatelessWidget {
           icon: Icon(Icons.bookmark),
           label: 'Following',
         ),
-        BottomNavigationBarItem(
-          icon: _buildNotificationIcon(),
-          label: 'Notifications',
-        ),
+        BottomNavigationBarItem(icon: _buildNotificationIcon(), label: 'Inbox'),
         const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
       ],
     );

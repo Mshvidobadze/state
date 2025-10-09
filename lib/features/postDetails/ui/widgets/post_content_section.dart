@@ -6,6 +6,8 @@ import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/postDetails/bloc/post_details_cubit.dart';
 import 'package:state/features/postDetails/ui/widgets/post_details_theme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:state/core/services/share_service.dart';
+import 'package:state/service_locator.dart';
 
 class PostContentSection extends StatelessWidget {
   final PostModel post;
@@ -129,6 +131,14 @@ class PostContentSection extends StatelessWidget {
                   isActive: false,
                   onPressed: null,
                 ),
+                const Spacer(),
+                _buildActionButton(
+                  icon: Icons.share_outlined,
+                  label: '',
+                  isActive: false,
+                  onPressed: () => _handleShare(),
+                  horizontalPadding: 8,
+                ),
               ],
             ),
           ),
@@ -169,6 +179,11 @@ class PostContentSection extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _handleShare() {
+    final shareService = sl<ShareService>();
+    shareService.sharePost(post);
   }
 
   String _getTimeAgo(DateTime dateTime) {
