@@ -41,6 +41,21 @@
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <!-- Deep link intent filter for HTTPS/HTTP -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="stateapp.net" />
+                <data android:scheme="http" android:host="stateapp.net" />
+            </intent-filter>
+            <!-- Custom URL Scheme for deep links -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="stateapp" />
+            </intent-filter>
         </activity>
         <meta-data
             android:name="flutterEmbedding"

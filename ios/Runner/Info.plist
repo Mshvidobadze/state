@@ -54,9 +54,14 @@
         <key>CFBundleURLSchemes</key>
         <array>
         <string>com.googleusercontent.apps.230214864870-ct2v5868s4criqqhvrrvo5s9de7809s6</string>
+        <string>stateapp</string>
         </array>
     </dict>
     </array>
+    
+    <!-- Universal Links for stateapp.net -->
+    <key>FlutterDeepLinkingEnabled</key>
+    <true/>
     <key>LSApplicationQueriesSchemes</key>
     <array>
         <string>google</string>

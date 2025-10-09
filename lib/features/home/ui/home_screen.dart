@@ -15,6 +15,7 @@ import 'package:state/features/home/ui/widgets/post_tile_skeleton.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/core/services/preferences_service.dart';
 import 'package:state/core/services/navigation_service.dart';
+import 'package:state/core/services/deep_link_service.dart';
 import 'package:state/service_locator.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -33,6 +34,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _initializeFilter();
     _setupScrollListener();
+    // Handle any pending deep link from app cold start
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      sl<DeepLinkService>().handlePendingDeepLink();
+    });
   }
 
   @override

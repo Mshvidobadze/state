@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/core/services/notification_service.dart';
 import 'package:state/core/services/fcm_token_service.dart';
+import 'package:state/core/services/deep_link_service.dart';
 import 'firebase_options.dart';
 import 'app/app.dart';
 
@@ -19,6 +20,10 @@ Future<void> main() async {
   // Initialize FCM Token Service
   final fcmTokenService = sl<FCMTokenService>();
   await fcmTokenService.initialize();
+
+  // Initialize Deep Link Service
+  final deepLinkService = sl<DeepLinkService>();
+  await deepLinkService.initialize();
 
   runApp(const App());
 }

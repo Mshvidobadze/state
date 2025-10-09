@@ -31,6 +31,8 @@ import 'package:state/features/notifications/data/repository/notification_reposi
 import 'package:state/features/notifications/domain/notification_repository.dart';
 import 'package:state/core/services/notification_service.dart';
 import 'package:state/core/services/fcm_token_service.dart';
+import 'package:state/core/services/share_service.dart';
+import 'package:state/core/services/deep_link_service.dart';
 
 final sl = GetIt.instance;
 
@@ -47,6 +49,12 @@ Future<void> initInjections() async {
 
   // FCM Token Service
   sl.registerLazySingleton(() => FCMTokenService());
+
+  // Share Service
+  sl.registerLazySingleton(() => ShareService());
+
+  // Deep Link Service
+  sl.registerLazySingleton(() => DeepLinkService());
 
   // Router
   sl.registerLazySingleton(() => AppRouter.router);

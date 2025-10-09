@@ -37,10 +37,11 @@ class AppRouter {
         return Routes.main;
       }
 
-      // Allow post details and user profile routes without authentication
-      // (for deep links from notifications)
+      // Allow post details, user profile, and shared post routes without authentication
+      // (for deep links from notifications and shares)
       if (state.matchedLocation.startsWith(Routes.postDetails) ||
-          state.matchedLocation.startsWith(Routes.userProfile)) {
+          state.matchedLocation.startsWith(Routes.userProfile) ||
+          state.matchedLocation.startsWith('/post/')) {
         return null; // Allow access
       }
 
@@ -198,6 +199,13 @@ class AppRouter {
             child: const SearchScreen(),
           );
         },
+      ),
+
+      // Shared post route - redirect to main (pending deep link will be handled there)
+      GoRoute(
+        path: '/post/:postId',
+        name: 'sharedPost',
+        redirect: (context, state) => '/main',
       ),
     ],
   );

@@ -9,6 +9,7 @@ import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:state/core/services/share_service.dart';
 
 class PostTile extends StatelessWidget {
   final PostModel post;
@@ -194,6 +195,14 @@ class PostTile extends StatelessWidget {
                     navigationService.goToPostDetails(context, post.id);
                   },
                 ),
+                const Spacer(),
+                _buildActionButton(
+                  icon: Icons.share_outlined,
+                  label: '',
+                  isActive: false,
+                  onPressed: () => _handleShare(context),
+                  horizontalPadding: 8,
+                ),
               ],
             ),
           ),
@@ -273,6 +282,11 @@ class PostTile extends StatelessWidget {
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
+  }
+
+  void _handleShare(BuildContext context) {
+    final shareService = sl<ShareService>();
+    shareService.sharePost(post);
   }
 
   void _showPostOptions(BuildContext context) {
