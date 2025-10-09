@@ -18,6 +18,7 @@ import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:state/features/userProfile/ui/user_profile_screen.dart';
 import 'package:state/features/search/bloc/search_cubit.dart';
 import 'package:state/features/search/ui/search_screen.dart';
+import 'package:state/features/notifications/ui/notifications_screen.dart';
 import 'package:state/service_locator.dart';
 
 class AppRouter {
@@ -112,6 +113,13 @@ class AppRouter {
             path: Routes.following,
             name: 'following',
             builder: (context, state) => const FollowingScreen(),
+          ),
+
+          // Notifications tab
+          GoRoute(
+            path: Routes.notifications,
+            name: 'notifications',
+            builder: (context, state) => const NotificationsScreen(),
           ),
 
           // User tab
@@ -238,6 +246,10 @@ class AppRouter {
 
   static void goToFollowingTab(BuildContext context) {
     context.go('${Routes.main}${Routes.following}');
+  }
+
+  static void goToNotificationsTab(BuildContext context) {
+    context.go('${Routes.main}${Routes.notifications}');
   }
 
   static void goToUserTab(BuildContext context) {

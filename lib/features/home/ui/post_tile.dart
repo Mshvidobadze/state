@@ -56,18 +56,31 @@ class PostTile extends StatelessWidget {
                       onTap: onAuthorTap,
                     ),
                     const SizedBox(width: 8),
-                    // Author name and date
+                    // Author name and timestamp
                     Expanded(
                       child: GestureDetector(
                         onTap: onAuthorTap,
-                        child: Text(
-                          '${post.authorName} ${_formatDate(post.createdAt)}',
-                          style: GoogleFonts.beVietnamPro(
-                            color: const Color(0xFF121416),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        child: Row(
+                          children: [
+                            Text(
+                              post.authorName,
+                              style: GoogleFonts.beVietnamPro(
+                                color: const Color(0xFF121416),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _formatDate(post.createdAt),
+                              style: GoogleFonts.beVietnamPro(
+                                color: const Color(0xFF6B7280),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

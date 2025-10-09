@@ -1,8 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:state/features/notifications/data/models/notification_model.dart';
 
 abstract class NotificationRepository {
-  /// Fetch all notifications for a user
-  Future<List<NotificationModel>> fetchNotifications(String userId);
+  /// Fetch notifications for a user with pagination
+  Future<Map<String, dynamic>> fetchNotificationsWithPagination({
+    required String userId,
+    required int limit,
+    DocumentSnapshot? lastDocument,
+  });
 
   /// Mark a notification as read
   Future<void> markAsRead(String notificationId);
@@ -19,4 +24,3 @@ abstract class NotificationRepository {
   /// Delete a notification
   Future<void> deleteNotification(String notificationId);
 }
-

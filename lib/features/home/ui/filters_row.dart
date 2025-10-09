@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/constants/regions.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/features/home/ui/widgets/feed_options_bottom_sheet.dart';
-import 'package:state/core/services/navigation_service.dart';
-import 'package:state/service_locator.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class FiltersRow extends StatelessWidget {
   final FilterModel currentFilter;

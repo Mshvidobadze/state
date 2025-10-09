@@ -108,8 +108,7 @@ class NavigationService implements INavigationService {
   @override
   void goToNotificationsTab(BuildContext context) {
     try {
-      // Navigate to user tab since notifications are now integrated there
-      AppRouter.goToUserTab(context);
+      AppRouter.goToNotificationsTab(context);
     } catch (e) {
       _handleNavigationError('goToNotificationsTab', e);
     }

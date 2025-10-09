@@ -4,10 +4,10 @@ class Routes {
   static const main = '/main';
   static const home = '/home';
   static const following = '/following';
+  static const notifications = '/notifications';
   static const user = '/user';
   static const postCreation = '/post-creation';
   static const postDetails = '/post-details';
   static const userProfile = '/user-profile';
   static const search = '/search';
-  static const notifications = '/notifications';
 }

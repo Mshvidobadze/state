@@ -9,19 +9,31 @@ class NotificationRepositoryImpl implements NotificationRepository {
     : firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
-  Future<List<NotificationModel>> fetchNotifications(String userId) async {
+  Future<Map<String, dynamic>> fetchNotificationsWithPagination({
+    required String userId,
+    required int limit,
+    DocumentSnapshot? lastDocument,
+  }) async {
     try {
-      final snapshot =
-          await firestore
-              .collection('notifications')
-              .where('userId', isEqualTo: userId)
-              .orderBy('createdAt', descending: true)
-              .limit(50)
-              .get();
+      Query query = firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .limit(limit);
 
-      return snapshot.docs
-          .map((doc) => NotificationModel.fromDoc(doc))
-          .toList();
+      if (lastDocument != null) {
+        query = query.startAfterDocument(lastDocument);
+      }
+
+      final snapshot = await query.get();
+
+      final notifications =
+          snapshot.docs.map((doc) => NotificationModel.fromDoc(doc)).toList();
+
+      return {
+        'notifications': notifications,
+        'lastDocument': snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
+      };
     } catch (e) {
       throw Exception('Failed to fetch notifications: $e');
     }
@@ -100,4 +112,3 @@ class NotificationRepositoryImpl implements NotificationRepository {
     }
   }
 }
-
