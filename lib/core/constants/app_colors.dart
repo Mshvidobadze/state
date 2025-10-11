@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 /// Centralizes all color definitions for consistency and maintainability
 class AppColors {
   // Primary colors
-  static const primary = Color(0xFF1A237E); // Deep Indigo
-  static const primaryLight = Color(0xFFEFF6FF);
+  static const primary = Color(0xFF74182F); // Dark Red/Burgundy
+  static const primaryLight = Color(0xFFFEF2F4);
 
   // Text colors
   static const textPrimary = Color(0xFF121416);
@@ -19,9 +19,9 @@ class AppColors {
   static const border = Color(0xFFE5E7EB);
 
   // Notification colors
-  static const notificationUnreadBackground = Color(0xFFEFF6FF);
-  static const notificationBackground = Color(0xFF2196F3);
-  static const unreadIndicator = Color(0xFF1A237E);
+  static const notificationUnreadBackground = Color(0xFFFEF2F4);
+  static const notificationBackground = Color(0xFF74182F);
+  static const unreadIndicator = Color(0xFF74182F);
 
   // Error/Warning colors
   static const error = Colors.red;

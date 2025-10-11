@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -33,9 +34,25 @@ class FCMTokenService {
   }
 
   /// Update FCM token for the current user
+  /// On iOS, this gracefully handles cases where notification permissions
+  /// haven't been granted yet or APNS token isn't available
   Future<void> _updateFCMTokenForUser(String userId) async {
     try {
       print('FCMTokenService: Getting FCM token for user: $userId');
+
+      // On iOS, check if APNS token is available first
+      if (Platform.isIOS) {
+        final apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken == null) {
+          print(
+            'FCMTokenService: APNS token not available yet. '
+            'FCM token will be saved when permissions are granted and token refreshes.',
+          );
+          // Token will be saved via onTokenRefresh listener when available
+          return;
+        }
+      }
+
       final token = await _messaging.getToken();
       print(
         'FCMTokenService: FCM token received: ${token?.substring(0, 20)}...',
@@ -47,6 +64,7 @@ class FCMTokenService {
       }
     } catch (e) {
       print('FCMTokenService: Error updating FCM token: $e');
+      print('FCMTokenService: Token will be saved on next refresh');
     }
   }
 
@@ -78,8 +96,20 @@ class FCMTokenService {
   }
 
   /// Get current FCM token
+  /// On iOS, checks APNS token availability first
   Future<String?> getCurrentToken() async {
     try {
+      // On iOS, verify APNS token is available
+      if (Platform.isIOS) {
+        final apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken == null) {
+          print(
+            'FCMTokenService: APNS token not available, cannot get FCM token',
+          );
+          return null;
+        }
+      }
+
       return await _messaging.getToken();
     } catch (e) {
       print('FCMTokenService: Error getting FCM token: $e');

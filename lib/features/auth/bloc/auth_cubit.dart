@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
 import 'package:state/features/auth/domain/auth_repository.dart';
 import 'package:state/core/services/fcm_token_service.dart';
+import 'package:state/core/services/notification_service.dart';
 import 'package:state/service_locator.dart';
 
 class AuthCubit extends Cubit<AuthState> {
@@ -17,16 +20,15 @@ class AuthCubit extends Cubit<AuthState> {
       await authRepository.signInWithGoogle();
       await authRepository.createUserEntry();
 
-      // Generate and save FCM token after successful authentication
-      final fcmTokenService = sl<FCMTokenService>();
-      await fcmTokenService.refreshAndSaveFCMToken();
-
       emit(
         Authenticated(
           userId: _firebaseAuth.currentUser?.uid ?? '',
           userName: _firebaseAuth.currentUser?.displayName ?? '',
         ),
       );
+
+      // Request permissions and update FCM token in background (non-blocking)
+      _requestPermissionsAndUpdateToken();
     } catch (e) {
       emit(AuthError(e.toString()));
       emit(Unauthenticated());
@@ -34,6 +36,14 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> signOut() async {
+    // Delete FCM token from current user's Firestore document before signing out
+    final userId = _firebaseAuth.currentUser?.uid;
+    if (userId != null) {
+      final fcmTokenService = sl<FCMTokenService>();
+      await fcmTokenService.deleteFCMToken(userId);
+      print('AuthCubit: FCM token deleted for user: $userId');
+    }
+
     await authRepository.signOut();
     emit(Unauthenticated());
   }
@@ -41,18 +51,54 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> checkAuthStatus() async {
     final isSignedIn = await authRepository.isSignedIn();
     if (isSignedIn) {
-      // Generate and save FCM token for already authenticated user
-      final fcmTokenService = sl<FCMTokenService>();
-      await fcmTokenService.refreshAndSaveFCMToken();
-
       emit(
         Authenticated(
           userId: _firebaseAuth.currentUser?.uid ?? '',
           userName: _firebaseAuth.currentUser?.displayName ?? '',
         ),
       );
+
+      // Request permissions if needed and update FCM token (non-blocking)
+      _requestPermissionsAndUpdateToken();
     } else {
       emit(Unauthenticated());
+    }
+  }
+
+  /// Requests notification permissions and updates FCM token in background
+  /// This is non-blocking and won't freeze the UI
+  ///
+  /// On iOS, we rely on the onTokenRefresh listener to save the token once
+  /// permissions are granted and APNS token becomes available.
+  Future<void> _requestPermissionsAndUpdateToken() async {
+    try {
+      final fcmTokenService = sl<FCMTokenService>();
+
+      if (Platform.isIOS) {
+        // Request permissions on iOS
+        final notificationService = sl<NotificationService>();
+        final authStatus =
+            await notificationService.requestFirebasePermissions();
+        print('AuthCubit: iOS notification permission status: $authStatus');
+
+        if (authStatus != AuthorizationStatus.authorized) {
+          print('AuthCubit: Permission not granted, skipping FCM token update');
+          return;
+        }
+
+        // Try to update token once - if APNS token isn't ready yet,
+        // the onTokenRefresh listener will handle it when it becomes available
+        await fcmTokenService.refreshAndSaveFCMToken();
+        print(
+          'AuthCubit: FCM token update initiated (will save via onTokenRefresh if needed)',
+        );
+      } else {
+        // For Android, permissions are handled differently and token is usually available immediately
+        await fcmTokenService.refreshAndSaveFCMToken();
+        print('AuthCubit: Android FCM token updated');
+      }
+    } catch (e) {
+      print('AuthCubit: Error requesting permissions or updating token: $e');
     }
   }
 }

@@ -106,8 +106,14 @@ class NotificationService {
   Future<PermissionStatus> permissionStatus() async =>
       Permission.notification.status;
 
-  /// Requests notification permissions for both iOS and Android
-  Future<void> _requestNotificationPermissions() async {
+  /// Requests Firebase Cloud Messaging permissions for iOS
+  /// On Android 13+, uses permission_handler to request notification permission
+  ///
+  /// This should be called when appropriate for your UX flow (e.g., during onboarding
+  /// or when user toggles notifications on in settings).
+  ///
+  /// Returns the authorization status after the request.
+  Future<AuthorizationStatus> requestFirebasePermissions() async {
     try {
       if (Platform.isIOS) {
         // Request iOS permissions through Firebase Messaging
@@ -123,20 +129,11 @@ class NotificationService {
 
         if (settings.authorizationStatus == AuthorizationStatus.denied) {
           log('User declined or has not accepted permission');
-          return;
+        } else {
+          log('iOS notification permission granted');
         }
 
-        // Wait for APNS token to be available on iOS
-        try {
-          final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-          if (apnsToken == null) {
-            log('APNS token not available yet, waiting...');
-            // Wait a bit and try again
-            await Future.delayed(const Duration(seconds: 2));
-          }
-        } catch (e) {
-          log('APNS token error: $e');
-        }
+        return settings.authorizationStatus;
       } else if (Platform.isAndroid) {
         // Request notification permission for Android 13+ (API 33+)
         // For older Android versions, notification permission is granted by default
@@ -144,27 +141,31 @@ class NotificationService {
           final status = await Permission.notification.request();
           if (status.isDenied) {
             log('Android notification permission denied');
-            // Don't return here - FCM might still work on older Android versions
+            return AuthorizationStatus.denied;
           } else {
             log('Android notification permission granted');
+            return AuthorizationStatus.authorized;
           }
         } catch (e) {
           log('Android notification permission request failed: $e');
           // Continue anyway - might work on older Android versions
+          return AuthorizationStatus.authorized;
         }
       }
     } catch (e) {
       log('Notification permission request error: $e');
     }
+
+    return AuthorizationStatus.notDetermined;
   }
 
   /// Sets up the notification service by initializing both Firebase Cloud Messaging
   /// and local notifications handlers. This should be called when the app starts,
   /// typically during the bootstrap process.
+  ///
+  /// Note: This does NOT request permissions. Permissions should be requested
+  /// separately when appropriate for your UX flow (e.g., when user opts in).
   Future<void> initialize() async {
-    // Request notification permissions first
-    await _requestNotificationPermissions();
-
     await _initializeFirebaseMessaging();
     await _initializeLocalNotifications();
   }
@@ -173,29 +174,53 @@ class NotificationService {
   /// app states (foreground, background, terminated) and checking for any pending
   /// initial messages that may have launched the app.
   Future<void> _initializeFirebaseMessaging() async {
-    final token = await FirebaseMessaging.instance.getToken();
-    log('FCM Token: $token');
+    // Get the FCM token (works even if permissions not granted yet)
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      log('FCM Token: $token');
+    } catch (e) {
+      log('Error getting FCM token: $e');
+      // This is fine - token might not be available yet if permissions not granted
+      // It will be available after permissions are granted or via onTokenRefresh
+    }
 
+    // Set up token refresh listener (best practice - catches token when ready)
+    FirebaseMessaging.instance.onTokenRefresh.listen(
+      (newToken) {
+        log('FCM Token refreshed: $newToken');
+        // You can send this to your backend or store it locally
+      },
+      onError: (error) {
+        log('Error on token refresh: $error');
+      },
+    );
+
+    // Set up message listeners
+    _setupMessageListeners();
+  }
+
+  /// Sets up Firebase Messaging listeners for various app states
+  void _setupMessageListeners() {
     // Request iOS permissions
-    await FirebaseMessaging.instance
-        .setForegroundNotificationPresentationOptions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+    FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
 
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    final initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) {
-      log('Initial message received: ${initialMessage.data}');
-      // Delay handling initial message to ensure app is fully initialized
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        _handleNotificationData(remote: initialMessage);
-      });
-    }
+    _messaging.getInitialMessage().then((initialMessage) {
+      if (initialMessage != null) {
+        log('Initial message received: ${initialMessage.data}');
+        // Delay handling initial message to ensure app is fully initialized
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          _handleNotificationData(remote: initialMessage);
+        });
+      }
+    });
   }
 
   /// Configures the local notifications plugin with platform-specific settings.

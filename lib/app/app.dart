@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/app/app_router.dart';
+import 'package:state/core/constants/app_colors.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/following/bloc/following_cubit.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
@@ -27,6 +28,19 @@ class App extends StatelessWidget {
         title: 'State',
         debugShowCheckedModeBanner: false,
         routerConfig: AppRouter.router,
+        theme: ThemeData(
+          primaryColor: AppColors.primary,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: AppColors.primary,
+            primary: AppColors.primary,
+          ),
+          progressIndicatorTheme: const ProgressIndicatorThemeData(
+            color: AppColors.primary,
+          ),
+          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            selectedItemColor: AppColors.primary,
+          ),
+        ),
       ),
     );
   }

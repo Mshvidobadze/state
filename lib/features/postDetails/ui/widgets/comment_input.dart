@@ -115,7 +115,7 @@ class _CommentInputState extends State<CommentInput> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(color: Color(0xFF1A237E)),
+                        borderSide: const BorderSide(color: Color(0xFF74182F)),
                       ),
                     ),
                     maxLines: null,
@@ -127,7 +127,7 @@ class _CommentInputState extends State<CommentInput> {
                 IconButton(
                   icon: const Icon(Icons.send),
                   onPressed: _isComposing ? _handleSubmit : null,
-                  color: _isComposing ? const Color(0xFF1A237E) : hintColor,
+                  color: _isComposing ? const Color(0xFF74182F) : hintColor,
                 ),
               ],
             ),
