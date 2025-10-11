@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
+import 'package:state/core/widgets/fullscreen_image_viewer.dart';
+import 'package:state/core/widgets/linkified_text.dart';
+import 'package:state/core/services/share_service.dart';
+import 'package:state/service_locator.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/postDetails/bloc/post_details_cubit.dart';
 import 'package:state/features/postDetails/ui/widgets/post_details_theme.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:state/core/services/share_service.dart';
-import 'package:state/service_locator.dart';
 
 class PostContentSection extends StatelessWidget {
   final PostModel post;
@@ -82,28 +84,44 @@ class PostContentSection extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Post Content
-          Text(
-            post.content,
-            style: GoogleFonts.beVietnamPro(
-              color: theme.textColor,
-              fontSize: 16,
-              height: 1.5,
+          // Post Content (only show if not empty)
+          if (post.content.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            LinkifiedText(
+              text: post.content,
+              style: GoogleFonts.beVietnamPro(
+                color: theme.textColor,
+                fontSize: 16,
+                height: 1.5,
+              ),
             ),
-          ),
+          ],
           if (post.imageUrl != null) ...[
             const SizedBox(height: UIConstants.spacingLarge),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: UIConstants.spacingLarge,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(UIConstants.radiusLarge),
-                child: Image.network(
-                  post.imageUrl!,
-                  width: double.infinity,
-                  fit: BoxFit.contain,
+            GestureDetector(
+              onTap: () {
+                // Single tap - open fullscreen viewer
+                FullscreenImageViewer.show(
+                  context,
+                  imageUrl: post.imageUrl!,
+                  heroTag: 'post-image-${post.id}',
+                );
+              },
+              onDoubleTap: () {
+                // Double tap - upvote (only if not already upvoted)
+                if (!isUpvoted) {
+                  context.read<PostDetailsCubit>().toggleUpvote(post.id);
+                }
+              },
+              child: Hero(
+                tag: 'post-image-${post.id}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
+                  child: Image.network(
+                    post.imageUrl!,
+                    width: double.infinity,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),

@@ -3,12 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:state/core/constants/regions.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/services/preferences_service.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postCreation/bloc/post_creation_state.dart';
-import 'package:state/features/postCreation/ui/widgets/simple_dropdown.dart';
+import 'package:state/features/postCreation/ui/widgets/region_picker_bottom_sheet.dart';
 import 'package:state/features/postCreation/ui/widgets/image_source_selector.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -20,7 +19,7 @@ class PostCreationScreen extends StatefulWidget {
 }
 
 class _PostCreationScreenState extends State<PostCreationScreen> {
-  String selectedRegion = kRegions.first; // Will be updated in initState
+  String selectedRegion = 'Global'; // Will be updated in initState
   final TextEditingController contentController = TextEditingController();
   File? _selectedImage;
 
@@ -35,6 +34,18 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
     if (mounted) {
       setState(() {
         selectedRegion = savedRegion;
+      });
+    }
+  }
+
+  Future<void> _showRegionPicker() async {
+    final result = await RegionPickerBottomSheet.show(
+      context,
+      currentRegion: selectedRegion,
+    );
+    if (result != null && mounted) {
+      setState(() {
+        selectedRegion = result;
       });
     }
   }
@@ -105,7 +116,8 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                           ? null
                           : () {
                             final content = contentController.text.trim();
-                            if (content.isNotEmpty) {
+                            // Allow posting with just image or just text or both
+                            if (content.isNotEmpty || _selectedImage != null) {
                               context.read<PostCreationCubit>().createPost(
                                 region: selectedRegion,
                                 content: content,
@@ -145,12 +157,40 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      SimpleDropdown(
-                        value: selectedRegion,
-                        items: kRegions,
-                        icon: Icons.public,
-                        onChanged:
-                            (region) => setState(() => selectedRegion = region),
+                      InkWell(
+                        onTap: _showRegionPicker,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.public,
+                                size: 20,
+                                color: Colors.black54,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                selectedRegion,
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.arrow_drop_down,
+                                size: 20,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       GestureDetector(
                         onTap: _pickImage,

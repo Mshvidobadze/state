@@ -12,13 +12,32 @@ class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() => _NotificationsScreenState();
+  State<NotificationsScreen> createState() => NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen>
+class NotificationsScreenState extends State<NotificationsScreen>
     with AutomaticKeepAliveClientMixin {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Scrolls to top - called when bottom nav is tapped while already on this screen
+  void scrollToTopAndRefresh() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,22 +125,38 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
                   if (state is NotificationLoaded) {
                     if (state.notifications.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          await context
+                              .read<NotificationCubit>()
+                              .refreshNotifications();
+                        },
+                        child: ListView(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
                           children: [
-                            const Icon(
-                              Icons.notifications_none,
-                              size: 64,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No notifications yet',
-                              style: GoogleFonts.beVietnamPro(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey,
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.6,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.notifications_none,
+                                      size: 64,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No notifications yet',
+                                      style: GoogleFonts.beVietnamPro(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -147,6 +182,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                           return false;
                         },
                         child: ListView.builder(
+                          controller: _scrollController,
                           itemCount:
                               state.notifications.length +
                               (state.isLoadingMore ? 1 : 0),

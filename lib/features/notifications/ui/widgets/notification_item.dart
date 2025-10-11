@@ -68,16 +68,42 @@ class NotificationItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Notification message
-                    Text(
-                      notification.message,
-                      style: GoogleFonts.beVietnamPro(
-                        fontSize: 14,
-                        fontWeight:
-                            isUnread ? FontWeight.w600 : FontWeight.w400,
-                        color: AppColors.textPrimary,
+                    // Actor name and action (e.g., "John Smith upvoted your post")
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: notification.actorName,
+                            style: GoogleFonts.beVietnamPro(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          TextSpan(
+                            text: _getActionText(notification.type),
+                            style: GoogleFonts.beVietnamPro(
+                              fontSize: 14,
+                              fontWeight:
+                                  isUnread ? FontWeight.w500 : FontWeight.w400,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    // Post/comment text (max 2 lines)
+                    if (notification.message.isNotEmpty)
+                      Text(
+                        notification.message,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.beVietnamPro(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     const SizedBox(height: 4),
                     // Time ago
                     Text(
@@ -106,6 +132,15 @@ class NotificationItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getActionText(NotificationType type) {
+    switch (type) {
+      case NotificationType.upvote:
+        return ' upvoted your post';
+      case NotificationType.comment:
+        return ' commented on your post';
+    }
   }
 
   String _getTimeAgo(DateTime dateTime) {

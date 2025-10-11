@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
+import 'package:state/core/widgets/fullscreen_image_viewer.dart';
 import 'package:state/core/services/navigation_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
@@ -63,11 +64,26 @@ class UserScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      // Profile picture
-                      AvatarWidget(
-                        imageUrl: user.photoURL,
-                        size: 80,
-                        displayName: user.displayName ?? 'User',
+                      // Profile picture - tappable for fullscreen view
+                      GestureDetector(
+                        onTap: () {
+                          if (user.photoURL != null &&
+                              user.photoURL!.isNotEmpty) {
+                            FullscreenImageViewer.show(
+                              context,
+                              imageUrl: user.photoURL!,
+                              heroTag: 'user-avatar-${user.uid}',
+                            );
+                          }
+                        },
+                        child: Hero(
+                          tag: 'user-avatar-${user.uid}',
+                          child: AvatarWidget(
+                            imageUrl: user.photoURL,
+                            size: 80,
+                            displayName: user.displayName ?? 'User',
+                          ),
+                        ),
                       ),
 
                       const SizedBox(height: 12),
