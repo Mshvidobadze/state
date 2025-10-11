@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
+import 'package:state/core/widgets/linkified_text.dart';
 import 'package:state/core/services/navigation_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
@@ -118,19 +119,20 @@ class PostTile extends StatelessWidget {
               crossAxisAlignment:
                   CrossAxisAlignment.stretch, // Makes full width clickable
               children: [
-                // Post content
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Text(
-                    post.content,
-                    style: GoogleFonts.beVietnamPro(
-                      color: const Color(0xFF121416),
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                      height: 1.5,
+                // Post content (only show if not empty)
+                if (post.content.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: LinkifiedText(
+                      text: post.content,
+                      style: GoogleFonts.beVietnamPro(
+                        color: const Color(0xFF121416),
+                        fontSize: 16,
+                        fontWeight: FontWeight.normal,
+                        height: 1.5,
+                      ),
                     ),
                   ),
-                ),
 
                 // Post image if exists
                 if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
@@ -138,32 +140,41 @@ class PostTile extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                       horizontal: UIConstants.spacingLarge,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(
-                        UIConstants.radiusMedium,
-                      ),
-                      child: Image.network(
-                        post.imageUrl!,
-                        width: double.infinity,
-                        fit: BoxFit.contain, // Show original size
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            height: UIConstants.loadingPlaceholderHeight,
-                            color: Colors.grey[100],
-                            child: Center(
-                              child: SvgPicture.asset(
-                                'assets/vectors/logo.svg',
-                                width: UIConstants.loadingPlaceholderSize,
-                                height: UIConstants.loadingPlaceholderSize,
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.grey,
-                                  BlendMode.srcIn,
+                    child: GestureDetector(
+                      onDoubleTap: () {
+                        // Double tap - upvote (only if not already upvoted)
+                        final isUpvoted = post.upvoters.contains(currentUserId);
+                        if (!isUpvoted) {
+                          _handleUpvote(context);
+                        }
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          UIConstants.radiusMedium,
+                        ),
+                        child: Image.network(
+                          post.imageUrl!,
+                          width: double.infinity,
+                          fit: BoxFit.contain, // Show original size
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: UIConstants.loadingPlaceholderHeight,
+                              color: Colors.grey[100],
+                              child: Center(
+                                child: SvgPicture.asset(
+                                  'assets/vectors/logo.svg',
+                                  width: UIConstants.loadingPlaceholderSize,
+                                  height: UIConstants.loadingPlaceholderSize,
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.grey,
+                                    BlendMode.srcIn,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),

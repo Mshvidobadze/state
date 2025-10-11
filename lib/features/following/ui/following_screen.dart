@@ -15,16 +15,27 @@ class FollowingScreen extends StatefulWidget {
   const FollowingScreen({super.key});
 
   @override
-  State<FollowingScreen> createState() => _FollowingScreenState();
+  State<FollowingScreen> createState() => FollowingScreenState();
 }
 
-class _FollowingScreenState extends State<FollowingScreen> {
+class FollowingScreenState extends State<FollowingScreen> {
   final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Scrolls to top - called when bottom nav is tapped while already on this screen
+  void scrollToTopAndRefresh() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   Future<void> _onRefresh(BuildContext context) async {

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/core/widgets/error_state.dart';
+import 'package:state/core/widgets/fullscreen_image_viewer.dart';
 import 'package:state/features/home/ui/post_tile.dart';
 import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:state/features/userProfile/bloc/user_profile_state.dart';
@@ -179,16 +180,31 @@ class _ProfileHeader extends StatelessWidget {
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
-          // Avatar
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey[300]!, width: 2),
-            ),
-            child: AvatarWidget(
-              imageUrl: userProfile.photoUrl,
-              size: 120,
-              displayName: userProfile.displayName,
+          // Avatar - tappable for fullscreen view
+          GestureDetector(
+            onTap: () {
+              if (userProfile.photoUrl != null &&
+                  userProfile.photoUrl!.isNotEmpty) {
+                FullscreenImageViewer.show(
+                  context,
+                  imageUrl: userProfile.photoUrl!,
+                  heroTag: 'user-avatar-${userProfile.id}',
+                );
+              }
+            },
+            child: Hero(
+              tag: 'user-avatar-${userProfile.id}',
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey[300]!, width: 2),
+                ),
+                child: AvatarWidget(
+                  imageUrl: userProfile.photoUrl,
+                  size: 120,
+                  displayName: userProfile.displayName,
+                ),
+              ),
             ),
           ),
 
