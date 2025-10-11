@@ -34,7 +34,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const primaryColor = Color(0xFF1A237E);
+    const primaryColor = Color(0xFF74182F);
     final isLightMode = theme.brightness == Brightness.light;
     final backgroundColor =
         isLightMode ? const Color(0xFFF8F9FA) : const Color(0xFF1A1A1A);
