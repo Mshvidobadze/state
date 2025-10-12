@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:state/core/constants/ui_constants.dart';
+import 'package:state/core/constants/app_colors.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/core/widgets/linkified_text.dart';
 import 'package:state/core/services/navigation_service.dart';
@@ -232,6 +233,8 @@ class PostTile extends StatelessWidget {
     double horizontalPadding = 12,
     double verticalPadding = 8,
   }) {
+    final color = isActive ? AppColors.primary : const Color(0xFF121416);
+
     return InkWell(
       onTap: onPressed,
       child: Padding(
@@ -241,12 +244,12 @@ class PostTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: const Color(0xFF121416)),
+            Icon(icon, size: 16, color: color),
             const SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.beVietnamPro(
-                color: const Color(0xFF121416),
+                color: color,
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.015,

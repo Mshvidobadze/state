@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/constants/ui_constants.dart';
+import 'package:state/core/constants/app_colors.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/core/widgets/fullscreen_image_viewer.dart';
 import 'package:state/core/widgets/linkified_text.dart';
@@ -173,6 +174,8 @@ class PostContentSection extends StatelessWidget {
     double horizontalPadding = 12,
     double verticalPadding = 8,
   }) {
+    final color = isActive ? AppColors.primary : const Color(0xFF121416);
+
     return InkWell(
       onTap: onPressed,
       child: Padding(
@@ -182,12 +185,12 @@ class PostContentSection extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: const Color(0xFF121416)),
+            Icon(icon, size: 16, color: color),
             const SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.beVietnamPro(
-                color: const Color(0xFF121416),
+                color: color,
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.015,
