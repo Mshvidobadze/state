@@ -26,12 +26,15 @@ class HomeRepositoryImpl implements HomeRepository {
           .where('region', isEqualTo: filter.region);
 
       // Apply time filter only for "top" filter type
+      bool hasTimeFilter = false;
       if (filter.filterType == FilterType.top &&
-          filter.timeFilter != TimeFilter.allTime) {
+          filter.timeFilter != TimeFilter.allTime &&
+          filter.timeFilter.isNotEmpty) {
         final duration = TimeFilter.timeFilterDurations[filter.timeFilter];
         if (duration != null && duration != Duration.zero) {
           final cutoffTime = DateTime.now().subtract(duration);
           query = query.where('createdAt', isGreaterThanOrEqualTo: cutoffTime);
+          hasTimeFilter = true;
         }
       }
 
@@ -39,11 +42,24 @@ class HomeRepositoryImpl implements HomeRepository {
       if (filter.filterType == FilterType.newest) {
         query = query.orderBy('createdAt', descending: true);
       } else {
-        query = query.orderBy('upvotes', descending: true);
+        // For top posts with time filter, Firestore requires ordering by createdAt first
+        // We'll sort by upvotes in memory after fetching
+        if (hasTimeFilter) {
+          query = query.orderBy('createdAt', descending: true);
+        } else {
+          query = query.orderBy('upvotes', descending: true);
+        }
       }
 
-      // Apply pagination
-      if (lastDocumentId != null) {
+      // For time-filtered top posts, fetch a larger batch to enable proper sorting
+      // Pagination will be handled in-memory
+      final fetchLimit =
+          (filter.filterType == FilterType.top && hasTimeFilter)
+              ? 100 // Fetch all posts in time range (up to 100)
+              : limit;
+
+      // Apply pagination (only for non-time-filtered queries)
+      if (lastDocumentId != null && !hasTimeFilter) {
         final lastDoc =
             await firestore.collection('posts').doc(lastDocumentId).get();
         if (lastDoc.exists) {
@@ -51,8 +67,16 @@ class HomeRepositoryImpl implements HomeRepository {
         }
       }
 
-      final snapshot = await query.limit(limit).get();
-      return snapshot.docs.map((doc) => PostModel.fromDoc(doc)).toList();
+      final snapshot = await query.limit(fetchLimit).get();
+      final posts = snapshot.docs.map((doc) => PostModel.fromDoc(doc)).toList();
+
+      // For top posts with time filter, sort by upvotes in memory
+      // since Firestore ordered by createdAt for the range query
+      if (filter.filterType == FilterType.top && hasTimeFilter) {
+        posts.sort((a, b) => b.upvotes.compareTo(a.upvotes));
+      }
+
+      return posts;
     } catch (e) {
       throw Exception('Failed to fetch posts: $e');
     }
