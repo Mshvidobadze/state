@@ -29,109 +29,137 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+    // Use larger size only when showing regions (long list)
+    final isShowingRegions = _selectedOption == 'region';
 
-          // Title
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              'Feed Options',
-              style: GoogleFonts.beVietnamPro(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+    return DraggableScrollableSheet(
+      key: ValueKey(_selectedOption), // Force rebuild when option changes
+      initialChildSize: isShowingRegions ? 0.6 : 0.35,
+      minChildSize: 0.2,
+      maxChildSize: 0.9,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-          ),
 
-          // Options list
-          if (_selectedOption == null) ...[
-            // Main options
-            _buildOptionItem(
-              icon: Icons.public,
-              title: 'Region',
-              subtitle: _currentFilter.region,
-              onTap: () => setState(() => _selectedOption = 'region'),
-            ),
-            _buildOptionItem(
-              icon: Icons.new_releases,
-              title: 'New',
-              subtitle: 'Latest posts',
-              isSelected: _currentFilter.filterType == FilterType.newest,
+              // Title
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Feed Options',
+                  style: GoogleFonts.beVietnamPro(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+
+              // Scrollable content
+              Expanded(child: _buildContent(scrollController)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(ScrollController scrollController) {
+    if (_selectedOption == null) {
+      // Main options
+      return ListView(
+        controller: scrollController,
+        children: [
+          _buildOptionItem(
+            icon: Icons.public,
+            title: 'Region',
+            subtitle: _currentFilter.region,
+            onTap: () => setState(() => _selectedOption = 'region'),
+          ),
+          _buildOptionItem(
+            icon: Icons.new_releases,
+            title: 'New',
+            subtitle: 'Latest posts',
+            isSelected: _currentFilter.filterType == FilterType.newest,
+            onTap: () {
+              final newFilter = _currentFilter.copyWith(
+                filterType: FilterType.newest,
+                timeFilter: '', // Clear time filter for "New"
+              );
+              widget.onFilterChanged(newFilter);
+              Navigator.pop(context);
+            },
+          ),
+          _buildOptionItem(
+            icon: Icons.trending_up,
+            title: 'Top',
+            subtitle:
+                TimeFilter.timeFilterLabels[_currentFilter.timeFilter] ?? '',
+            isSelected: _currentFilter.filterType == FilterType.top,
+            onTap: () => setState(() => _selectedOption = 'time'),
+          ),
+        ],
+      );
+    } else if (_selectedOption == 'region') {
+      // Region sub-options - scrollable list
+      return ListView.builder(
+        controller: scrollController,
+        itemCount: kRegions.length + 1, // +1 for back button
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return _buildBackButton();
+          }
+          final region = kRegions[index - 1];
+          return _buildSubOptionItem(
+            title: region,
+            isSelected: _currentFilter.region == region,
+            onTap: () {
+              final newFilter = _currentFilter.copyWith(region: region);
+              widget.onFilterChanged(newFilter);
+              Navigator.pop(context);
+            },
+          );
+        },
+      );
+    } else {
+      // Time filter sub-options
+      return ListView(
+        controller: scrollController,
+        children: [
+          _buildBackButton(),
+          ...TimeFilter.allTimeFilters.map(
+            (timeFilter) => _buildSubOptionItem(
+              title: TimeFilter.timeFilterLabels[timeFilter] ?? timeFilter,
+              isSelected:
+                  _currentFilter.filterType == FilterType.top &&
+                  _currentFilter.timeFilter == timeFilter,
               onTap: () {
                 final newFilter = _currentFilter.copyWith(
-                  filterType: FilterType.newest,
-                  timeFilter:
-                      '', // Clear time filter for "New" - no sub-options selected
+                  filterType: FilterType.top,
+                  timeFilter: timeFilter,
                 );
                 widget.onFilterChanged(newFilter);
                 Navigator.pop(context);
               },
             ),
-            _buildOptionItem(
-              icon: Icons.trending_up,
-              title: 'Top',
-              subtitle:
-                  TimeFilter.timeFilterLabels[_currentFilter.timeFilter] ?? '',
-              isSelected: _currentFilter.filterType == FilterType.top,
-              onTap: () => setState(() => _selectedOption = 'time'),
-            ),
-          ] else if (_selectedOption == 'region') ...[
-            // Region sub-options
-            _buildBackButton(),
-            ...kRegions.map(
-              (region) => _buildSubOptionItem(
-                title: region,
-                isSelected: _currentFilter.region == region,
-                onTap: () {
-                  final newFilter = _currentFilter.copyWith(region: region);
-                  widget.onFilterChanged(newFilter);
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-          ] else if (_selectedOption == 'time') ...[
-            // Time filter sub-options
-            _buildBackButton(),
-            ...TimeFilter.allTimeFilters.map(
-              (timeFilter) => _buildSubOptionItem(
-                title: TimeFilter.timeFilterLabels[timeFilter] ?? timeFilter,
-                isSelected:
-                    _currentFilter.filterType == FilterType.top &&
-                    _currentFilter.timeFilter == timeFilter,
-                onTap: () {
-                  final newFilter = _currentFilter.copyWith(
-                    filterType: FilterType.top,
-                    timeFilter: timeFilter,
-                  );
-                  widget.onFilterChanged(newFilter);
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 16),
+          ),
         ],
-      ),
-    );
+      );
+    }
   }
 
   Widget _buildOptionItem({

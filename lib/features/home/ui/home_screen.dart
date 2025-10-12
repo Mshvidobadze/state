@@ -22,10 +22,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   late FilterModel _currentFilter;
   final ScrollController _scrollController = ScrollController();
 
@@ -46,8 +46,20 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  /// Scrolls to top - called when bottom nav is tapped while already on this screen
+  void scrollToTopAndRefresh() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
   void _setupScrollListener() {
     _scrollController.addListener(() {
+      // Load more when scrolling down
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 200) {
         final homeCubit = context.read<HomeCubit>();

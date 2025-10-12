@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/postDetails/bloc/post_details_state.dart';
 import 'package:state/features/postDetails/domain/post_details_repository.dart';
@@ -8,8 +10,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class PostDetailsCubit extends Cubit<PostDetailsState> {
   final PostDetailsRepository _repository;
   final FirebaseAuth _auth;
+  final FirebaseStorage _storage;
 
-  PostDetailsCubit(this._repository, this._auth) : super(PostDetailsInitial());
+  PostDetailsCubit(this._repository, this._auth, this._storage)
+    : super(PostDetailsInitial());
 
   String? get currentUserId => _auth.currentUser?.uid;
   String? get currentUserName => _auth.currentUser?.displayName ?? '';
@@ -144,28 +148,42 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
   Future<void> addComment({
     required String postId,
     required String content,
+    File? imageFile,
     String? parentCommentId,
   }) async {
     if (state is! PostDetailsLoaded) return;
     final currentState = state as PostDetailsLoaded;
 
     try {
-      // Emit commenting state to show UI is updating
-      emit(
-        PostDetailsCommenting(
-          post: currentState.post,
-          comments: currentState.comments,
-          isUpvoted: currentState.isUpvoted,
-          isFollowing: currentState.isFollowing,
-          hasMoreComments: currentState.hasMoreComments,
-          lastCommentDocument: currentState.lastCommentDocument,
-          viewingSpecificComment: currentState.viewingSpecificComment,
-        ),
-      );
-
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
         throw Exception('User must be logged in to comment');
+      }
+
+      // Upload image if provided (this shows PostDetailsCommenting state)
+      String? imageUrl;
+      if (imageFile != null) {
+        // Show commenting state only if uploading image
+        emit(
+          PostDetailsCommenting(
+            post: currentState.post,
+            comments: currentState.comments,
+            isUpvoted: currentState.isUpvoted,
+            isFollowing: currentState.isFollowing,
+            hasMoreComments: currentState.hasMoreComments,
+            lastCommentDocument: currentState.lastCommentDocument,
+            viewingSpecificComment: currentState.viewingSpecificComment,
+          ),
+        );
+
+        final ref = _storage
+            .ref()
+            .child('comment_images')
+            .child(
+              '${DateTime.now().millisecondsSinceEpoch}_${currentUser.uid}.jpg',
+            );
+        final uploadTask = await ref.putFile(imageFile);
+        imageUrl = await uploadTask.ref.getDownloadURL();
       }
 
       await _repository.addComment(
@@ -174,10 +192,11 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
         userName: currentUser.displayName ?? 'Anonymous',
         userPhotoUrl: currentUser.photoURL,
         content: content,
+        imageUrl: imageUrl,
         parentCommentId: parentCommentId,
       );
 
-      // Fetch updated comments and update state directly
+      // Fetch fresh comments without showing skeleton
       final updatedComments = await _repository.fetchComments(postId);
 
       // Update post model with incremented comments count
@@ -197,7 +216,8 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
         ),
       );
     } catch (e) {
-      emit(PostDetailsError(e.toString()));
+      // Revert to loaded state on error, don't show error screen
+      emit(currentState);
     }
   }
 
@@ -338,5 +358,80 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
     } catch (e) {
       emit(PostDetailsError(e.toString()));
     }
+  }
+
+  Future<void> toggleCommentUpvote(String postId, String commentId) async {
+    if (state is! PostDetailsLoaded) return;
+    final currentState = state as PostDetailsLoaded;
+
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User must be logged in to upvote');
+      }
+
+      print(
+        'toggleCommentUpvote: postId=$postId, commentId=$commentId, userId=${currentUser.uid}',
+      );
+
+      // Optimistically update UI
+      final updatedComments = _updateCommentUpvote(
+        currentState.comments,
+        commentId,
+        currentUser.uid,
+      );
+
+      print(
+        'toggleCommentUpvote: Updated comments count = ${updatedComments.length}',
+      );
+
+      final newState = PostDetailsLoaded(
+        post: currentState.post,
+        comments: updatedComments,
+        isUpvoted: currentState.isUpvoted,
+        isFollowing: currentState.isFollowing,
+        hasMoreComments: currentState.hasMoreComments,
+        lastCommentDocument: currentState.lastCommentDocument,
+        viewingSpecificComment: currentState.viewingSpecificComment,
+      );
+
+      emit(newState);
+      print('toggleCommentUpvote: Emitted new state');
+
+      // Perform actual upvote
+      await _repository.toggleCommentUpvote(postId, commentId, currentUser.uid);
+      print('toggleCommentUpvote: Backend call completed successfully');
+    } catch (e) {
+      print('Error toggling comment upvote: $e');
+      // Revert on error - emit previous state without showing skeleton
+      emit(currentState);
+    }
+  }
+
+  // Recursively update comment upvote status
+  List<CommentModel> _updateCommentUpvote(
+    List<CommentModel> comments,
+    String commentId,
+    String userId,
+  ) {
+    return comments.map((comment) {
+      if (comment.id == commentId) {
+        final hasUpvoted = comment.upvoters.contains(userId);
+        return comment.copyWith(
+          upvotes: hasUpvoted ? comment.upvotes - 1 : comment.upvotes + 1,
+          upvoters:
+              hasUpvoted
+                  ? comment.upvoters.where((id) => id != userId).toList()
+                  : [...comment.upvoters, userId],
+        );
+      }
+      // Recursively check replies
+      if (comment.replies.isNotEmpty) {
+        return comment.copyWith(
+          replies: _updateCommentUpvote(comment.replies, commentId, userId),
+        );
+      }
+      return comment;
+    }).toList();
   }
 }

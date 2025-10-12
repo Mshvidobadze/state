@@ -39,6 +39,8 @@ class App extends StatelessWidget {
           ),
           bottomNavigationBarTheme: const BottomNavigationBarThemeData(
             selectedItemColor: AppColors.primary,
+            backgroundColor: Colors.white,
+            unselectedItemColor: Colors.grey,
           ),
         ),
       ),

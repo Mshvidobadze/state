@@ -10,6 +10,7 @@ import 'package:state/features/postDetails/ui/widgets/comment_item.dart';
 import 'package:state/features/postDetails/ui/widgets/post_content_section.dart';
 import 'package:state/features/postDetails/ui/widgets/post_details_theme.dart';
 import 'package:state/features/postDetails/ui/widgets/post_details_skeleton.dart';
+import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
 import 'package:state/service_locator.dart';
 
 class PostDetailsScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class PostDetailsScreen extends StatefulWidget {
 class _PostDetailsScreenState extends State<PostDetailsScreen> {
   String? _replyingToCommentId;
   String? _replyingToUserName;
+  final Set<String> _collapsedCommentIds = {};
 
   @override
   void initState() {
@@ -49,6 +51,45 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
     });
   }
 
+  void _toggleCommentCollapse(String commentId) {
+    setState(() {
+      if (_collapsedCommentIds.contains(commentId)) {
+        _collapsedCommentIds.remove(commentId);
+      } else {
+        _collapsedCommentIds.add(commentId);
+      }
+    });
+  }
+
+  void _showPostOptions(BuildContext context, bool isFollowing) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
+      builder:
+          (bottomSheetContext) => PostOptionsBottomSheet(
+            isFollowing: isFollowing,
+            onFollowToggle: () {
+              // Use the outer context for BLoC access
+              context.read<PostDetailsCubit>().toggleFollow(widget.postId);
+              // PostOptionsBottomSheet handles Navigator.pop internally
+            },
+            onReport: () {
+              // Use the outer context for SnackBar
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Report functionality coming soon'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              // PostOptionsBottomSheet handles Navigator.pop internally
+            },
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = PostDetailsTheme.of(context);
@@ -71,6 +112,20 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
+        actions: [
+          BlocBuilder<PostDetailsCubit, PostDetailsState>(
+            builder: (context, state) {
+              if (state is PostDetailsWithData) {
+                return IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () => _showPostOptions(context, state.isFollowing),
+                  color: theme.textColor,
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
       ),
       body: BlocBuilder<PostDetailsCubit, PostDetailsState>(
         builder: (context, state) {
@@ -190,8 +245,9 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                                     context
                                         .read<PostDetailsCubit>()
                                         .currentUserId;
-                                if (currentUserId == null)
+                                if (currentUserId == null) {
                                   return const SizedBox.shrink();
+                                }
 
                                 return Container(
                                   color: theme.cardColor,
@@ -204,6 +260,19 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                                           commentId,
                                           comment.userName,
                                         ),
+                                    onUpvote: (commentId) {
+                                      context
+                                          .read<PostDetailsCubit>()
+                                          .toggleCommentUpvote(
+                                            widget.postId,
+                                            commentId,
+                                          );
+                                    },
+                                    onToggleCollapse: _toggleCommentCollapse,
+                                    isCollapsed: _collapsedCommentIds.contains(
+                                      comment.id,
+                                    ),
+                                    collapsedCommentIds: _collapsedCommentIds,
                                     onAuthorTap: () {
                                       final navigationService =
                                           sl<INavigationService>();
@@ -234,10 +303,11 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                 ),
                 // Comment Input
                 CommentInput(
-                  onSubmit: (content) {
+                  onSubmit: (content, imageFile) {
                     context.read<PostDetailsCubit>().addComment(
                       postId: post.id,
                       content: content,
+                      imageFile: imageFile,
                       parentCommentId: _replyingToCommentId,
                     );
                     _cancelReply();

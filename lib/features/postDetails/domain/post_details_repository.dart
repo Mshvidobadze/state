@@ -21,10 +21,17 @@ abstract class PostDetailsRepository {
     required String userName,
     required String content,
     String? userPhotoUrl,
+    String? imageUrl,
     String? parentCommentId,
   });
 
   Future<void> toggleUpvote(String postId, String userId);
+
+  Future<void> toggleCommentUpvote(
+    String postId,
+    String commentId,
+    String userId,
+  );
 
   Future<void> toggleFollow(String postId, String userId);
 }

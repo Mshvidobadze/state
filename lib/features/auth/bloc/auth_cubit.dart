@@ -73,12 +73,12 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> _requestPermissionsAndUpdateToken() async {
     try {
       final fcmTokenService = sl<FCMTokenService>();
+      final notificationService = sl<NotificationService>();
+
+      // Request permissions on both platforms
+      final authStatus = await notificationService.requestFirebasePermissions();
 
       if (Platform.isIOS) {
-        // Request permissions on iOS
-        final notificationService = sl<NotificationService>();
-        final authStatus =
-            await notificationService.requestFirebasePermissions();
         print('AuthCubit: iOS notification permission status: $authStatus');
 
         if (authStatus != AuthorizationStatus.authorized) {
@@ -93,7 +93,8 @@ class AuthCubit extends Cubit<AuthState> {
           'AuthCubit: FCM token update initiated (will save via onTokenRefresh if needed)',
         );
       } else {
-        // For Android, permissions are handled differently and token is usually available immediately
+        // Android - permissions dialog is shown, then token is updated
+        print('AuthCubit: Android notification permission status: $authStatus');
         await fcmTokenService.refreshAndSaveFCMToken();
         print('AuthCubit: Android FCM token updated');
       }

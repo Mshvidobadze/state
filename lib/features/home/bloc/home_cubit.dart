@@ -3,39 +3,74 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/home/bloc/home_state.dart';
 import 'package:state/features/home/domain/home_repository.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
+import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/core/constants/ui_constants.dart';
+import 'package:state/core/constants/regions.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository homeRepository;
   final FirebaseAuth firebaseAuth;
   FilterModel? _currentFilter;
+  List<PostModel>? _allTimeFilteredPosts; // Cache for time-filtered posts
+  int _currentPageIndex = 0; // Track pagination for time-filtered posts
 
   HomeCubit(this.homeRepository, this.firebaseAuth) : super(HomeInitial());
 
   String? get currentUserId => firebaseAuth.currentUser?.uid;
   String? get currentUserName => firebaseAuth.currentUser?.displayName ?? '';
 
+  bool _isTimeFilteredTopQuery(FilterModel filter) {
+    return filter.filterType == FilterType.top &&
+        filter.timeFilter != TimeFilter.allTime &&
+        filter.timeFilter.isNotEmpty;
+  }
+
   Future<void> loadPosts({required FilterModel filter}) async {
     _currentFilter = filter;
+    _currentPageIndex = 0; // Reset page index
     emit(HomeLoading());
     try {
-      final posts = await homeRepository.fetchPosts(
+      final isTimeFiltered = _isTimeFilteredTopQuery(filter);
+
+      // Fetch posts from repository
+      final allPosts = await homeRepository.fetchPosts(
         filter: filter,
         limit: UIConstants.postsPerPage,
       );
-      final user = firebaseAuth.currentUser;
-      final hasMorePosts = posts.length == UIConstants.postsPerPage;
-      final lastDocumentId = posts.isNotEmpty ? posts.last.id : null;
 
-      emit(
-        HomeLoaded(
-          posts,
-          user?.uid ?? '',
-          user?.displayName ?? '',
-          hasMorePosts: hasMorePosts,
-          lastDocumentId: lastDocumentId,
-        ),
-      );
+      final user = firebaseAuth.currentUser;
+
+      if (isTimeFiltered) {
+        // For time-filtered top posts, store all posts and paginate in-memory
+        _allTimeFilteredPosts = allPosts;
+        final firstPage = allPosts.take(UIConstants.postsPerPage).toList();
+        final hasMorePosts = allPosts.length > UIConstants.postsPerPage;
+
+        emit(
+          HomeLoaded(
+            firstPage,
+            user?.uid ?? '',
+            user?.displayName ?? '',
+            hasMorePosts: hasMorePosts,
+            lastDocumentId: null, // Not used for in-memory pagination
+          ),
+        );
+      } else {
+        // Normal pagination for other queries
+        _allTimeFilteredPosts = null; // Clear cache
+        final hasMorePosts = allPosts.length == UIConstants.postsPerPage;
+        final lastDocumentId = allPosts.isNotEmpty ? allPosts.last.id : null;
+
+        emit(
+          HomeLoaded(
+            allPosts,
+            user?.uid ?? '',
+            user?.displayName ?? '',
+            hasMorePosts: hasMorePosts,
+            lastDocumentId: lastDocumentId,
+          ),
+        );
+      }
     } catch (e) {
       emit(HomeError(e.toString()));
     }
@@ -54,27 +89,60 @@ class HomeCubit extends Cubit<HomeState> {
     emit(currentState.copyWith(isLoadingMore: true));
 
     try {
-      final newPosts = await homeRepository.fetchPosts(
-        filter: _currentFilter!,
-        limit: UIConstants.postsPerPage,
-        lastDocumentId: currentState.lastDocumentId,
-      );
-
       final user = firebaseAuth.currentUser;
-      final allPosts = [...currentState.posts, ...newPosts];
-      final hasMorePosts = newPosts.length == UIConstants.postsPerPage;
-      final lastDocumentId =
-          newPosts.isNotEmpty ? newPosts.last.id : currentState.lastDocumentId;
 
-      emit(
-        HomeLoaded(
-          allPosts,
-          user?.uid ?? '',
-          user?.displayName ?? '',
-          hasMorePosts: hasMorePosts,
-          lastDocumentId: lastDocumentId,
-        ),
-      );
+      // Check if we're using in-memory pagination
+      if (_allTimeFilteredPosts != null && _allTimeFilteredPosts!.isNotEmpty) {
+        // In-memory pagination for time-filtered top posts
+        _currentPageIndex++;
+        final startIndex = _currentPageIndex * UIConstants.postsPerPage;
+        final endIndex = startIndex + UIConstants.postsPerPage;
+
+        if (startIndex < _allTimeFilteredPosts!.length) {
+          final nextPage =
+              _allTimeFilteredPosts!
+                  .skip(startIndex)
+                  .take(UIConstants.postsPerPage)
+                  .toList();
+
+          final allPosts = [...currentState.posts, ...nextPage];
+          final hasMorePosts = endIndex < _allTimeFilteredPosts!.length;
+
+          emit(
+            HomeLoaded(
+              allPosts,
+              user?.uid ?? '',
+              user?.displayName ?? '',
+              hasMorePosts: hasMorePosts,
+              lastDocumentId: null,
+            ),
+          );
+        }
+      } else {
+        // Normal Firestore pagination
+        final newPosts = await homeRepository.fetchPosts(
+          filter: _currentFilter!,
+          limit: UIConstants.postsPerPage,
+          lastDocumentId: currentState.lastDocumentId,
+        );
+
+        final allPosts = [...currentState.posts, ...newPosts];
+        final hasMorePosts = newPosts.length == UIConstants.postsPerPage;
+        final lastDocumentId =
+            newPosts.isNotEmpty
+                ? newPosts.last.id
+                : currentState.lastDocumentId;
+
+        emit(
+          HomeLoaded(
+            allPosts,
+            user?.uid ?? '',
+            user?.displayName ?? '',
+            hasMorePosts: hasMorePosts,
+            lastDocumentId: lastDocumentId,
+          ),
+        );
+      }
     } catch (e) {
       emit(HomeError(e.toString()));
     }
