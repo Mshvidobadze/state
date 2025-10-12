@@ -107,7 +107,11 @@ Future<void> initInjections() async {
     () => PostDetailsRepositoryImpl(firestore: sl()),
   );
   sl.registerFactory(
-    () => PostDetailsCubit(sl<PostDetailsRepository>(), sl<FirebaseAuth>()),
+    () => PostDetailsCubit(
+      sl<PostDetailsRepository>(),
+      sl<FirebaseAuth>(),
+      sl<FirebaseStorage>(),
+    ),
   );
 
   // User Profile

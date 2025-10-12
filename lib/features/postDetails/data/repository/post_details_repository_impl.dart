@@ -59,7 +59,6 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
               .collection('posts')
               .doc(postId)
               .collection('comments')
-              .orderBy('createdAt', descending: true)
               .get();
 
       final comments =
@@ -79,35 +78,30 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
       // Root comments are those with no parent
       final rootComments = commentsByParent[null] ?? [];
 
+      // Sort parent comments by upvotes (descending)
+      rootComments.sort((a, b) {
+        final upvotesCompare = b.upvotes.compareTo(a.upvotes);
+        if (upvotesCompare != 0) return upvotesCompare;
+        // If same upvotes, sort by creation date
+        return b.createdAt.compareTo(a.createdAt);
+      });
+
+      // Sort replies by creation date (chronological)
+      for (final replies in commentsByParent.values) {
+        replies.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      }
+
       // Recursively add replies to each comment
       List<CommentModel> addReplies(CommentModel comment) {
         final replies = commentsByParent[comment.id] ?? [];
         return replies.map((reply) {
-          return CommentModel(
-            id: reply.id,
-            userId: reply.userId,
-            userName: reply.userName,
-            userPhotoUrl: reply.userPhotoUrl,
-            content: reply.content,
-            createdAt: reply.createdAt,
-            parentCommentId: reply.parentCommentId,
-            replies: addReplies(reply),
-          );
+          return reply.copyWith(replies: addReplies(reply));
         }).toList();
       }
 
       // Build the final tree structure
       return rootComments.map((comment) {
-        return CommentModel(
-          id: comment.id,
-          userId: comment.userId,
-          userName: comment.userName,
-          userPhotoUrl: comment.userPhotoUrl,
-          content: comment.content,
-          createdAt: comment.createdAt,
-          parentCommentId: comment.parentCommentId,
-          replies: addReplies(comment),
-        );
+        return comment.copyWith(replies: addReplies(comment));
       }).toList();
     } catch (e) {
       throw Exception('Failed to fetch comments: $e');
@@ -122,11 +116,13 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
   }) async {
     try {
       // First, get only parent comments (no replies) with pagination
+      // Ordered by upvotes for parent comments
       Query parentQuery = firestore
           .collection('posts')
           .doc(postId)
           .collection('comments')
           .where('parentCommentId', isNull: true)
+          .orderBy('upvotes', descending: true)
           .orderBy('createdAt', descending: true)
           .limit(limit);
 
@@ -151,7 +147,6 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
               .collection('posts')
               .doc(postId)
               .collection('comments')
-              .orderBy('createdAt', descending: true)
               .get();
 
       final List<CommentModel> allComments = [];
@@ -170,42 +165,38 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
         commentsByParent.putIfAbsent(parentId, () => []).add(comment);
       }
 
+      // Sort replies by creation date (chronological)
+      for (final replies in commentsByParent.values) {
+        replies.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      }
+
       // Get only the root comments that are in our paginated set
-      final paginatedRootComments =
-          (commentsByParent[null] ?? [])
-              .where((comment) => parentCommentIds.contains(comment.id))
-              .toList();
+      // Preserve the order from Firestore query (sorted by upvotes)
+      final paginatedRootComments = <CommentModel>[];
+      for (final docId in parentCommentIds) {
+        try {
+          final comment = (commentsByParent[null] ?? []).firstWhere(
+            (c) => c.id == docId,
+          );
+          paginatedRootComments.add(comment);
+        } catch (e) {
+          // Comment not found in the list, skip it
+          continue;
+        }
+      }
 
       // Recursively add replies to each comment
       List<CommentModel> addReplies(CommentModel comment) {
         final replies = commentsByParent[comment.id] ?? [];
         return replies.map((reply) {
-          return CommentModel(
-            id: reply.id,
-            userId: reply.userId,
-            userName: reply.userName,
-            userPhotoUrl: reply.userPhotoUrl,
-            content: reply.content,
-            createdAt: reply.createdAt,
-            parentCommentId: reply.parentCommentId,
-            replies: addReplies(reply),
-          );
+          return reply.copyWith(replies: addReplies(reply));
         }).toList();
       }
 
       // Build the final tree structure with all replies included
       final structuredComments =
           paginatedRootComments.map((comment) {
-            return CommentModel(
-              id: comment.id,
-              userId: comment.userId,
-              userName: comment.userName,
-              userPhotoUrl: comment.userPhotoUrl,
-              content: comment.content,
-              createdAt: comment.createdAt,
-              parentCommentId: comment.parentCommentId,
-              replies: addReplies(comment),
-            );
+            return comment.copyWith(replies: addReplies(comment));
           }).toList();
 
       // Return both structured comments and the last document for next pagination
@@ -226,6 +217,7 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
     required String userName,
     required String content,
     String? userPhotoUrl,
+    String? imageUrl,
     String? parentCommentId,
   }) async {
     try {
@@ -240,8 +232,11 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
         'userName': userName,
         'userPhotoUrl': userPhotoUrl,
         'content': content,
+        'imageUrl': imageUrl,
         'createdAt': FieldValue.serverTimestamp(),
         'parentCommentId': parentCommentId,
+        'upvotes': 0,
+        'upvoters': [],
       };
 
       batch.set(commentsRef.doc(), commentData);
@@ -281,6 +276,44 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
       });
     } catch (e) {
       throw Exception('Failed to toggle upvote: $e');
+    }
+  }
+
+  @override
+  Future<void> toggleCommentUpvote(
+    String postId,
+    String commentId,
+    String userId,
+  ) async {
+    try {
+      final commentRef = firestore
+          .collection('posts')
+          .doc(postId)
+          .collection('comments')
+          .doc(commentId);
+
+      await firestore.runTransaction((tx) async {
+        final doc = await tx.get(commentRef);
+        if (!doc.exists) throw Exception('Comment not found');
+
+        final data = doc.data() as Map<String, dynamic>;
+        final List<dynamic> upvoters = data['upvoters'] ?? [];
+        final int upvotes = data['upvotes'] ?? 0;
+
+        if (upvoters.contains(userId)) {
+          tx.update(commentRef, {
+            'upvotes': upvotes > 0 ? upvotes - 1 : 0,
+            'upvoters': FieldValue.arrayRemove([userId]),
+          });
+        } else {
+          tx.update(commentRef, {
+            'upvotes': upvotes + 1,
+            'upvoters': FieldValue.arrayUnion([userId]),
+          });
+        }
+      });
+    } catch (e) {
+      throw Exception('Failed to toggle comment upvote: $e');
     }
   }
 

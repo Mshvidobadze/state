@@ -164,22 +164,22 @@ class NotificationsScreenState extends State<NotificationsScreen>
                       );
                     }
 
-                    return NotificationListener<ScrollNotification>(
-                      onNotification: (ScrollNotification scrollInfo) {
-                        // Load more when user scrolls to 80% of current content
-                        if (scrollInfo.metrics.pixels >=
-                            scrollInfo.metrics.maxScrollExtent * 0.8) {
-                          context
-                              .read<NotificationCubit>()
-                              .loadMoreNotifications();
-                        }
-                        return false;
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        await context
+                            .read<NotificationCubit>()
+                            .refreshNotifications();
                       },
-                      child: RefreshIndicator(
-                        onRefresh: () async {
-                          await context
-                              .read<NotificationCubit>()
-                              .refreshNotifications();
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (ScrollNotification scrollInfo) {
+                          // Load more when user scrolls to 80% of current content
+                          if (scrollInfo.metrics.pixels >=
+                              scrollInfo.metrics.maxScrollExtent * 0.8) {
+                            context
+                                .read<NotificationCubit>()
+                                .loadMoreNotifications();
+                          }
+                          return false;
                         },
                         child: ListView.builder(
                           controller: _scrollController,

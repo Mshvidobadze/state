@@ -20,6 +20,8 @@ class RegionPickerBottomSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
       builder:
           (context) => RegionPickerBottomSheet(
             currentRegion: currentRegion,

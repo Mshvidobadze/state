@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:state/features/postCreation/ui/widgets/image_source_selector.dart';
 
 class CommentInput extends StatefulWidget {
-  final Function(String) onSubmit;
+  final Function(String content, File? image) onSubmit;
   final String? replyingTo;
   final VoidCallback? onCancelReply;
 
@@ -20,6 +23,8 @@ class CommentInput extends StatefulWidget {
 class _CommentInputState extends State<CommentInput> {
   final _controller = TextEditingController();
   bool _isComposing = false;
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
@@ -27,12 +32,53 @@ class _CommentInputState extends State<CommentInput> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final result = await ImageSourceSelector.show(context);
+    if (result != null && mounted) {
+      XFile? image;
+      if (result == true) {
+        // Camera
+        image = await _picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 80,
+          maxWidth: 1920,
+          maxHeight: 1080,
+        );
+      } else {
+        // Gallery
+        image = await _picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 80,
+          maxWidth: 1920,
+          maxHeight: 1080,
+        );
+      }
+
+      if (image != null && mounted) {
+        setState(() {
+          _selectedImage = File(image!.path);
+          _isComposing = true;
+        });
+      }
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+      _isComposing = _controller.text.trim().isNotEmpty;
+    });
+  }
+
   void _handleSubmit() {
     final text = _controller.text.trim();
-    if (text.isNotEmpty) {
-      widget.onSubmit(text);
+    if (text.isNotEmpty || _selectedImage != null) {
+      widget.onSubmit(text, _selectedImage);
       _controller.clear();
-      setState(() => _isComposing = false);
+      setState(() {
+        _isComposing = false;
+        _selectedImage = null;
+      });
     }
   }
 
@@ -83,15 +129,56 @@ class _CommentInputState extends State<CommentInput> {
                 ],
               ),
             ),
+          // Image Preview
+          if (_selectedImage != null)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      _selectedImage!,
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: _removeImage,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black54,
+                        padding: const EdgeInsets.all(4),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.image),
+                  onPressed: _pickImage,
+                  color: hintColor,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: _controller,
                     onChanged: (text) {
-                      setState(() => _isComposing = text.trim().isNotEmpty);
+                      setState(
+                        () =>
+                            _isComposing =
+                                text.trim().isNotEmpty ||
+                                _selectedImage != null,
+                      );
                     },
                     style: GoogleFonts.beVietnamPro(fontSize: 14),
                     decoration: InputDecoration(

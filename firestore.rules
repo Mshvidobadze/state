@@ -17,6 +17,7 @@ service cloud.firestore {
     match /posts/{postId}/comments/{commentId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
+      allow update: if request.auth != null;  // Required for upvoting comments
     }
     
     // Notifications are readable and writable by the notification recipient

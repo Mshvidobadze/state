@@ -26,6 +26,7 @@ class PostDetailsScreen extends StatefulWidget {
 class _PostDetailsScreenState extends State<PostDetailsScreen> {
   String? _replyingToCommentId;
   String? _replyingToUserName;
+  final Set<String> _collapsedCommentIds = {};
 
   @override
   void initState() {
@@ -50,11 +51,23 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
     });
   }
 
+  void _toggleCommentCollapse(String commentId) {
+    setState(() {
+      if (_collapsedCommentIds.contains(commentId)) {
+        _collapsedCommentIds.remove(commentId);
+      } else {
+        _collapsedCommentIds.add(commentId);
+      }
+    });
+  }
+
   void _showPostOptions(BuildContext context, bool isFollowing) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
       builder:
           (bottomSheetContext) => PostOptionsBottomSheet(
             isFollowing: isFollowing,
@@ -232,8 +245,9 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                                     context
                                         .read<PostDetailsCubit>()
                                         .currentUserId;
-                                if (currentUserId == null)
+                                if (currentUserId == null) {
                                   return const SizedBox.shrink();
+                                }
 
                                 return Container(
                                   color: theme.cardColor,
@@ -246,6 +260,19 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                                           commentId,
                                           comment.userName,
                                         ),
+                                    onUpvote: (commentId) {
+                                      context
+                                          .read<PostDetailsCubit>()
+                                          .toggleCommentUpvote(
+                                            widget.postId,
+                                            commentId,
+                                          );
+                                    },
+                                    onToggleCollapse: _toggleCommentCollapse,
+                                    isCollapsed: _collapsedCommentIds.contains(
+                                      comment.id,
+                                    ),
+                                    collapsedCommentIds: _collapsedCommentIds,
                                     onAuthorTap: () {
                                       final navigationService =
                                           sl<INavigationService>();
@@ -276,10 +303,11 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                 ),
                 // Comment Input
                 CommentInput(
-                  onSubmit: (content) {
+                  onSubmit: (content, imageFile) {
                     context.read<PostDetailsCubit>().addComment(
                       postId: post.id,
                       content: content,
+                      imageFile: imageFile,
                       parentCommentId: _replyingToCommentId,
                     );
                     _cancelReply();

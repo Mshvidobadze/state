@@ -308,6 +308,8 @@ class PostTile extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
       builder:
           (context) => PostOptionsBottomSheet(
             isFollowing: post.followers.contains(currentUserId),
