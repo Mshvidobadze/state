@@ -28,12 +28,22 @@ class AppRouter {
 
     // Route guards and redirects
     redirect: (context, state) {
+      debugPrint('🚦 [ROUTER] Redirect called');
+      debugPrint('🚦 [ROUTER] Full location: ${state.uri}');
+      debugPrint('🚦 [ROUTER] Matched location: ${state.matchedLocation}');
+      debugPrint('🚦 [ROUTER] Path: ${state.uri.path}');
+      debugPrint('🚦 [ROUTER] Path parameters: ${state.pathParameters}');
+
       final authCubit = context.read<AuthCubit>();
       final authState = authCubit.state;
+      debugPrint('🚦 [ROUTER] Auth state: ${authState.runtimeType}');
 
       // Handle authentication redirects
       if (state.matchedLocation == Routes.signin &&
           authState is Authenticated) {
+        debugPrint(
+          '🚦 [ROUTER] Redirecting from signin to main (already authenticated)',
+        );
         return Routes.main;
       }
 
@@ -42,44 +52,58 @@ class AppRouter {
       if (state.matchedLocation.startsWith(Routes.postDetails) ||
           state.matchedLocation.startsWith(Routes.userProfile) ||
           state.matchedLocation.startsWith('/post/')) {
+        debugPrint('🚦 [ROUTER] Allowing access to: ${state.matchedLocation}');
         return null; // Allow access
       }
 
       if (state.matchedLocation.startsWith(Routes.main) &&
           authState is Unauthenticated) {
+        debugPrint('🚦 [ROUTER] Redirecting to signin (unauthenticated)');
         return Routes.signin;
       }
 
+      debugPrint('🚦 [ROUTER] No redirect needed');
       return null; // No redirect needed
     },
 
     // Error handling
-    errorBuilder:
-        (context, state) => Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text(
-                  'Page not found',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'The page "${state.matchedLocation}" does not exist.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => context.go(Routes.splash),
-                  child: const Text('Go Home'),
-                ),
-              ],
-            ),
+    errorBuilder: (context, state) {
+      debugPrint('❌ [ROUTER ERROR] Error builder called!');
+      debugPrint('❌ [ROUTER ERROR] Full URI: ${state.uri}');
+      debugPrint('❌ [ROUTER ERROR] Matched location: ${state.matchedLocation}');
+      debugPrint('❌ [ROUTER ERROR] Path: ${state.uri.path}');
+      debugPrint('❌ [ROUTER ERROR] Path parameters: ${state.pathParameters}');
+      debugPrint(
+        '❌ [ROUTER ERROR] Query parameters: ${state.uri.queryParameters}',
+      );
+      debugPrint('❌ [ROUTER ERROR] Error: ${state.error}');
+
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                'Page not found',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'The page "${state.matchedLocation}" does not exist.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.go(Routes.splash),
+                child: const Text('Go Home'),
+              ),
+            ],
           ),
         ),
+      );
+    },
 
     routes: [
       // Splash route
@@ -167,8 +191,18 @@ class AppRouter {
         path: '${Routes.postDetails}/:postId',
         name: 'postDetails',
         builder: (context, state) {
+          debugPrint('📄 [POST DETAILS ROUTE] Building post details screen');
+          debugPrint(
+            '📄 [POST DETAILS ROUTE] Path parameters: ${state.pathParameters}',
+          );
+          debugPrint('📄 [POST DETAILS ROUTE] Full URI: ${state.uri}');
+
           final postId = state.pathParameters['postId']!;
           final commentId = state.uri.queryParameters['commentId'];
+
+          debugPrint('📄 [POST DETAILS ROUTE] Post ID: $postId');
+          debugPrint('📄 [POST DETAILS ROUTE] Comment ID: $commentId');
+
           return BlocProvider<PostDetailsCubit>(
             create: (_) => sl<PostDetailsCubit>(),
             child: PostDetailsScreen(postId: postId, commentId: commentId),
@@ -205,7 +239,55 @@ class AppRouter {
       GoRoute(
         path: '/post/:postId',
         name: 'sharedPost',
-        redirect: (context, state) => '/main',
+        redirect: (context, state) {
+          debugPrint('📮 [SHARED POST ROUTE] Matched /post/:postId route');
+          debugPrint('📮 [SHARED POST ROUTE] Full URI: ${state.uri}');
+          debugPrint(
+            '📮 [SHARED POST ROUTE] Path parameters: ${state.pathParameters}',
+          );
+          debugPrint(
+            '📮 [SHARED POST ROUTE] Post ID: ${state.pathParameters['postId']}',
+          );
+          debugPrint('📮 [SHARED POST ROUTE] Redirecting to: /main');
+          return '/main';
+        },
+      ),
+
+      // Catch-all route for custom scheme deep links (stateapp://post/ID)
+      // When app_links receives stateapp://post/ID, GoRouter sees path as /:postId
+      // This route catches those and redirects to main, letting DeepLinkService handle navigation
+      GoRoute(
+        path: '/:postId',
+        name: 'customSchemePost',
+        redirect: (context, state) {
+          final postId = state.pathParameters['postId'];
+          debugPrint('🔗 [CUSTOM SCHEME ROUTE] Matched /:postId route');
+          debugPrint('🔗 [CUSTOM SCHEME ROUTE] Full URI: ${state.uri}');
+          debugPrint('🔗 [CUSTOM SCHEME ROUTE] Post ID: $postId');
+
+          // Check if this looks like a post ID (not a regular route)
+          // Regular routes start with specific paths like /splash, /signin, /main
+          final knownRoutes = [
+            'splash',
+            'signin',
+            'main',
+            'post-creation',
+            'post-details',
+            'user-profile',
+            'search',
+          ];
+
+          if (postId != null && !knownRoutes.contains(postId)) {
+            debugPrint(
+              '🔗 [CUSTOM SCHEME ROUTE] Detected deep link post ID, redirecting to /main',
+            );
+            // Let DeepLinkService handle the actual navigation
+            return '/main';
+          }
+
+          debugPrint('🔗 [CUSTOM SCHEME ROUTE] Not a deep link, no redirect');
+          return null;
+        },
       ),
     ],
   );

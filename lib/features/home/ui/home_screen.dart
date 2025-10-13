@@ -32,10 +32,14 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🏠 [HOME SCREEN] initState called');
     _initializeFilter();
     _setupScrollListener();
     // Handle any pending deep link from app cold start
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint(
+        '🏠 [HOME SCREEN] PostFrameCallback - checking for pending deep links',
+      );
       sl<DeepLinkService>().handlePendingDeepLink();
     });
   }
