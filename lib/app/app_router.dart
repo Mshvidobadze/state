@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:state/core/constants/routes.dart';
+import 'package:state/core/services/deep_link_service.dart';
 import 'package:state/core/widgets/main_scaffold.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
@@ -47,18 +48,43 @@ class AppRouter {
         return Routes.main;
       }
 
-      // Allow post details, user profile, and shared post routes without authentication
-      // (for deep links from notifications and shares)
+      // Require authentication for post details and user profiles
+      // If user is not authenticated and tries to access these, redirect to signin
       if (state.matchedLocation.startsWith(Routes.postDetails) ||
-          state.matchedLocation.startsWith(Routes.userProfile) ||
-          state.matchedLocation.startsWith('/post/')) {
-        debugPrint('🚦 [ROUTER] Allowing access to: ${state.matchedLocation}');
+          state.matchedLocation.startsWith(Routes.userProfile)) {
+        // Check if user is NOT authenticated (includes AuthInitial and Unauthenticated)
+        if (authState is! Authenticated) {
+          debugPrint(
+            '🚦 [ROUTER] Unauthenticated/Initial access to ${state.matchedLocation}, redirecting to signin',
+          );
+
+          // If trying to access post details, save the post ID for after authentication
+          if (state.matchedLocation.startsWith(Routes.postDetails)) {
+            final postId = state.pathParameters['postId'];
+            if (postId != null) {
+              debugPrint(
+                '🚦 [ROUTER] Saving post ID $postId as pending deep link',
+              );
+              sl<DeepLinkService>().setPendingDeepLink(postId);
+            }
+          }
+
+          return Routes.signin;
+        }
+
+        // User is authenticated, allow access
+        debugPrint(
+          '🚦 [ROUTER] Authenticated access to: ${state.matchedLocation}',
+        );
         return null; // Allow access
       }
 
+      // Redirect to signin for unauthenticated users trying to access main
       if (state.matchedLocation.startsWith(Routes.main) &&
-          authState is Unauthenticated) {
-        debugPrint('🚦 [ROUTER] Redirecting to signin (unauthenticated)');
+          authState is! Authenticated) {
+        debugPrint(
+          '🚦 [ROUTER] Redirecting to signin (not authenticated: ${authState.runtimeType})',
+        );
         return Routes.signin;
       }
 

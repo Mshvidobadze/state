@@ -78,6 +78,8 @@ class DeepLinkService {
       debugPrint('🔗 [DEEP LINK] Is post link: true');
       debugPrint('🔗 [DEEP LINK] Extracted post ID: $postId');
       if (postId != null) {
+        // Try to navigate - if user is unauthenticated, router will handle it
+        // and the router redirect will store this as pending before redirecting to signin
         _navigateToPost(postId);
       }
     } else {
@@ -150,6 +152,18 @@ class DeepLinkService {
       );
       AppRouter.router.push('/post-details/$postId');
     });
+  }
+
+  /// Set a pending deep link (useful when navigation is blocked by auth)
+  void setPendingDeepLink(String postId) {
+    _pendingDeepLink = postId;
+    debugPrint('🔗 [DEEP LINK] Manually set pending deep link: $postId');
+  }
+
+  /// Clear pending deep link
+  void clearPendingDeepLink() {
+    _pendingDeepLink = null;
+    debugPrint('🔗 [DEEP LINK] Cleared pending deep link');
   }
 
   /// Handle any pending deep link

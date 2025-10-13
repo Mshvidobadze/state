@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:state/core/services/navigation_service.dart';
+import 'package:state/core/services/deep_link_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/core/configs/assets/app_vectors.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
@@ -35,6 +36,16 @@ class SignInScreen extends StatelessWidget {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is Authenticated) {
+          debugPrint('🔐 [SIGN IN] User authenticated successfully');
+          final deepLinkService = sl<DeepLinkService>();
+
+          // Check if there's a pending deep link from before authentication
+          if (deepLinkService.hasPendingDeepLink()) {
+            debugPrint(
+              '🔐 [SIGN IN] Found pending deep link, will be handled after navigation to main',
+            );
+          }
+
           final navigationService = sl<INavigationService>();
           navigationService.goToMainScaffold(context);
         }
