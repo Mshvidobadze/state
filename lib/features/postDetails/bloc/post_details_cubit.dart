@@ -196,8 +196,34 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
         parentCommentId: parentCommentId,
       );
 
-      // Fetch fresh comments without showing skeleton
-      final updatedComments = await _repository.fetchComments(postId);
+      // Create the new comment model to add optimistically
+      final newComment = CommentModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(), // Temporary ID
+        userId: currentUser.uid,
+        userName: currentUser.displayName ?? 'Anonymous',
+        userPhotoUrl: currentUser.photoURL,
+        content: content,
+        imageUrl: imageUrl,
+        createdAt: DateTime.now(),
+        parentCommentId: parentCommentId,
+        upvotes: 0,
+        upvoters: [],
+        replies: [],
+      );
+
+      // Add comment optimistically to the list
+      List<CommentModel> updatedComments;
+      if (parentCommentId == null) {
+        // Adding a parent comment - add to the end of the list
+        updatedComments = [...currentState.comments, newComment];
+      } else {
+        // Adding a reply - find parent and add reply
+        updatedComments = _addReplyToComment(
+          currentState.comments,
+          parentCommentId,
+          newComment,
+        );
+      }
 
       // Update post model with incremented comments count
       final updatedPost = currentState.post.copyWith(
@@ -219,6 +245,31 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
       // Revert to loaded state on error, don't show error screen
       emit(currentState);
     }
+  }
+
+  // Recursively add reply to the correct parent comment
+  List<CommentModel> _addReplyToComment(
+    List<CommentModel> comments,
+    String parentCommentId,
+    CommentModel newReply,
+  ) {
+    return comments.map((comment) {
+      if (comment.id == parentCommentId) {
+        // Found the parent, add reply
+        return comment.copyWith(replies: [...comment.replies, newReply]);
+      }
+      // Check if the parent is in the replies
+      if (comment.replies.isNotEmpty) {
+        return comment.copyWith(
+          replies: _addReplyToComment(
+            comment.replies,
+            parentCommentId,
+            newReply,
+          ),
+        );
+      }
+      return comment;
+    }).toList();
   }
 
   Future<void> toggleUpvote(String postId) async {
@@ -305,6 +356,48 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
       );
     } catch (e) {
       emit(PostDetailsError(e.toString()));
+    }
+  }
+
+  // Pull-to-refresh: same as initial load
+  Future<void> refreshPostDetails(String postId) async {
+    if (state is! PostDetailsLoaded) return;
+
+    try {
+      final post = await _repository.fetchPostById(postId);
+
+      // Reload first page of comments (same as initial load)
+      final result = await _repository.fetchCommentsWithPagination(
+        postId: postId,
+        limit: _commentsPerPage,
+        lastDocument: null,
+      );
+
+      final comments = result['comments'] as List<CommentModel>;
+      final lastDocument = result['lastDocument'] as DocumentSnapshot?;
+
+      final currentUser = _auth.currentUser;
+      final isUpvoted =
+          currentUser != null && post.upvoters.contains(currentUser.uid);
+      final isFollowing =
+          currentUser != null && post.followers.contains(currentUser.uid);
+
+      emit(
+        PostDetailsLoaded(
+          post: post,
+          comments: comments,
+          isUpvoted: isUpvoted,
+          isFollowing: isFollowing,
+          hasMoreComments: comments.length >= _commentsPerPage,
+          lastCommentDocument: lastDocument,
+          viewingSpecificComment: false,
+        ),
+      );
+    } catch (e) {
+      // Revert to current state on error
+      if (state is PostDetailsLoaded) {
+        emit(state as PostDetailsLoaded);
+      }
     }
   }
 

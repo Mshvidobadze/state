@@ -155,7 +155,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                   child: RefreshIndicator(
                     color: Theme.of(context).primaryColor,
                     onRefresh: () async {
-                      await context.read<PostDetailsCubit>().loadPostDetails(
+                      await context.read<PostDetailsCubit>().refreshPostDetails(
                         post.id,
                       );
                     },
