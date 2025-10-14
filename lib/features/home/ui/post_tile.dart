@@ -41,6 +41,7 @@ class PostTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUpvoted = post.upvoters.contains(currentUserId);
+    final isAdvertisement = post.authorId.isEmpty;
 
     return Container(
       color: Colors.white,
@@ -97,7 +98,7 @@ class PostTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (showOptions)
+              if (showOptions && !isAdvertisement)
                 Align(
                   alignment: Alignment.topRight,
                   child: Padding(
@@ -117,13 +118,16 @@ class PostTile extends StatelessWidget {
             ],
           ),
 
-          // Post content area (navigable)
+          // Post content area (navigable for regular posts, not for ads)
           GestureDetector(
             behavior: HitTestBehavior.opaque, // Makes empty spaces clickable
-            onTap: () {
-              final navigationService = sl<INavigationService>();
-              navigationService.goToPostDetails(context, post.id);
-            },
+            onTap:
+                isAdvertisement
+                    ? null // Don't navigate for ads
+                    : () {
+                      final navigationService = sl<INavigationService>();
+                      navigationService.goToPostDetails(context, post.id);
+                    },
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.stretch, // Makes full width clickable
@@ -150,13 +154,18 @@ class PostTile extends StatelessWidget {
                       horizontal: UIConstants.spacingLarge,
                     ),
                     child: GestureDetector(
-                      onDoubleTap: () {
-                        // Double tap - upvote (only if not already upvoted)
-                        final isUpvoted = post.upvoters.contains(currentUserId);
-                        if (!isUpvoted) {
-                          _handleUpvote(context);
-                        }
-                      },
+                      onDoubleTap:
+                          isAdvertisement
+                              ? null // Don't allow upvote for ads
+                              : () {
+                                // Double tap - upvote (only if not already upvoted)
+                                final isUpvoted = post.upvoters.contains(
+                                  currentUserId,
+                                );
+                                if (!isUpvoted) {
+                                  _handleUpvote(context);
+                                }
+                              },
                       child: _MeasuredNetworkImage(url: post.imageUrl!),
                     ),
                   ),
@@ -164,41 +173,42 @@ class PostTile extends StatelessWidget {
             ),
           ),
 
-          // Actions row
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: UIConstants.spacingXSmall,
-              horizontal: UIConstants.spacingXSmall,
+          // Actions row (hidden for advertisements)
+          if (!isAdvertisement)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: UIConstants.spacingXSmall,
+                horizontal: UIConstants.spacingXSmall,
+              ),
+              child: Row(
+                children: [
+                  _buildActionButton(
+                    icon: Icons.arrow_upward,
+                    label: post.upvotes.toString(),
+                    isActive: isUpvoted,
+                    onPressed: () => _handleUpvote(context),
+                  ),
+                  const SizedBox(width: UIConstants.spacingXSmall),
+                  _buildActionButton(
+                    icon: Icons.chat_bubble_outline,
+                    label: post.commentsCount.toString(),
+                    isActive: false,
+                    onPressed: () {
+                      final navigationService = sl<INavigationService>();
+                      navigationService.goToPostDetails(context, post.id);
+                    },
+                  ),
+                  const Spacer(),
+                  _buildActionButton(
+                    icon: Icons.share_outlined,
+                    label: '',
+                    isActive: false,
+                    onPressed: () => _handleShare(context),
+                    horizontalPadding: 8,
+                  ),
+                ],
+              ),
             ),
-            child: Row(
-              children: [
-                _buildActionButton(
-                  icon: Icons.arrow_upward,
-                  label: post.upvotes.toString(),
-                  isActive: isUpvoted,
-                  onPressed: () => _handleUpvote(context),
-                ),
-                const SizedBox(width: UIConstants.spacingXSmall),
-                _buildActionButton(
-                  icon: Icons.chat_bubble_outline,
-                  label: post.commentsCount.toString(),
-                  isActive: false,
-                  onPressed: () {
-                    final navigationService = sl<INavigationService>();
-                    navigationService.goToPostDetails(context, post.id);
-                  },
-                ),
-                const Spacer(),
-                _buildActionButton(
-                  icon: Icons.share_outlined,
-                  label: '',
-                  isActive: false,
-                  onPressed: () => _handleShare(context),
-                  horizontalPadding: 8,
-                ),
-              ],
-            ),
-          ),
 
           const SizedBox(height: UIConstants.spacingSmall), // Bottom spacing
         ],

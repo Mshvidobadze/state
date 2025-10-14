@@ -141,14 +141,18 @@ class FollowingScreenState extends State<FollowingScreen> {
                                           () => context
                                               .read<FollowingCubit>()
                                               .unfollowPost(post.id),
-                                      onAuthorTap: () {
-                                        final navigationService =
-                                            sl<INavigationService>();
-                                        navigationService.goToUserProfile(
-                                          context,
-                                          post.authorId,
-                                        );
-                                      },
+                                      onAuthorTap:
+                                          post.authorId.isNotEmpty
+                                              ? () {
+                                                final navigationService =
+                                                    sl<INavigationService>();
+                                                navigationService
+                                                    .goToUserProfile(
+                                                      context,
+                                                      post.authorId,
+                                                    );
+                                              }
+                                              : null, // Don't navigate for ads
                                     ),
                                     Container(
                                       height: 1,
