@@ -9,6 +9,6 @@ Whether you want to follow the latest political developments, share your opinion
 Key Features:  
 • Post and comment freely on political topics  
 • Engage in uncensored discussions with diverse viewpoints  
-• Follow users and stay updated on debates that matter to you  
+• Follow posts and stay updated on debates that matter to you  
 • Secure login with Google or Apple ID — no additional accounts needed  
 • Built on Firebase for safe and reliable performance
