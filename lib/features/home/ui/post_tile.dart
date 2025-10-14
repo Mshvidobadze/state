@@ -339,6 +339,26 @@ class _MeasuredNetworkImage extends StatefulWidget {
 
 class _MeasuredNetworkImageState extends State<_MeasuredNetworkImage> {
   double? _aspectRatio; // width / height
+  late ImageProvider _provider;
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+
+  @override
+  void initState() {
+    super.initState();
+    _provider = NetworkImage(widget.url);
+    _resolveIntrinsicSize();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MeasuredNetworkImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _aspectRatio = null;
+      _provider = NetworkImage(widget.url);
+      _resolveIntrinsicSize();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -356,9 +376,10 @@ class _MeasuredNetworkImageState extends State<_MeasuredNetworkImage> {
       ),
     );
 
-    final image = Image.network(
-      widget.url,
+    final image = Image(
+      image: _provider,
       fit: BoxFit.cover,
+      gaplessPlayback: true,
       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
         if (frame == null) {
           return placeholder; // still loading, keep reserved space
@@ -378,13 +399,15 @@ class _MeasuredNetworkImageState extends State<_MeasuredNetworkImage> {
           },
         );
       },
-      // Once the image is fully resolved, update aspect ratio from its ImageStream
+      // Once loading completes or errors, update appropriately
       loadingBuilder: (context, child, event) {
         if (event == null) {
-          // Image fully loaded; obtain image dimensions via ImageStreamListener
           _resolveIntrinsicSize();
           return child;
         }
+        return placeholder;
+      },
+      errorBuilder: (context, error, stackTrace) {
         return placeholder;
       },
     );
@@ -396,18 +419,33 @@ class _MeasuredNetworkImageState extends State<_MeasuredNetworkImage> {
   }
 
   void _resolveIntrinsicSize() {
-    if (_aspectRatio != null) return;
-    final stream = Image.network(
-      widget.url,
-    ).image.resolve(const ImageConfiguration());
-    stream.addListener(
-      ImageStreamListener((info, _) {
+    _stream?.removeListener(_listener ?? const ImageStreamListener(_noop));
+    _stream = _provider.resolve(const ImageConfiguration());
+    _listener = ImageStreamListener(
+      (info, _) {
         if (mounted && _aspectRatio == null) {
           setState(() {
             _aspectRatio = info.image.width / info.image.height;
           });
         }
-      }),
+      },
+      onError: (error, stackTrace) {
+        if (!mounted) return;
+        setState(() {
+          _aspectRatio = 16 / 9; // fallback ratio on error
+        });
+      },
     );
+    _stream!.addListener(_listener!);
+  }
+
+  static void _noop(ImageInfo _, bool __) {}
+
+  @override
+  void dispose() {
+    if (_stream != null && _listener != null) {
+      _stream!.removeListener(_listener!);
+    }
+    super.dispose();
   }
 }

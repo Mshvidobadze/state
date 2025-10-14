@@ -31,10 +31,16 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
   Widget build(BuildContext context) {
     // Use larger size only when showing regions (long list)
     final isShowingRegions = _selectedOption == 'region';
+    final isShowingTime = _selectedOption == 'time';
 
     return DraggableScrollableSheet(
       key: ValueKey(_selectedOption), // Force rebuild when option changes
-      initialChildSize: isShowingRegions ? 0.6 : 0.35,
+      initialChildSize:
+          isShowingRegions
+              ? 0.6
+              : isShowingTime
+              ? 0.5
+              : 0.35,
       minChildSize: 0.2,
       maxChildSize: 0.9,
       builder: (context, scrollController) {

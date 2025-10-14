@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:state/core/widgets/linkified_text.dart';
 import 'package:state/core/constants/app_colors.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
@@ -118,12 +119,12 @@ class CommentItem extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                // Comment Content
+                // Comment Content (linkified)
                 if (comment.content.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      comment.content,
+                    child: LinkifiedText(
+                      text: comment.content,
                       style: GoogleFonts.beVietnamPro(
                         color: textColor,
                         fontSize: 14,
