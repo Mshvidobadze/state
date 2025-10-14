@@ -81,7 +81,7 @@ class AppRouter {
 
       // Redirect to signin for unauthenticated users trying to access main
       if (state.matchedLocation.startsWith(Routes.main) &&
-          authState is! Authenticated) {
+          (authState is Unauthenticated || authState is AuthError)) {
         debugPrint(
           '🚦 [ROUTER] Redirecting to signin (not authenticated: ${authState.runtimeType})',
         );
