@@ -9,6 +9,7 @@ import 'package:state/service_locator.dart';
 import 'package:state/core/configs/assets/app_vectors.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
+import 'package:state/core/constants/app_colors.dart';
 import 'package:state/core/constants/quotes.dart';
 import 'dart:math';
 
@@ -68,194 +69,192 @@ class SignInScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
-            child: Column(
-              children: [
-                // Main content - vertically centered
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // State title - much bigger
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'State',
-                          style: TextStyle(
-                            color: const Color(0xFF111418),
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.015,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Column(
+                  children: [
+                    // Main content - vertically centered
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Brand logo
+                          SvgPicture.asset(
+                            AppVectors.appLogo,
+                            width: 96,
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.primary,
+                              BlendMode.srcIn,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
 
-                      const SizedBox(height: 32),
+                          const SizedBox(height: 32),
 
-                      // Random quote - much smaller
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          Quotes.signinQuotes[Random().nextInt(
-                            Quotes.signinQuotes.length,
-                          )],
-                          style: TextStyle(
-                            color: const Color(0xFF111418),
-                            fontSize: 16,
-                            fontWeight: FontWeight.normal,
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Apple sign-in (iOS only)
-                      if (Platform.isIOS)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: SizedBox(
-                            width: 220,
-                            height: 48,
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF111418),
-                                elevation: 0,
-                                side: const BorderSide(
-                                  color: Color(0xFFE0E0E0),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                          // Apple sign-in (iOS only)
+                          if (Platform.isIOS)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: SizedBox(
+                                width: 220,
+                                height: 48,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: const Color(0xFF111418),
+                                    elevation: 0,
+                                    side: const BorderSide(
+                                      color: Color(0xFFE0E0E0),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  onPressed:
+                                      () =>
+                                          context
+                                              .read<AuthCubit>()
+                                              .signInWithApple(),
+                                  icon: const Icon(
+                                    Icons.apple,
+                                    size: 20,
+                                    color: Color(0xFF111418),
+                                  ),
+                                  label: const Text(
+                                    'Sign in with Apple',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.015,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              onPressed:
-                                  () =>
-                                      context
-                                          .read<AuthCubit>()
-                                          .signInWithApple(),
-                              icon: const Icon(
-                                Icons.apple,
-                                size: 20,
-                                color: Color(0xFF111418),
-                              ),
-                              label: const Text(
-                                'Sign in with Apple',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.015,
+                            ),
+
+                          if (Platform.isIOS) const SizedBox(height: 12),
+
+                          // Google sign in (same style)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: SizedBox(
+                              width: 220,
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: const Color(0xFF111418),
+                                  elevation: 0,
+                                  side: const BorderSide(
+                                    color: Color(0xFFE0E0E0),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed:
+                                    () =>
+                                        context
+                                            .read<AuthCubit>()
+                                            .signInWithGoogle(),
+                                icon: SvgPicture.asset(
+                                  AppVectors.googleSignIn,
+                                  width: 20,
+                                  height: 20,
+                                ),
+                                label: const Text(
+                                  'Sign in with Google',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.015,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
 
-                      if (Platform.isIOS) const SizedBox(height: 12),
+                          const SizedBox(height: 24),
 
-                      // Google sign in button (match Apple styling, use SVG icon)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: SizedBox(
-                          width: 220,
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF111418),
-                              elevation: 0,
-                              side: const BorderSide(color: Color(0xFFE0E0E0)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed:
-                                () =>
-                                    context
-                                        .read<AuthCubit>()
-                                        .signInWithGoogle(),
-                            icon: SvgPicture.asset(
-                              AppVectors.googleSignIn,
-                              width: 20,
-                              height: 20,
-                            ),
-                            label: const Text(
-                              'Sign in with Google',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.015,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Bottom legal text
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: RichText(
-                    textAlign: TextAlign.center,
-                    text: TextSpan(
-                      style: TextStyle(
-                        color: const Color(0xFF637488),
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
-                      ),
-                      children: [
-                        const TextSpan(
-                          text: 'By continuing, you agree to our ',
-                        ),
-                        WidgetSpan(
-                          child: GestureDetector(
-                            onTap:
-                                () => _launchUrl(
-                                  'https://stateapp.net/terms-and-conditions',
-                                  context,
-                                ),
+                          // Subtle random quote
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'Terms of Service',
-                              style: TextStyle(
-                                color: const Color(0xFF637488),
-                                fontSize: 14,
-                                fontWeight: FontWeight.normal,
-                                decoration: TextDecoration.underline,
+                              Quotes.signinQuotes[Random().nextInt(
+                                Quotes.signinQuotes.length,
+                              )],
+                              style: const TextStyle(
+                                color: Color(0xFF637488),
+                                fontSize: 13,
+                                height: 1.4,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                        ),
-                        const TextSpan(text: ' and '),
-                        WidgetSpan(
-                          child: GestureDetector(
-                            onTap:
-                                () => _launchUrl(
-                                  'https://stateapp.net/privacy-policy',
-                                  context,
-                                ),
-                            child: Text(
-                              'Privacy Policy',
-                              style: TextStyle(
-                                color: const Color(0xFF637488),
-                                fontSize: 14,
-                                fontWeight: FontWeight.normal,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const TextSpan(text: '.'),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ),
 
-                // Bottom spacing
-                const SizedBox(height: 20),
-              ],
+                    // Bottom legal text
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: const TextStyle(
+                            color: Color(0xFF637488),
+                            fontSize: 12,
+                            fontWeight: FontWeight.normal,
+                          ),
+                          children: [
+                            const TextSpan(
+                              text: 'By continuing, you agree to our ',
+                            ),
+                            WidgetSpan(
+                              child: GestureDetector(
+                                onTap:
+                                    () => _launchUrl(
+                                      'https://stateapp.net/terms-and-conditions',
+                                      context,
+                                    ),
+                                child: const Text(
+                                  'Terms of Service',
+                                  style: TextStyle(
+                                    color: Color(0xFF637488),
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const TextSpan(text: ' and '),
+                            WidgetSpan(
+                              child: GestureDetector(
+                                onTap:
+                                    () => _launchUrl(
+                                      'https://stateapp.net/privacy-policy',
+                                      context,
+                                    ),
+                                child: const Text(
+                                  'Privacy Policy',
+                                  style: TextStyle(
+                                    color: Color(0xFF637488),
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const TextSpan(text: '.'),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
             ),
           ),
         );
