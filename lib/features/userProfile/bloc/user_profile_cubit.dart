@@ -67,4 +67,40 @@ class UserProfileCubit extends Cubit<UserProfileState> {
       emit(UserProfileError('Failed to load more posts: ${e.toString()}'));
     }
   }
+
+  /// Apply follow locally to keep UI in sync when toggled from other cubits
+  void applyFollowLocally(String postId, String userId) {
+    final currentState = state;
+    if (currentState is! UserProfileLoaded) return;
+
+    final updatedPosts =
+        currentState.posts.map((post) {
+          if (post.id == postId && !post.followers.contains(userId)) {
+            final updatedFollowers = List<String>.from(post.followers)
+              ..add(userId);
+            return post.copyWith(followers: updatedFollowers);
+          }
+          return post;
+        }).toList();
+
+    emit(currentState.copyWith(posts: updatedPosts));
+  }
+
+  /// Apply unfollow locally to keep UI in sync when toggled from other cubits
+  void applyUnfollowLocally(String postId, String userId) {
+    final currentState = state;
+    if (currentState is! UserProfileLoaded) return;
+
+    final updatedPosts =
+        currentState.posts.map((post) {
+          if (post.id == postId && post.followers.contains(userId)) {
+            final updatedFollowers = List<String>.from(post.followers)
+              ..remove(userId);
+            return post.copyWith(followers: updatedFollowers);
+          }
+          return post;
+        }).toList();
+
+    emit(currentState.copyWith(posts: updatedPosts));
+  }
 }

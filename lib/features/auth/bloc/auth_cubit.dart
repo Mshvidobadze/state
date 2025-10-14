@@ -30,7 +30,25 @@ class AuthCubit extends Cubit<AuthState> {
       // Request permissions and update FCM token in background (non-blocking)
       _requestPermissionsAndUpdateToken();
     } catch (e) {
-      emit(AuthError(e.toString()));
+      emit(Unauthenticated());
+    }
+  }
+
+  Future<void> signInWithApple() async {
+    emit(AuthLoading());
+    try {
+      await authRepository.signInWithApple();
+      await authRepository.createUserEntry();
+
+      emit(
+        Authenticated(
+          userId: _firebaseAuth.currentUser?.uid ?? '',
+          userName: _firebaseAuth.currentUser?.displayName ?? '',
+        ),
+      );
+
+      _requestPermissionsAndUpdateToken();
+    } catch (e) {
       emit(Unauthenticated());
     }
   }

@@ -10,6 +10,7 @@ import 'package:state/service_locator.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
+import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/services/share_service.dart';
 
@@ -20,6 +21,7 @@ class PostTile extends StatelessWidget {
   final VoidCallback? onUnfollow;
   final VoidCallback? onAuthorTap;
   final dynamic cubit; // Can be HomeCubit or FollowingCubit
+  final bool showOptions;
 
   const PostTile({
     required this.post,
@@ -28,6 +30,7 @@ class PostTile extends StatelessWidget {
     this.onUnfollow,
     this.onAuthorTap,
     this.cubit,
+    this.showOptions = true,
     super.key,
   });
 
@@ -90,22 +93,23 @@ class PostTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: IconButton(
-                    onPressed: () => _showPostOptions(context),
-                    icon: const Icon(
-                      Icons.more_vert,
-                      color: Color(0xFF121416),
-                      size: 24,
+              if (showOptions)
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: IconButton(
+                      onPressed: () => _showPostOptions(context),
+                      icon: const Icon(
+                        Icons.more_vert,
+                        color: Color(0xFF121416),
+                        size: 24,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
                   ),
                 ),
-              ),
             ],
           ),
 
@@ -270,14 +274,31 @@ class PostTile extends StatelessWidget {
   }
 
   void _handleFollowToggle(BuildContext context, bool isFollowing) {
-    if (isFollowing) {
+    final homeCubit = context.read<HomeCubit>();
+    final wasFollowing = isFollowing;
+
+    if (wasFollowing) {
       if (onUnfollow != null) {
         onUnfollow!();
       } else {
-        context.read<HomeCubit>().unfollowPost(post.id, currentUserId);
+        homeCubit.unfollowPost(post.id, currentUserId);
       }
+      // Optimistically update UserProfile if present
+      try {
+        context.read<UserProfileCubit>().applyUnfollowLocally(
+          post.id,
+          currentUserId,
+        );
+      } catch (_) {}
     } else {
-      context.read<HomeCubit>().followPost(post.id, currentUserId);
+      homeCubit.followPost(post.id, currentUserId);
+      // Optimistically update UserProfile if present
+      try {
+        context.read<UserProfileCubit>().applyFollowLocally(
+          post.id,
+          currentUserId,
+        );
+      } catch (_) {}
     }
   }
 

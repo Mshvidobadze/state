@@ -8,6 +8,7 @@ import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postDetails/bloc/post_details_cubit.dart';
 import 'package:state/features/splash/bloc/splash_cubit.dart';
+import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:state/service_locator.dart';
 
 class App extends StatelessWidget {
@@ -18,11 +19,12 @@ class App extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => sl<SplashCubit>()..appStarted()),
-        BlocProvider(create: (_) => sl<AuthCubit>()),
+        BlocProvider(create: (_) => sl<AuthCubit>()..checkAuthStatus()),
         BlocProvider(create: (_) => sl<HomeCubit>()),
         BlocProvider(create: (_) => sl<PostCreationCubit>()),
         BlocProvider(create: (_) => sl<FollowingCubit>()),
         BlocProvider(create: (_) => sl<PostDetailsCubit>()),
+        BlocProvider(create: (_) => sl<UserProfileCubit>()),
       ],
       child: MaterialApp.router(
         title: 'State',

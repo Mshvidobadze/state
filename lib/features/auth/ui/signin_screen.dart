@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:state/core/services/navigation_service.dart';
+import 'package:state/core/services/deep_link_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/core/configs/assets/app_vectors.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
+import 'package:state/core/constants/app_colors.dart';
+import 'package:state/core/constants/quotes.dart';
+import 'dart:math';
 
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
@@ -35,6 +40,16 @@ class SignInScreen extends StatelessWidget {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is Authenticated) {
+          debugPrint('🔐 [SIGN IN] User authenticated successfully');
+          final deepLinkService = sl<DeepLinkService>();
+
+          // Check if there's a pending deep link from before authentication
+          if (deepLinkService.hasPendingDeepLink()) {
+            debugPrint(
+              '🔐 [SIGN IN] Found pending deep link, will be handled after navigation to main',
+            );
+          }
+
           final navigationService = sl<INavigationService>();
           navigationService.goToMainScaffold(context);
         }
@@ -54,138 +69,192 @@ class SignInScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
-            child: Column(
-              children: [
-                // Main content - vertically centered
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // State title - much bigger
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'State',
-                          style: TextStyle(
-                            color: const Color(0xFF111418),
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.015,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Column(
+                  children: [
+                    // Main content - vertically centered
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Brand logo
+                          SvgPicture.asset(
+                            AppVectors.appLogo,
+                            width: 96,
+                            colorFilter: const ColorFilter.mode(
+                              AppColors.primary,
+                              BlendMode.srcIn,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
 
-                      const SizedBox(height: 32),
+                          const SizedBox(height: 32),
 
-                      // Plato quote - much smaller
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'The punishment which the wise suffer who refuse to take part in the government, is to live under the government of worse men.',
-                          style: TextStyle(
-                            color: const Color(0xFF111418),
-                            fontSize: 16,
-                            fontWeight: FontWeight.normal,
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-
-                      // Plato attribution
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 32),
-                        child: Text(
-                          '- Plato',
-                          style: TextStyle(
-                            color: const Color(0xFF637488),
-                            fontSize: 14,
-                            fontWeight: FontWeight.normal,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-
-                      // Original SVG sign in button
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: GestureDetector(
-                          onTap:
-                              () =>
-                                  context.read<AuthCubit>().signInWithGoogle(),
-                          child: SvgPicture.asset(
-                            AppVectors.googleSignIn,
-                            width: 220,
-                            height: 48,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Bottom legal text
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: RichText(
-                    textAlign: TextAlign.center,
-                    text: TextSpan(
-                      style: TextStyle(
-                        color: const Color(0xFF637488),
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
-                      ),
-                      children: [
-                        const TextSpan(
-                          text: 'By continuing, you agree to our ',
-                        ),
-                        WidgetSpan(
-                          child: GestureDetector(
-                            onTap:
-                                () => _launchUrl(
-                                  'https://stateapp.net/terms-and-conditions',
-                                  context,
+                          // Apple sign-in (iOS only)
+                          if (Platform.isIOS)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: SizedBox(
+                                width: 220,
+                                height: 48,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: const Color(0xFF111418),
+                                    elevation: 0,
+                                    side: const BorderSide(
+                                      color: Color(0xFFE0E0E0),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  onPressed:
+                                      () =>
+                                          context
+                                              .read<AuthCubit>()
+                                              .signInWithApple(),
+                                  icon: const Icon(
+                                    Icons.apple,
+                                    size: 20,
+                                    color: Color(0xFF111418),
+                                  ),
+                                  label: const Text(
+                                    'Sign in with Apple',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.015,
+                                    ),
+                                  ),
                                 ),
-                            child: Text(
-                              'Terms of Service',
-                              style: TextStyle(
-                                color: const Color(0xFF637488),
-                                fontSize: 14,
-                                fontWeight: FontWeight.normal,
-                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+
+                          if (Platform.isIOS) const SizedBox(height: 12),
+
+                          // Google sign in (same style)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: SizedBox(
+                              width: 220,
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: const Color(0xFF111418),
+                                  elevation: 0,
+                                  side: const BorderSide(
+                                    color: Color(0xFFE0E0E0),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed:
+                                    () =>
+                                        context
+                                            .read<AuthCubit>()
+                                            .signInWithGoogle(),
+                                icon: SvgPicture.asset(
+                                  AppVectors.googleSignIn,
+                                  width: 20,
+                                  height: 20,
+                                ),
+                                label: const Text(
+                                  'Sign in with Google',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.015,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const TextSpan(text: ' and '),
-                        WidgetSpan(
-                          child: GestureDetector(
-                            onTap:
-                                () => _launchUrl(
-                                  'https://stateapp.net/privacy-policy',
-                                  context,
-                                ),
+
+                          const SizedBox(height: 24),
+
+                          // Subtle random quote
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'Privacy Policy',
-                              style: TextStyle(
-                                color: const Color(0xFF637488),
-                                fontSize: 14,
-                                fontWeight: FontWeight.normal,
-                                decoration: TextDecoration.underline,
+                              Quotes.signinQuotes[Random().nextInt(
+                                Quotes.signinQuotes.length,
+                              )],
+                              style: const TextStyle(
+                                color: Color(0xFF637488),
+                                fontSize: 13,
+                                height: 1.4,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                        ),
-                        const TextSpan(text: '.'),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ),
 
-                // Bottom spacing
-                const SizedBox(height: 20),
-              ],
+                    // Bottom legal text
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: const TextStyle(
+                            color: Color(0xFF637488),
+                            fontSize: 12,
+                            fontWeight: FontWeight.normal,
+                          ),
+                          children: [
+                            const TextSpan(
+                              text: 'By continuing, you agree to our ',
+                            ),
+                            WidgetSpan(
+                              child: GestureDetector(
+                                onTap:
+                                    () => _launchUrl(
+                                      'https://stateapp.net/terms-and-conditions',
+                                      context,
+                                    ),
+                                child: const Text(
+                                  'Terms of Service',
+                                  style: TextStyle(
+                                    color: Color(0xFF637488),
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const TextSpan(text: ' and '),
+                            WidgetSpan(
+                              child: GestureDetector(
+                                onTap:
+                                    () => _launchUrl(
+                                      'https://stateapp.net/privacy-policy',
+                                      context,
+                                    ),
+                                child: const Text(
+                                  'Privacy Policy',
+                                  style: TextStyle(
+                                    color: Color(0xFF637488),
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const TextSpan(text: '.'),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
             ),
           ),
         );
