@@ -20,6 +20,7 @@ class FeedOptionsBottomSheet extends StatefulWidget {
 class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
   late FilterModel _currentFilter;
   String? _selectedOption;
+  String _regionQuery = '';
 
   @override
   void initState() {
@@ -31,10 +32,16 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
   Widget build(BuildContext context) {
     // Use larger size only when showing regions (long list)
     final isShowingRegions = _selectedOption == 'region';
+    final isShowingTime = _selectedOption == 'time';
 
     return DraggableScrollableSheet(
       key: ValueKey(_selectedOption), // Force rebuild when option changes
-      initialChildSize: isShowingRegions ? 0.6 : 0.35,
+      initialChildSize:
+          isShowingRegions
+              ? 0.6
+              : isShowingTime
+              ? 0.5
+              : 0.35,
       minChildSize: 0.2,
       maxChildSize: 0.9,
       builder: (context, scrollController) {
@@ -115,25 +122,56 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
         ],
       );
     } else if (_selectedOption == 'region') {
-      // Region sub-options - scrollable list
-      return ListView.builder(
-        controller: scrollController,
-        itemCount: kRegions.length + 1, // +1 for back button
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return _buildBackButton();
-          }
-          final region = kRegions[index - 1];
-          return _buildSubOptionItem(
-            title: region,
-            isSelected: _currentFilter.region == region,
-            onTap: () {
-              final newFilter = _currentFilter.copyWith(region: region);
-              widget.onFilterChanged(newFilter);
-              Navigator.pop(context);
-            },
-          );
-        },
+      // Region sub-options with search
+      final filtered =
+          _regionQuery.isEmpty
+              ? kRegions
+              : kRegions
+                  .where(
+                    (r) => r.toLowerCase().contains(_regionQuery.toLowerCase()),
+                  )
+                  .toList();
+
+      return Column(
+        children: [
+          _buildBackButton(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              onChanged: (v) => setState(() => _regionQuery = v),
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                hintText: 'Search regions',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                prefixIcon: const Icon(Icons.search, size: 20),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: scrollController,
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final region = filtered[index];
+                return _buildSubOptionItem(
+                  title: region,
+                  isSelected: _currentFilter.region == region,
+                  onTap: () {
+                    final newFilter = _currentFilter.copyWith(region: region);
+                    widget.onFilterChanged(newFilter);
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       );
     } else {
       // Time filter sub-options

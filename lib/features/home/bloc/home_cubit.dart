@@ -2,19 +2,28 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/home/bloc/home_state.dart';
 import 'package:state/features/home/domain/home_repository.dart';
+import 'package:state/features/home/domain/advertisement_repository.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/features/home/data/models/post_model.dart';
+import 'package:state/features/home/utils/advertisement_inserter.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/constants/regions.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository homeRepository;
+  final AdvertisementRepository advertisementRepository;
   final FirebaseAuth firebaseAuth;
   FilterModel? _currentFilter;
   List<PostModel>? _allTimeFilteredPosts; // Cache for time-filtered posts
   int _currentPageIndex = 0; // Track pagination for time-filtered posts
+  List<PostModel> _advertisements = []; // Cached advertisements
+  int _currentAdIndex = 0; // Track which ad to insert next
 
-  HomeCubit(this.homeRepository, this.firebaseAuth) : super(HomeInitial());
+  HomeCubit(
+    this.homeRepository,
+    this.advertisementRepository,
+    this.firebaseAuth,
+  ) : super(HomeInitial());
 
   String? get currentUserId => firebaseAuth.currentUser?.uid;
   String? get currentUserName => firebaseAuth.currentUser?.displayName ?? '';
@@ -28,15 +37,22 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> loadPosts({required FilterModel filter}) async {
     _currentFilter = filter;
     _currentPageIndex = 0; // Reset page index
+    _currentAdIndex = 0; // Reset ad index
     emit(HomeLoading());
     try {
       final isTimeFiltered = _isTimeFilteredTopQuery(filter);
 
-      // Fetch posts from repository
-      final allPosts = await homeRepository.fetchPosts(
-        filter: filter,
-        limit: UIConstants.postsPerPage,
-      );
+      // Fetch posts and advertisements in parallel
+      final results = await Future.wait([
+        homeRepository.fetchPosts(
+          filter: filter,
+          limit: UIConstants.postsPerPage,
+        ),
+        advertisementRepository.fetchAdvertisements(),
+      ]);
+
+      final allPosts = results[0] as List<PostModel>;
+      _advertisements = results[1] as List<PostModel>;
 
       final user = firebaseAuth.currentUser;
 
@@ -44,11 +60,26 @@ class HomeCubit extends Cubit<HomeState> {
         // For time-filtered top posts, store all posts and paginate in-memory
         _allTimeFilteredPosts = allPosts;
         final firstPage = allPosts.take(UIConstants.postsPerPage).toList();
+
+        // Insert advertisements into first page
+        final postsWithAds = AdvertisementInserter.insertAdvertisements(
+          posts: firstPage,
+          advertisements: _advertisements,
+          startingAdIndex: _currentAdIndex,
+        );
+
+        // Update ad index for next page
+        _currentAdIndex = AdvertisementInserter.calculateNextAdIndex(
+          currentAdIndex: _currentAdIndex,
+          postsCount: firstPage.length,
+          advertisementsCount: _advertisements.length,
+        );
+
         final hasMorePosts = allPosts.length > UIConstants.postsPerPage;
 
         emit(
           HomeLoaded(
-            firstPage,
+            postsWithAds,
             user?.uid ?? '',
             user?.displayName ?? '',
             hasMorePosts: hasMorePosts,
@@ -58,12 +89,27 @@ class HomeCubit extends Cubit<HomeState> {
       } else {
         // Normal pagination for other queries
         _allTimeFilteredPosts = null; // Clear cache
+
+        // Insert advertisements
+        final postsWithAds = AdvertisementInserter.insertAdvertisements(
+          posts: allPosts,
+          advertisements: _advertisements,
+          startingAdIndex: _currentAdIndex,
+        );
+
+        // Update ad index for next page
+        _currentAdIndex = AdvertisementInserter.calculateNextAdIndex(
+          currentAdIndex: _currentAdIndex,
+          postsCount: allPosts.length,
+          advertisementsCount: _advertisements.length,
+        );
+
         final hasMorePosts = allPosts.length == UIConstants.postsPerPage;
         final lastDocumentId = allPosts.isNotEmpty ? allPosts.last.id : null;
 
         emit(
           HomeLoaded(
-            allPosts,
+            postsWithAds,
             user?.uid ?? '',
             user?.displayName ?? '',
             hasMorePosts: hasMorePosts,
@@ -91,6 +137,12 @@ class HomeCubit extends Cubit<HomeState> {
     try {
       final user = firebaseAuth.currentUser;
 
+      // Remove ads from current posts to get clean post list
+      final currentPostsWithoutAds = AdvertisementInserter.removeAdvertisements(
+        postsWithAds: currentState.posts,
+        advertisements: _advertisements,
+      );
+
       // Check if we're using in-memory pagination
       if (_allTimeFilteredPosts != null && _allTimeFilteredPosts!.isNotEmpty) {
         // In-memory pagination for time-filtered top posts
@@ -105,12 +157,19 @@ class HomeCubit extends Cubit<HomeState> {
                   .take(UIConstants.postsPerPage)
                   .toList();
 
-          final allPosts = [...currentState.posts, ...nextPage];
+          // Combine posts and insert ads
+          final combinedPosts = [...currentPostsWithoutAds, ...nextPage];
+          final postsWithAds = AdvertisementInserter.insertAdvertisements(
+            posts: combinedPosts,
+            advertisements: _advertisements,
+            startingAdIndex: 0, // Start from beginning for full list
+          );
+
           final hasMorePosts = endIndex < _allTimeFilteredPosts!.length;
 
           emit(
             HomeLoaded(
-              allPosts,
+              postsWithAds,
               user?.uid ?? '',
               user?.displayName ?? '',
               hasMorePosts: hasMorePosts,
@@ -126,7 +185,14 @@ class HomeCubit extends Cubit<HomeState> {
           lastDocumentId: currentState.lastDocumentId,
         );
 
-        final allPosts = [...currentState.posts, ...newPosts];
+        // Combine posts and insert ads
+        final combinedPosts = [...currentPostsWithoutAds, ...newPosts];
+        final postsWithAds = AdvertisementInserter.insertAdvertisements(
+          posts: combinedPosts,
+          advertisements: _advertisements,
+          startingAdIndex: 0, // Start from beginning for full list
+        );
+
         final hasMorePosts = newPosts.length == UIConstants.postsPerPage;
         final lastDocumentId =
             newPosts.isNotEmpty
@@ -135,7 +201,7 @@ class HomeCubit extends Cubit<HomeState> {
 
         emit(
           HomeLoaded(
-            allPosts,
+            postsWithAds,
             user?.uid ?? '',
             user?.displayName ?? '',
             hasMorePosts: hasMorePosts,
@@ -223,6 +289,48 @@ class HomeCubit extends Cubit<HomeState> {
       emit(currentState.copyWith(posts: posts));
     } catch (e) {
       emit(HomeError(e.toString()));
+    }
+  }
+
+  Future<void> reportPost(String postId, String userId) async {
+    print(
+      '🚩 [HOME_CUBIT] reportPost called - postId: $postId, userId: $userId',
+    );
+    print('🚩 [HOME_CUBIT] Current state: ${state.runtimeType}');
+
+    if (state is! HomeLoaded) {
+      print('🚩 [HOME_CUBIT] State is not HomeLoaded, returning');
+      return;
+    }
+
+    try {
+      // Optimistically update UI first
+      final currentState = state as HomeLoaded;
+      print(
+        '🚩 [HOME_CUBIT] Current posts count: ${currentState.posts.length}',
+      );
+
+      final posts =
+          currentState.posts.map((post) {
+            if (post.id == postId && !post.reporters.contains(userId)) {
+              print('🚩 [HOME_CUBIT] Found post to update, adding reporter');
+              final updatedReporters = List<String>.from(post.reporters)
+                ..add(userId);
+              return post.copyWith(reporters: updatedReporters);
+            }
+            return post;
+          }).toList();
+
+      print('🚩 [HOME_CUBIT] Emitting updated state');
+      emit(currentState.copyWith(posts: posts));
+
+      // Then persist to backend
+      print('🚩 [HOME_CUBIT] Calling repository.reportPost');
+      await homeRepository.reportPost(postId, userId);
+      print('🚩 [HOME_CUBIT] Repository call successful');
+    } catch (e) {
+      // Silently fail - UI already updated
+      print('🚩 [HOME_CUBIT] Report error: $e');
     }
   }
 

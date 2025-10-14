@@ -34,4 +34,6 @@ abstract class PostDetailsRepository {
   );
 
   Future<void> toggleFollow(String postId, String userId);
+
+  Future<void> reportPost(String postId, String userId);
 }

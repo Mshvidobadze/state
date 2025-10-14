@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/constants/regions.dart';
 
-class RegionPickerBottomSheet extends StatelessWidget {
+class RegionPickerBottomSheet extends StatefulWidget {
   final String currentRegion;
   final ValueChanged<String> onRegionChanged;
 
@@ -33,6 +33,20 @@ class RegionPickerBottomSheet extends StatelessWidget {
   }
 
   @override
+  State<RegionPickerBottomSheet> createState() =>
+      _RegionPickerBottomSheetState();
+}
+
+class _RegionPickerBottomSheetState extends State<RegionPickerBottomSheet> {
+  String _query = '';
+
+  List<String> get _filteredRegions {
+    if (_query.isEmpty) return kRegions;
+    final q = _query.toLowerCase();
+    return kRegions.where((r) => r.toLowerCase().contains(q)).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -57,16 +71,37 @@ class RegionPickerBottomSheet extends StatelessWidget {
                 ),
               ),
 
-              // Title
+              // Title + Search
               Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Region',
-                  style: GoogleFonts.beVietnamPro(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Region',
+                      style: GoogleFonts.beVietnamPro(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      onChanged: (v) => setState(() => _query = v),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        hintText: 'Search regions',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
@@ -74,11 +109,11 @@ class RegionPickerBottomSheet extends StatelessWidget {
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
-                  itemCount: kRegions.length,
+                  itemCount: _filteredRegions.length,
                   itemBuilder: (context, index) {
-                    final region = kRegions[index];
+                    final region = _filteredRegions[index];
                     return InkWell(
-                      onTap: () => onRegionChanged(region),
+                      onTap: () => widget.onRegionChanged(region),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -92,17 +127,17 @@ class RegionPickerBottomSheet extends StatelessWidget {
                                 style: GoogleFonts.beVietnamPro(
                                   fontSize: 16,
                                   fontWeight:
-                                      currentRegion == region
+                                      widget.currentRegion == region
                                           ? FontWeight.w600
                                           : FontWeight.w400,
                                   color:
-                                      currentRegion == region
+                                      widget.currentRegion == region
                                           ? Colors.black87
                                           : Colors.black54,
                                 ),
                               ),
                             ),
-                            if (currentRegion == region)
+                            if (widget.currentRegion == region)
                               const Icon(
                                 Icons.check,
                                 color: Colors.black87,

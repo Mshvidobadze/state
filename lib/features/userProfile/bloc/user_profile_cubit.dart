@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/home/data/models/post_model.dart';
+import 'package:state/features/home/domain/home_repository.dart';
 import 'package:state/features/userProfile/data/models/user_profile_model.dart';
 import 'package:state/features/userProfile/domain/user_profile_repository.dart';
 import 'package:state/features/userProfile/bloc/user_profile_state.dart';
@@ -13,10 +14,14 @@ import 'package:state/features/userProfile/bloc/user_profile_state.dart';
 /// - Managing loading states
 class UserProfileCubit extends Cubit<UserProfileState> {
   final UserProfileRepository userProfileRepository;
+  final HomeRepository homeRepository;
   final FirebaseAuth firebaseAuth;
 
-  UserProfileCubit(this.userProfileRepository, this.firebaseAuth)
-    : super(UserProfileInitial());
+  UserProfileCubit(
+    this.userProfileRepository,
+    this.homeRepository,
+    this.firebaseAuth,
+  ) : super(UserProfileInitial());
 
   /// Load user profile and posts
   Future<void> loadUserProfile(String userId) async {
@@ -102,5 +107,90 @@ class UserProfileCubit extends Cubit<UserProfileState> {
         }).toList();
 
     emit(currentState.copyWith(posts: updatedPosts));
+  }
+
+  /// Report a post and update UI optimistically
+  Future<void> reportPost(String postId, String userId) async {
+    if (state is! UserProfileLoaded) return;
+    try {
+      // Optimistically update UI first
+      reportPostLocally(postId, userId);
+      // Then persist to backend
+      await homeRepository.reportPost(postId, userId);
+    } catch (e) {
+      // Silently fail - UI already updated
+      print('Report error: $e');
+    }
+  }
+
+  /// Apply report locally to keep UI in sync when reported from other screens
+  void reportPostLocally(String postId, String userId) {
+    print(
+      '🚩 [USER_PROFILE_CUBIT] reportPostLocally called - postId: $postId, userId: $userId',
+    );
+    print('🚩 [USER_PROFILE_CUBIT] Current state: ${state.runtimeType}');
+
+    final currentState = state;
+    if (currentState is! UserProfileLoaded) {
+      print(
+        '🚩 [USER_PROFILE_CUBIT] State is not UserProfileLoaded, returning',
+      );
+      return;
+    }
+
+    print(
+      '🚩 [USER_PROFILE_CUBIT] Current posts count: ${currentState.posts.length}',
+    );
+    final updatedPosts =
+        currentState.posts.map((post) {
+          if (post.id == postId && !post.reporters.contains(userId)) {
+            print(
+              '🚩 [USER_PROFILE_CUBIT] Found post to update, adding reporter',
+            );
+            final updatedReporters = List<String>.from(post.reporters)
+              ..add(userId);
+            return post.copyWith(reporters: updatedReporters);
+          }
+          return post;
+        }).toList();
+
+    print('🚩 [USER_PROFILE_CUBIT] Emitting updated state');
+    emit(currentState.copyWith(posts: updatedPosts));
+  }
+
+  /// Upvote a post
+  Future<void> upvotePost(String postId, String userId) async {
+    if (state is! UserProfileLoaded) return;
+    try {
+      final currentState = state as UserProfileLoaded;
+      final updatedPosts =
+          currentState.posts.map((post) {
+            if (post.id == postId) {
+              final upvoters = post.upvoters;
+              bool hasUpvoted = upvoters.contains(userId);
+              final updatedUpvoters = List<String>.from(upvoters);
+              int updatedUpvotes = post.upvotes;
+
+              if (hasUpvoted) {
+                updatedUpvoters.remove(userId);
+                updatedUpvotes = updatedUpvotes > 0 ? updatedUpvotes - 1 : 0;
+              } else {
+                updatedUpvoters.add(userId);
+                updatedUpvotes = updatedUpvotes + 1;
+              }
+
+              return post.copyWith(
+                upvoters: updatedUpvoters,
+                upvotes: updatedUpvotes,
+              );
+            }
+            return post;
+          }).toList();
+
+      emit(currentState.copyWith(posts: updatedPosts));
+      await homeRepository.upvotePost(postId, userId);
+    } catch (e) {
+      print('Upvote error: $e');
+    }
   }
 }

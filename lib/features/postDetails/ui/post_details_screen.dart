@@ -11,6 +11,7 @@ import 'package:state/features/postDetails/ui/widgets/post_content_section.dart'
 import 'package:state/features/postDetails/ui/widgets/post_details_theme.dart';
 import 'package:state/features/postDetails/ui/widgets/post_details_skeleton.dart';
 import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
+import 'package:state/features/home/ui/widgets/report_confirmation_dialog.dart';
 import 'package:state/service_locator.dart';
 
 class PostDetailsScreen extends StatefulWidget {
@@ -61,7 +62,11 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
     });
   }
 
-  void _showPostOptions(BuildContext context, bool isFollowing) {
+  void _showPostOptions(
+    BuildContext context,
+    bool isFollowing,
+    bool isReported,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -71,23 +76,30 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
       builder:
           (bottomSheetContext) => PostOptionsBottomSheet(
             isFollowing: isFollowing,
+            isReported: isReported,
             onFollowToggle: () {
               // Use the outer context for BLoC access
               context.read<PostDetailsCubit>().toggleFollow(widget.postId);
               // PostOptionsBottomSheet handles Navigator.pop internally
             },
-            onReport: () {
-              // Use the outer context for SnackBar
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Report functionality coming soon'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-              // PostOptionsBottomSheet handles Navigator.pop internally
-            },
+            onReport: () => _handleReport(context),
           ),
     );
+  }
+
+  void _handleReport(BuildContext context) async {
+    // Capture cubit reference BEFORE showing dialog
+    final postDetailsCubit = context.read<PostDetailsCubit>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => const ReportConfirmationDialog(),
+    );
+
+    if (confirmed != true) return;
+
+    // Report post - state will update automatically
+    postDetailsCubit.reportPost(widget.postId);
   }
 
   @override
@@ -118,7 +130,12 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
               if (state is PostDetailsWithData) {
                 return IconButton(
                   icon: const Icon(Icons.more_vert),
-                  onPressed: () => _showPostOptions(context, state.isFollowing),
+                  onPressed:
+                      () => _showPostOptions(
+                        context,
+                        state.isFollowing,
+                        state.isReported,
+                      ),
                   color: theme.textColor,
                 );
               }

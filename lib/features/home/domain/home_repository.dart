@@ -16,6 +16,8 @@ abstract class HomeRepository {
 
   Future<void> unfollowPost(String postId, String userId);
 
+  Future<void> reportPost(String postId, String userId);
+
   Future<void> addComment({
     required String postId,
     required String userId,

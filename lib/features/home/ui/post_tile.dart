@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/constants/app_colors.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
@@ -10,9 +11,12 @@ import 'package:state/service_locator.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
+import 'package:state/features/home/ui/widgets/report_confirmation_dialog.dart';
 import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
+import 'package:state/features/following/bloc/following_cubit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/services/share_service.dart';
+import 'package:flutter/rendering.dart';
 
 class PostTile extends StatelessWidget {
   final PostModel post;
@@ -37,6 +41,7 @@ class PostTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUpvoted = post.upvoters.contains(currentUserId);
+    final isAdvertisement = post.authorId.isEmpty;
 
     return Container(
       color: Colors.white,
@@ -93,7 +98,7 @@ class PostTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (showOptions)
+              if (showOptions && !isAdvertisement)
                 Align(
                   alignment: Alignment.topRight,
                   child: Padding(
@@ -113,13 +118,16 @@ class PostTile extends StatelessWidget {
             ],
           ),
 
-          // Post content area (navigable)
+          // Post content area (navigable for regular posts, not for ads)
           GestureDetector(
             behavior: HitTestBehavior.opaque, // Makes empty spaces clickable
-            onTap: () {
-              final navigationService = sl<INavigationService>();
-              navigationService.goToPostDetails(context, post.id);
-            },
+            onTap:
+                isAdvertisement
+                    ? null // Don't navigate for ads
+                    : () {
+                      final navigationService = sl<INavigationService>();
+                      navigationService.goToPostDetails(context, post.id);
+                    },
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.stretch, // Makes full width clickable
@@ -139,89 +147,68 @@ class PostTile extends StatelessWidget {
                     ),
                   ),
 
-                // Post image if exists
+                // Post image if exists (reserve space immediately)
                 if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: UIConstants.spacingLarge,
                     ),
                     child: GestureDetector(
-                      onDoubleTap: () {
-                        // Double tap - upvote (only if not already upvoted)
-                        final isUpvoted = post.upvoters.contains(currentUserId);
-                        if (!isUpvoted) {
-                          _handleUpvote(context);
-                        }
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                          UIConstants.radiusMedium,
-                        ),
-                        child: Image.network(
-                          post.imageUrl!,
-                          width: double.infinity,
-                          fit: BoxFit.contain, // Show original size
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              height: UIConstants.loadingPlaceholderHeight,
-                              color: Colors.grey[100],
-                              child: Center(
-                                child: SvgPicture.asset(
-                                  'assets/vectors/logo.svg',
-                                  width: UIConstants.loadingPlaceholderSize,
-                                  height: UIConstants.loadingPlaceholderSize,
-                                  colorFilter: const ColorFilter.mode(
-                                    Colors.grey,
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      onDoubleTap:
+                          isAdvertisement
+                              ? null // Don't allow upvote for ads
+                              : () {
+                                // Double tap - upvote (only if not already upvoted)
+                                final isUpvoted = post.upvoters.contains(
+                                  currentUserId,
+                                );
+                                if (!isUpvoted) {
+                                  _handleUpvote(context);
+                                }
+                              },
+                      child: _MeasuredNetworkImage(url: post.imageUrl!),
                     ),
                   ),
               ],
             ),
           ),
 
-          // Actions row
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: UIConstants.spacingXSmall,
-              horizontal: UIConstants.spacingXSmall,
+          // Actions row (hidden for advertisements)
+          if (!isAdvertisement)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: UIConstants.spacingXSmall,
+                horizontal: UIConstants.spacingXSmall,
+              ),
+              child: Row(
+                children: [
+                  _buildActionButton(
+                    icon: Icons.arrow_upward,
+                    label: post.upvotes.toString(),
+                    isActive: isUpvoted,
+                    onPressed: () => _handleUpvote(context),
+                  ),
+                  const SizedBox(width: UIConstants.spacingXSmall),
+                  _buildActionButton(
+                    icon: Icons.chat_bubble_outline,
+                    label: post.commentsCount.toString(),
+                    isActive: false,
+                    onPressed: () {
+                      final navigationService = sl<INavigationService>();
+                      navigationService.goToPostDetails(context, post.id);
+                    },
+                  ),
+                  const Spacer(),
+                  _buildActionButton(
+                    icon: Icons.share_outlined,
+                    label: '',
+                    isActive: false,
+                    onPressed: () => _handleShare(context),
+                    horizontalPadding: 8,
+                  ),
+                ],
+              ),
             ),
-            child: Row(
-              children: [
-                _buildActionButton(
-                  icon: Icons.arrow_upward,
-                  label: post.upvotes.toString(),
-                  isActive: isUpvoted,
-                  onPressed: () => _handleUpvote(context),
-                ),
-                const SizedBox(width: UIConstants.spacingXSmall),
-                _buildActionButton(
-                  icon: Icons.chat_bubble_outline,
-                  label: post.commentsCount.toString(),
-                  isActive: false,
-                  onPressed: () {
-                    final navigationService = sl<INavigationService>();
-                    navigationService.goToPostDetails(context, post.id);
-                  },
-                ),
-                const Spacer(),
-                _buildActionButton(
-                  icon: Icons.share_outlined,
-                  label: '',
-                  isActive: false,
-                  onPressed: () => _handleShare(context),
-                  horizontalPadding: 8,
-                ),
-              ],
-            ),
-          ),
 
           const SizedBox(height: UIConstants.spacingSmall), // Bottom spacing
         ],
@@ -334,21 +321,183 @@ class PostTile extends StatelessWidget {
       builder:
           (context) => PostOptionsBottomSheet(
             isFollowing: post.followers.contains(currentUserId),
+            isReported: post.reporters.contains(currentUserId),
             onFollowToggle:
                 () => _handleFollowToggle(
                   context,
                   post.followers.contains(currentUserId),
                 ),
-            onReport: () {
-              // TODO: Implement report functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Report functionality coming soon'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
+            onReport: () => _handleReport(context),
           ),
     );
+  }
+
+  void _handleReport(BuildContext context) async {
+    debugPrint('🚩 [POST_TILE] Opening report dialog for post ${post.id}');
+
+    // Capture cubit references BEFORE showing dialog (avoid using exceptions for control flow)
+    final homeCubit = cubit ?? context.read<HomeCubit>();
+    final followingCubit = Provider.of<FollowingCubit?>(context, listen: false);
+    final userProfileCubit = Provider.of<UserProfileCubit?>(
+      context,
+      listen: false,
+    );
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => const ReportConfirmationDialog(),
+    );
+
+    debugPrint('🚩 [POST_TILE] Dialog result: $confirmed');
+    if (confirmed != true) {
+      debugPrint('🚩 [POST_TILE] Report cancelled');
+      return;
+    }
+
+    debugPrint('🚩 [POST_TILE] Starting report process');
+
+    // Update main cubit
+    debugPrint('🚩 [POST_TILE] Calling reportPost on main cubit');
+    homeCubit.reportPost(post.id, currentUserId);
+
+    // Also update Following and UserProfile cubits if available
+    if (followingCubit != null) {
+      debugPrint('🚩 [POST_TILE] Updating FollowingCubit locally');
+      followingCubit.reportPostLocally(post.id, currentUserId);
+    }
+
+    if (userProfileCubit != null) {
+      debugPrint('🚩 [POST_TILE] Updating UserProfileCubit locally');
+      userProfileCubit.reportPostLocally(post.id, currentUserId);
+    }
+
+    debugPrint('🚩 [POST_TILE] Report process completed');
+  }
+}
+
+/// Displays a reserved placeholder, then adopts the true image aspect ratio once
+/// the first frame is available, eliminating layout jumps while avoiding a fixed height.
+class _MeasuredNetworkImage extends StatefulWidget {
+  final String url;
+  const _MeasuredNetworkImage({required this.url});
+
+  @override
+  State<_MeasuredNetworkImage> createState() => _MeasuredNetworkImageState();
+}
+
+class _MeasuredNetworkImageState extends State<_MeasuredNetworkImage> {
+  double? _aspectRatio; // width / height
+  late ImageProvider _provider;
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+
+  @override
+  void initState() {
+    super.initState();
+    _provider = NetworkImage(widget.url);
+    _resolveIntrinsicSize();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MeasuredNetworkImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      // Clean up old listener
+      if (_stream != null && _listener != null) {
+        _stream!.removeListener(_listener!);
+      }
+      _aspectRatio = null;
+      _provider = NetworkImage(widget.url);
+      _resolveIntrinsicSize();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder = Container(
+      height: UIConstants.loadingPlaceholderHeight,
+      width: double.infinity,
+      color: Colors.grey[100],
+      child: Center(
+        child: SvgPicture.asset(
+          'assets/vectors/logo.svg',
+          width: UIConstants.loadingPlaceholderSize,
+          height: UIConstants.loadingPlaceholderSize,
+          colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.srcIn),
+        ),
+      ),
+    );
+
+    final image = Image(
+      image: _provider,
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (frame == null) {
+          return placeholder; // still loading, keep reserved space
+        }
+        // Measure the rendered image to compute aspect ratio once
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            _aspectRatio ??= 16 / 9;
+            return AspectRatio(
+              aspectRatio: _aspectRatio!,
+              child: AnimatedOpacity(
+                opacity: 1.0,
+                duration: const Duration(milliseconds: 150),
+                child: child,
+              ),
+            );
+          },
+        );
+      },
+      // Once loading completes or errors, update appropriately
+      loadingBuilder: (context, child, event) {
+        if (event == null) {
+          _resolveIntrinsicSize();
+          return child;
+        }
+        return placeholder;
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return placeholder;
+      },
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
+      child: image,
+    );
+  }
+
+  void _resolveIntrinsicSize() {
+    _stream?.removeListener(_listener ?? const ImageStreamListener(_noop));
+    _stream = _provider.resolve(const ImageConfiguration());
+    _listener = ImageStreamListener(
+      (info, _) {
+        if (mounted && _aspectRatio == null) {
+          setState(() {
+            _aspectRatio = info.image.width / info.image.height;
+          });
+        }
+      },
+      onError: (error, stackTrace) {
+        if (!mounted) return;
+        setState(() {
+          _aspectRatio = 16 / 9; // fallback ratio on error
+        });
+      },
+    );
+    _stream!.addListener(_listener!);
+  }
+
+  static void _noop(ImageInfo _, bool __) {}
+
+  @override
+  void dispose() {
+    if (_stream != null && _listener != null) {
+      _stream!.removeListener(_listener!);
+    }
+    super.dispose();
   }
 }

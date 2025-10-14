@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:equatable/equatable.dart';
 
-class PostModel {
+class PostModel extends Equatable {
   final String id;
   final String authorId;
   final String authorName;
@@ -14,6 +15,7 @@ class PostModel {
   final DateTime createdAt;
   final List<String> followers;
   final List<String> upvoters;
+  final List<String> reporters;
 
   PostModel({
     required this.id,
@@ -29,6 +31,7 @@ class PostModel {
     required this.createdAt,
     required this.followers,
     required this.upvoters,
+    required this.reporters,
   });
 
   factory PostModel.fromDoc(DocumentSnapshot doc) {
@@ -47,6 +50,7 @@ class PostModel {
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       followers: List<String>.from(data['followers'] ?? []),
       upvoters: List<String>.from(data['upvoters'] ?? []),
+      reporters: List<String>.from(data['reporters'] ?? []),
     );
   }
 
@@ -63,6 +67,7 @@ class PostModel {
     'createdAt': createdAt,
     'followers': followers,
     'upvoters': upvoters,
+    'reporters': reporters,
   };
 
   PostModel copyWith({
@@ -79,6 +84,7 @@ class PostModel {
     DateTime? createdAt,
     List<String>? followers,
     List<String>? upvoters,
+    List<String>? reporters,
   }) {
     return PostModel(
       id: id ?? this.id,
@@ -94,6 +100,25 @@ class PostModel {
       createdAt: createdAt ?? this.createdAt,
       followers: followers ?? this.followers,
       upvoters: upvoters ?? this.upvoters,
+      reporters: reporters ?? this.reporters,
     );
   }
+
+  @override
+  List<Object?> get props => [
+    id,
+    authorId,
+    authorName,
+    authorPhotoUrl,
+    region,
+    title,
+    content,
+    imageUrl,
+    upvotes,
+    commentsCount,
+    createdAt,
+    followers,
+    upvoters,
+    reporters,
+  ];
 }

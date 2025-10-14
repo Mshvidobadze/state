@@ -81,4 +81,39 @@ class FollowingCubit extends Cubit<FollowingState> {
       emit(FollowingError(e.toString()));
     }
   }
+
+  Future<void> reportPost(String postId, String userId) async {
+    if (state is! FollowingLoaded) return;
+    try {
+      // Optimistically update UI first
+      reportPostLocally(postId, userId);
+      // Then persist to backend
+      await homeRepository.reportPost(postId, userId);
+    } catch (e) {
+      // Silently fail - UI already updated
+      print('Report error: $e');
+    }
+  }
+
+  void reportPostLocally(String postId, String userId) {
+    if (state is! FollowingLoaded) return;
+    final currentState = state as FollowingLoaded;
+    final posts =
+        currentState.posts.map((post) {
+          if (post.id == postId && !post.reporters.contains(userId)) {
+            final updatedReporters = List<String>.from(post.reporters)
+              ..add(userId);
+            return post.copyWith(reporters: updatedReporters);
+          }
+          return post;
+        }).toList();
+
+    emit(
+      FollowingLoaded(
+        posts,
+        currentState.currentUserId,
+        currentState.currentUserName,
+      ),
+    );
+  }
 }
