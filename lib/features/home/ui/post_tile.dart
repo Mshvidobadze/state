@@ -13,6 +13,7 @@ import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
 import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/services/share_service.dart';
+import 'package:flutter/rendering.dart';
 
 class PostTile extends StatelessWidget {
   final PostModel post;
@@ -139,7 +140,7 @@ class PostTile extends StatelessWidget {
                     ),
                   ),
 
-                // Post image if exists
+                // Post image if exists (reserve space immediately)
                 if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -153,34 +154,7 @@ class PostTile extends StatelessWidget {
                           _handleUpvote(context);
                         }
                       },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                          UIConstants.radiusMedium,
-                        ),
-                        child: Image.network(
-                          post.imageUrl!,
-                          width: double.infinity,
-                          fit: BoxFit.contain, // Show original size
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              height: UIConstants.loadingPlaceholderHeight,
-                              color: Colors.grey[100],
-                              child: Center(
-                                child: SvgPicture.asset(
-                                  'assets/vectors/logo.svg',
-                                  width: UIConstants.loadingPlaceholderSize,
-                                  height: UIConstants.loadingPlaceholderSize,
-                                  colorFilter: const ColorFilter.mode(
-                                    Colors.grey,
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      child: _MeasuredNetworkImage(url: post.imageUrl!),
                     ),
                   ),
               ],
@@ -349,6 +323,91 @@ class PostTile extends StatelessWidget {
               );
             },
           ),
+    );
+  }
+}
+
+/// Displays a reserved placeholder, then adopts the true image aspect ratio once
+/// the first frame is available, eliminating layout jumps while avoiding a fixed height.
+class _MeasuredNetworkImage extends StatefulWidget {
+  final String url;
+  const _MeasuredNetworkImage({required this.url});
+
+  @override
+  State<_MeasuredNetworkImage> createState() => _MeasuredNetworkImageState();
+}
+
+class _MeasuredNetworkImageState extends State<_MeasuredNetworkImage> {
+  double? _aspectRatio; // width / height
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder = Container(
+      height: UIConstants.loadingPlaceholderHeight,
+      width: double.infinity,
+      color: Colors.grey[100],
+      child: Center(
+        child: SvgPicture.asset(
+          'assets/vectors/logo.svg',
+          width: UIConstants.loadingPlaceholderSize,
+          height: UIConstants.loadingPlaceholderSize,
+          colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.srcIn),
+        ),
+      ),
+    );
+
+    final image = Image.network(
+      widget.url,
+      fit: BoxFit.cover,
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (frame == null) {
+          return placeholder; // still loading, keep reserved space
+        }
+        // Measure the rendered image to compute aspect ratio once
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            _aspectRatio ??= 16 / 9;
+            return AspectRatio(
+              aspectRatio: _aspectRatio!,
+              child: AnimatedOpacity(
+                opacity: 1.0,
+                duration: const Duration(milliseconds: 150),
+                child: child,
+              ),
+            );
+          },
+        );
+      },
+      // Once the image is fully resolved, update aspect ratio from its ImageStream
+      loadingBuilder: (context, child, event) {
+        if (event == null) {
+          // Image fully loaded; obtain image dimensions via ImageStreamListener
+          _resolveIntrinsicSize();
+          return child;
+        }
+        return placeholder;
+      },
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
+      child: image,
+    );
+  }
+
+  void _resolveIntrinsicSize() {
+    if (_aspectRatio != null) return;
+    final stream = Image.network(
+      widget.url,
+    ).image.resolve(const ImageConfiguration());
+    stream.addListener(
+      ImageStreamListener((info, _) {
+        if (mounted && _aspectRatio == null) {
+          setState(() {
+            _aspectRatio = info.image.width / info.image.height;
+          });
+        }
+      }),
     );
   }
 }

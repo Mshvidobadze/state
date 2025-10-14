@@ -11,7 +11,6 @@ class Quotes {
     '“If liberty means anything at all, it means the right to tell people what they do not want to hear.” — George Orwell',
     '“Politics is the gentle art of getting votes from the poor and campaign funds from the rich, by promising to protect each from the other.” — Oscar Ameringer',
     '“All animals are equal, but some animals are more equal than others.” — George Orwell, *Animal Farm*',
-    '“In politics, stupidity is not a handicap.” — Napoleon Bonaparte',
     '“Those who can make you believe absurdities can make you commit atrocities.” — Voltaire',
     '“Bad officials are elected by good citizens who do not vote.” — George Jean Nathan',
     '“The ignorance of one voter in a democracy impairs the security of all.” — John F. Kennedy',
