@@ -14,6 +14,7 @@ abstract class PostDetailsWithData extends PostDetailsState {
   final List<CommentModel> comments;
   final bool isUpvoted;
   final bool isFollowing;
+  final bool isReported;
   final bool hasMoreComments;
   final DocumentSnapshot? lastCommentDocument;
   final bool viewingSpecificComment;
@@ -23,6 +24,7 @@ abstract class PostDetailsWithData extends PostDetailsState {
     required this.comments,
     required this.isUpvoted,
     required this.isFollowing,
+    required this.isReported,
     required this.hasMoreComments,
     this.lastCommentDocument,
     this.viewingSpecificComment = false,
@@ -35,6 +37,7 @@ class PostDetailsLoaded extends PostDetailsWithData {
     required super.comments,
     required super.isUpvoted,
     required super.isFollowing,
+    required super.isReported,
     required super.hasMoreComments,
     super.lastCommentDocument,
     super.viewingSpecificComment = false,
@@ -45,6 +48,7 @@ class PostDetailsLoaded extends PostDetailsWithData {
     List<CommentModel>? comments,
     bool? isUpvoted,
     bool? isFollowing,
+    bool? isReported,
     bool? hasMoreComments,
     DocumentSnapshot? lastCommentDocument,
     bool? viewingSpecificComment,
@@ -54,6 +58,7 @@ class PostDetailsLoaded extends PostDetailsWithData {
       comments: comments ?? this.comments,
       isUpvoted: isUpvoted ?? this.isUpvoted,
       isFollowing: isFollowing ?? this.isFollowing,
+      isReported: isReported ?? this.isReported,
       hasMoreComments: hasMoreComments ?? this.hasMoreComments,
       lastCommentDocument: lastCommentDocument ?? this.lastCommentDocument,
       viewingSpecificComment:
@@ -73,6 +78,7 @@ class PostDetailsUpvoting extends PostDetailsWithData {
     required super.comments,
     required super.isUpvoted,
     required super.isFollowing,
+    required super.isReported,
     required super.hasMoreComments,
     super.lastCommentDocument,
     super.viewingSpecificComment = false,
@@ -85,6 +91,7 @@ class PostDetailsCommenting extends PostDetailsWithData {
     required super.comments,
     required super.isUpvoted,
     required super.isFollowing,
+    required super.isReported,
     required super.hasMoreComments,
     super.lastCommentDocument,
     super.viewingSpecificComment = false,
@@ -97,6 +104,7 @@ class PostDetailsFollowing extends PostDetailsWithData {
     required super.comments,
     required super.isUpvoted,
     required super.isFollowing,
+    required super.isReported,
     required super.hasMoreComments,
     super.lastCommentDocument,
     super.viewingSpecificComment = false,
@@ -109,6 +117,7 @@ class PostDetailsLoadingMore extends PostDetailsWithData {
     required super.comments,
     required super.isUpvoted,
     required super.isFollowing,
+    required super.isReported,
     required super.hasMoreComments,
     super.lastCommentDocument,
     super.viewingSpecificComment = false,

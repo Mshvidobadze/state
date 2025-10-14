@@ -57,6 +57,8 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           currentUser != null && post.upvoters.contains(currentUser.uid);
       final isFollowing =
           currentUser != null && post.followers.contains(currentUser.uid);
+      final isReported =
+          currentUser != null && post.reporters.contains(currentUser.uid);
 
       emit(
         PostDetailsLoaded(
@@ -64,6 +66,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: comments,
           isUpvoted: isUpvoted,
           isFollowing: isFollowing,
+          isReported: isReported,
           hasMoreComments: hasMoreComments,
           lastCommentDocument: lastDocument,
           viewingSpecificComment: commentId != null && commentId.isNotEmpty,
@@ -88,6 +91,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: currentState.isFollowing,
+          isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
           viewingSpecificComment: currentState.viewingSpecificComment,
@@ -121,6 +125,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
             comments: updatedComments,
             isUpvoted: currentState.isUpvoted,
             isFollowing: currentState.isFollowing,
+            isReported: currentState.isReported,
             hasMoreComments: newComments.length >= _commentsPerPage,
             lastCommentDocument: lastDocument,
             viewingSpecificComment: currentState.viewingSpecificComment,
@@ -137,6 +142,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: currentState.isFollowing,
+          isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
           viewingSpecificComment: currentState.viewingSpecificComment,
@@ -170,6 +176,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
             comments: currentState.comments,
             isUpvoted: currentState.isUpvoted,
             isFollowing: currentState.isFollowing,
+            isReported: currentState.isReported,
             hasMoreComments: currentState.hasMoreComments,
             lastCommentDocument: currentState.lastCommentDocument,
             viewingSpecificComment: currentState.viewingSpecificComment,
@@ -236,6 +243,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: updatedComments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: currentState.isFollowing,
+          isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
           viewingSpecificComment: currentState.viewingSpecificComment,
@@ -284,6 +292,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: currentState.isFollowing,
+          isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
           viewingSpecificComment: currentState.viewingSpecificComment,
@@ -318,6 +327,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: newIsUpvoted,
           isFollowing: currentState.isFollowing,
+          isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
           viewingSpecificComment: currentState.viewingSpecificComment,
@@ -349,6 +359,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: comments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: currentState.isFollowing,
+          isReported: currentState.isReported,
           hasMoreComments: comments.length >= _commentsPerPage,
           lastCommentDocument: lastDocument,
           viewingSpecificComment: false, // Now viewing all comments
@@ -382,12 +393,16 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
       final isFollowing =
           currentUser != null && post.followers.contains(currentUser.uid);
 
+      final isReported =
+          currentUser != null && post.reporters.contains(currentUser.uid);
+
       emit(
         PostDetailsLoaded(
           post: post,
           comments: comments,
           isUpvoted: isUpvoted,
           isFollowing: isFollowing,
+          isReported: isReported,
           hasMoreComments: comments.length >= _commentsPerPage,
           lastCommentDocument: lastDocument,
           viewingSpecificComment: false,
@@ -413,6 +428,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: currentState.isFollowing,
+          isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
           viewingSpecificComment: currentState.viewingSpecificComment,
@@ -443,6 +459,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
           isFollowing: newIsFollowing,
+          isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
           lastCommentDocument: currentState.lastCommentDocument,
           viewingSpecificComment: currentState.viewingSpecificComment,
@@ -483,6 +500,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
         comments: updatedComments,
         isUpvoted: currentState.isUpvoted,
         isFollowing: currentState.isFollowing,
+        isReported: currentState.isReported,
         hasMoreComments: currentState.hasMoreComments,
         lastCommentDocument: currentState.lastCommentDocument,
         viewingSpecificComment: currentState.viewingSpecificComment,
@@ -526,5 +544,38 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
       }
       return comment;
     }).toList();
+  }
+
+  Future<void> reportPost(String postId) async {
+    if (state is! PostDetailsWithData) return;
+    try {
+      final currentState = state as PostDetailsWithData;
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) return;
+
+      // Optimistically update UI first
+      final updatedPost = currentState.post.copyWith(
+        reporters: [...currentState.post.reporters, currentUser.uid],
+      );
+
+      emit(
+        PostDetailsLoaded(
+          post: updatedPost,
+          comments: currentState.comments,
+          isUpvoted: currentState.isUpvoted,
+          isFollowing: currentState.isFollowing,
+          isReported: true,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
+        ),
+      );
+
+      // Then persist to backend
+      await _repository.reportPost(postId, currentUser.uid);
+    } catch (e) {
+      // Silently fail - UI already updated
+      print('Report error: $e');
+    }
   }
 }

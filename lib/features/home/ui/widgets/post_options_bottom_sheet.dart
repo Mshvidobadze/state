@@ -3,11 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 class PostOptionsBottomSheet extends StatelessWidget {
   final bool isFollowing;
+  final bool isReported;
   final VoidCallback onFollowToggle;
   final VoidCallback onReport;
 
   const PostOptionsBottomSheet({
     required this.isFollowing,
+    required this.isReported,
     required this.onFollowToggle,
     required this.onReport,
     super.key,
@@ -57,12 +59,16 @@ class PostOptionsBottomSheet extends StatelessWidget {
             },
           ),
           _buildOptionItem(
-            icon: Icons.flag_outlined,
-            title: 'Report',
-            onTap: () {
-              onReport();
-              Navigator.pop(context);
-            },
+            icon: isReported ? Icons.flag : Icons.flag_outlined,
+            title: isReported ? 'Reported' : 'Report',
+            onTap:
+                isReported
+                    ? () {} // Disabled
+                    : () {
+                      Navigator.pop(context);
+                      onReport();
+                    },
+            isDisabled: isReported,
           ),
 
           const SizedBox(height: 16),
@@ -75,21 +81,26 @@ class PostOptionsBottomSheet extends StatelessWidget {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    bool isDisabled = false,
   }) {
     return InkWell(
-      onTap: onTap,
+      onTap: isDisabled ? null : onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, color: Colors.black54, size: 24),
+            Icon(
+              icon,
+              color: isDisabled ? Colors.grey : Colors.black54,
+              size: 24,
+            ),
             const SizedBox(width: 16),
             Text(
               title,
               style: GoogleFonts.beVietnamPro(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                color: isDisabled ? Colors.grey : Colors.black87,
               ),
             ),
           ],

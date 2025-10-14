@@ -226,6 +226,48 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
+  Future<void> reportPost(String postId, String userId) async {
+    print(
+      '🚩 [HOME_CUBIT] reportPost called - postId: $postId, userId: $userId',
+    );
+    print('🚩 [HOME_CUBIT] Current state: ${state.runtimeType}');
+
+    if (state is! HomeLoaded) {
+      print('🚩 [HOME_CUBIT] State is not HomeLoaded, returning');
+      return;
+    }
+
+    try {
+      // Optimistically update UI first
+      final currentState = state as HomeLoaded;
+      print(
+        '🚩 [HOME_CUBIT] Current posts count: ${currentState.posts.length}',
+      );
+
+      final posts =
+          currentState.posts.map((post) {
+            if (post.id == postId && !post.reporters.contains(userId)) {
+              print('🚩 [HOME_CUBIT] Found post to update, adding reporter');
+              final updatedReporters = List<String>.from(post.reporters)
+                ..add(userId);
+              return post.copyWith(reporters: updatedReporters);
+            }
+            return post;
+          }).toList();
+
+      print('🚩 [HOME_CUBIT] Emitting updated state');
+      emit(currentState.copyWith(posts: posts));
+
+      // Then persist to backend
+      print('🚩 [HOME_CUBIT] Calling repository.reportPost');
+      await homeRepository.reportPost(postId, userId);
+      print('🚩 [HOME_CUBIT] Repository call successful');
+    } catch (e) {
+      // Silently fail - UI already updated
+      print('🚩 [HOME_CUBIT] Report error: $e');
+    }
+  }
+
   Future<void> addComment({
     required String postId,
     required String userId,

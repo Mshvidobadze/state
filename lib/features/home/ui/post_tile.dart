@@ -10,7 +10,9 @@ import 'package:state/service_locator.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
+import 'package:state/features/home/ui/widgets/report_confirmation_dialog.dart';
 import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
+import 'package:state/features/following/bloc/following_cubit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/services/share_service.dart';
 import 'package:flutter/rendering.dart';
@@ -308,22 +310,66 @@ class PostTile extends StatelessWidget {
       builder:
           (context) => PostOptionsBottomSheet(
             isFollowing: post.followers.contains(currentUserId),
+            isReported: post.reporters.contains(currentUserId),
             onFollowToggle:
                 () => _handleFollowToggle(
                   context,
                   post.followers.contains(currentUserId),
                 ),
-            onReport: () {
-              // TODO: Implement report functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Report functionality coming soon'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
+            onReport: () => _handleReport(context),
           ),
     );
+  }
+
+  void _handleReport(BuildContext context) async {
+    debugPrint('🚩 [POST_TILE] Opening report dialog for post ${post.id}');
+
+    // Capture cubit references BEFORE showing dialog
+    final homeCubit = cubit ?? context.read<HomeCubit>();
+    FollowingCubit? followingCubit;
+    UserProfileCubit? userProfileCubit;
+
+    try {
+      followingCubit = context.read<FollowingCubit>();
+    } catch (_) {
+      debugPrint('🚩 [POST_TILE] FollowingCubit not available in context');
+    }
+
+    try {
+      userProfileCubit = context.read<UserProfileCubit>();
+    } catch (_) {
+      debugPrint('🚩 [POST_TILE] UserProfileCubit not available in context');
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => const ReportConfirmationDialog(),
+    );
+
+    debugPrint('🚩 [POST_TILE] Dialog result: $confirmed');
+    if (confirmed != true) {
+      debugPrint('🚩 [POST_TILE] Report cancelled');
+      return;
+    }
+
+    debugPrint('🚩 [POST_TILE] Starting report process');
+
+    // Update main cubit
+    debugPrint('🚩 [POST_TILE] Calling reportPost on main cubit');
+    homeCubit.reportPost(post.id, currentUserId);
+
+    // Also update Following and UserProfile cubits if available
+    if (followingCubit != null) {
+      debugPrint('🚩 [POST_TILE] Updating FollowingCubit locally');
+      followingCubit.reportPostLocally(post.id, currentUserId);
+    }
+
+    if (userProfileCubit != null) {
+      debugPrint('🚩 [POST_TILE] Updating UserProfileCubit locally');
+      userProfileCubit.reportPostLocally(post.id, currentUserId);
+    }
+
+    debugPrint('🚩 [POST_TILE] Report process completed');
   }
 }
 
@@ -354,6 +400,10 @@ class _MeasuredNetworkImageState extends State<_MeasuredNetworkImage> {
   void didUpdateWidget(covariant _MeasuredNetworkImage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.url != widget.url) {
+      // Clean up old listener
+      if (_stream != null && _listener != null) {
+        _stream!.removeListener(_listener!);
+      }
       _aspectRatio = null;
       _provider = NetworkImage(widget.url);
       _resolveIntrinsicSize();
