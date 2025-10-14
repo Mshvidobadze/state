@@ -138,12 +138,20 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         final post = posts[index];
                         final currentUser = FirebaseAuth.instance.currentUser;
 
-                        return PostTile(
-                          post: post,
-                          currentUserId: currentUser?.uid ?? '',
-                          currentUserName: currentUser?.displayName ?? '',
-                          cubit: context.read<UserProfileCubit>(),
-                          // No onAuthorTap callback - author name won't be clickable
+                        return Column(
+                          children: [
+                            PostTile(
+                              post: post,
+                              currentUserId: currentUser?.uid ?? '',
+                              currentUserName: currentUser?.displayName ?? '',
+                              cubit: context.read<UserProfileCubit>(),
+                              // No onAuthorTap callback - author name won't be clickable
+                            ),
+                            Container(
+                              height: 1,
+                              color: const Color(0xFFE5E7EB),
+                            ),
+                          ],
                         );
                       }, childCount: posts.length),
                     ),

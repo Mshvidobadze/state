@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/constants/app_colors.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
@@ -324,22 +325,13 @@ class PostTile extends StatelessWidget {
   void _handleReport(BuildContext context) async {
     debugPrint('🚩 [POST_TILE] Opening report dialog for post ${post.id}');
 
-    // Capture cubit references BEFORE showing dialog
+    // Capture cubit references BEFORE showing dialog (avoid using exceptions for control flow)
     final homeCubit = cubit ?? context.read<HomeCubit>();
-    FollowingCubit? followingCubit;
-    UserProfileCubit? userProfileCubit;
-
-    try {
-      followingCubit = context.read<FollowingCubit>();
-    } catch (_) {
-      debugPrint('🚩 [POST_TILE] FollowingCubit not available in context');
-    }
-
-    try {
-      userProfileCubit = context.read<UserProfileCubit>();
-    } catch (_) {
-      debugPrint('🚩 [POST_TILE] UserProfileCubit not available in context');
-    }
+    final followingCubit = Provider.of<FollowingCubit?>(context, listen: false);
+    final userProfileCubit = Provider.of<UserProfileCubit?>(
+      context,
+      listen: false,
+    );
 
     final confirmed = await showDialog<bool>(
       context: context,
