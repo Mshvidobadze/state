@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,6 +9,8 @@ import 'package:state/service_locator.dart';
 import 'package:state/core/configs/assets/app_vectors.dart';
 import 'package:state/features/auth/bloc/auth_cubit.dart';
 import 'package:state/features/auth/bloc/auth_state.dart';
+import 'package:state/core/constants/quotes.dart';
+import 'dart:math';
 
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
@@ -89,11 +92,13 @@ class SignInScreen extends StatelessWidget {
 
                       const SizedBox(height: 32),
 
-                      // Plato quote - much smaller
+                      // Random quote - much smaller
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          'The punishment which the wise suffer who refuse to take part in the government, is to live under the government of worse men.',
+                          Quotes.signinQuotes[Random().nextInt(
+                            Quotes.signinQuotes.length,
+                          )],
                           style: TextStyle(
                             color: const Color(0xFF111418),
                             fontSize: 16,
@@ -104,31 +109,85 @@ class SignInScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Plato attribution
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 32),
-                        child: Text(
-                          '- Plato',
-                          style: TextStyle(
-                            color: const Color(0xFF637488),
-                            fontSize: 14,
-                            fontWeight: FontWeight.normal,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
+                      const SizedBox(height: 32),
 
-                      // Original SVG sign in button
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: GestureDetector(
-                          onTap:
-                              () =>
-                                  context.read<AuthCubit>().signInWithGoogle(),
-                          child: SvgPicture.asset(
-                            AppVectors.googleSignIn,
+                      // Apple sign-in (iOS only)
+                      if (Platform.isIOS)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: SizedBox(
                             width: 220,
                             height: 48,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF111418),
+                                elevation: 0,
+                                side: const BorderSide(
+                                  color: Color(0xFFE0E0E0),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              onPressed:
+                                  () =>
+                                      context
+                                          .read<AuthCubit>()
+                                          .signInWithApple(),
+                              icon: const Icon(
+                                Icons.apple,
+                                size: 20,
+                                color: Color(0xFF111418),
+                              ),
+                              label: const Text(
+                                'Sign in with Apple',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.015,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      if (Platform.isIOS) const SizedBox(height: 12),
+
+                      // Google sign in button (match Apple styling, use SVG icon)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: SizedBox(
+                          width: 220,
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF111418),
+                              elevation: 0,
+                              side: const BorderSide(color: Color(0xFFE0E0E0)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed:
+                                () =>
+                                    context
+                                        .read<AuthCubit>()
+                                        .signInWithGoogle(),
+                            icon: SvgPicture.asset(
+                              AppVectors.googleSignIn,
+                              width: 20,
+                              height: 20,
+                            ),
+                            label: const Text(
+                              'Sign in with Google',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.015,
+                              ),
+                            ),
                           ),
                         ),
                       ),

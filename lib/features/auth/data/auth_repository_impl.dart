@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:state/features/auth/domain/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -28,6 +32,46 @@ class AuthRepositoryImpl implements AuthRepository {
       idToken: googleAuth.idToken,
     );
     await _firebaseAuth.signInWithCredential(credential);
+  }
+
+  /// Generates a cryptographically secure random nonce (raw) and its SHA-256 hash.
+  (String raw, String sha256) _generateNoncePair([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final rand = Random.secure();
+    final raw =
+        List.generate(
+          length,
+          (_) => charset[rand.nextInt(charset.length)],
+        ).join();
+    final digest = crypto.sha256.convert(utf8.encode(raw)).toString();
+    return (raw, digest);
+  }
+
+  @override
+  Future<void> signInWithApple() async {
+    // Request Apple credential
+    final (rawNonce, hashedNonce) = _generateNoncePair();
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.fullName,
+          AppleIDAuthorizationScopes.email,
+        ],
+        nonce: hashedNonce,
+      );
+
+      final oauthCredential = OAuthProvider(
+        'apple.com',
+      ).credential(idToken: appleCredential.identityToken, rawNonce: rawNonce);
+
+      await _firebaseAuth.signInWithCredential(oauthCredential);
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        throw Exception('Sign in with Apple cancelled');
+      }
+      rethrow;
+    }
   }
 
   @override
