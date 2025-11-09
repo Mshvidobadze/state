@@ -28,7 +28,7 @@ class SplashScreen extends StatelessWidget {
             AppVectors.appLogo,
             width: 192,
             height: 192,
-            colorFilter: ColorFilter.mode(Color(0xFF800020), BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(Color(0xFF74182f), BlendMode.srcIn),
           ),
         ),
       ),

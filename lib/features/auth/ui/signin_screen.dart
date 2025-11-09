@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:state/core/services/navigation_service.dart';
 import 'package:state/core/services/deep_link_service.dart';
@@ -91,47 +92,27 @@ class SignInScreen extends StatelessWidget {
 
                           const SizedBox(height: 32),
 
-                          // Apple sign-in (iOS only)
+                          // Apple sign-in (iOS only) with availability check and official button
                           if (Platform.isIOS)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: SizedBox(
-                                width: 220,
-                                height: 48,
-                                child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: const Color(0xFF111418),
-                                    elevation: 0,
-                                    side: const BorderSide(
-                                      color: Color(0xFFE0E0E0),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                            FutureBuilder<bool>(
+                              future: SignInWithApple.isAvailable(),
+                              builder: (context, snapshot) {
+                                final available = snapshot.data == true;
+                                if (!available) return const SizedBox.shrink();
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: SizedBox(
+                                    width: 220,
+                                    height: 48,
+                                    child: SignInWithAppleButton(
+                                      style: SignInWithAppleButtonStyle.white,
+                                      onPressed: () => context.read<AuthCubit>().signInWithApple(),
                                     ),
                                   ),
-                                  onPressed:
-                                      () =>
-                                          context
-                                              .read<AuthCubit>()
-                                              .signInWithApple(),
-                                  icon: const Icon(
-                                    Icons.apple,
-                                    size: 20,
-                                    color: Color(0xFF111418),
-                                  ),
-                                  label: const Text(
-                                    'Sign in with Apple',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.015,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
 
                           if (Platform.isIOS) const SizedBox(height: 12),

@@ -68,7 +68,8 @@ class NotificationService {
     channelDescription: 'Main channel for State app notifications',
     importance: Importance.max,
     priority: Priority.high,
-    color: Color(0xFF008DDD), // Using skyBlue[110] equivalent
+    color: Color(0xFF74182f), // Brand color
+    icon: '@mipmap/ic_launcher', // App icon for notification
   );
 
   /// The default notification channel configuration for iOS/macOS devices. This specifies
@@ -228,7 +229,7 @@ class NotificationService {
   /// to be expanded in the future.
   Future<void> _initializeLocalNotifications() async {
     const androidInitializationSettings = AndroidInitializationSettings(
-      '@mipmap/ic_stat_name',
+      '@mipmap/ic_launcher', // Use app launcher icon as fallback
     );
     const iosInitializationSettings = DarwinInitializationSettings(
       requestAlertPermission: false,

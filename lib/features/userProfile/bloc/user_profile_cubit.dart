@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/userProfile/data/models/user_profile_model.dart';
@@ -11,12 +13,17 @@ import 'package:state/features/userProfile/bloc/user_profile_state.dart';
 /// - Loading user profile information
 /// - Loading user's posts
 /// - Managing loading states
+/// - Uploading user avatar
 class UserProfileCubit extends Cubit<UserProfileState> {
   final UserProfileRepository userProfileRepository;
   final FirebaseAuth firebaseAuth;
+  final FirebaseStorage firebaseStorage;
 
-  UserProfileCubit(this.userProfileRepository, this.firebaseAuth)
-    : super(UserProfileInitial());
+  UserProfileCubit(
+    this.userProfileRepository,
+    this.firebaseAuth,
+    this.firebaseStorage,
+  ) : super(UserProfileInitial());
 
   /// Load user profile and posts
   Future<void> loadUserProfile(String userId) async {
@@ -102,5 +109,31 @@ class UserProfileCubit extends Cubit<UserProfileState> {
         }).toList();
 
     emit(currentState.copyWith(posts: updatedPosts));
+  }
+
+  /// Upload user avatar to Firebase Storage and update Firestore + FirebaseAuth
+  Future<void> uploadAvatar(File imageFile, String userId) async {
+    try {
+      // Upload image to Firebase Storage
+      final storageRef = firebaseStorage.ref().child('user_avatars/$userId.jpg');
+      final uploadTask = storageRef.putFile(imageFile);
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      // Update Firestore
+      await userProfileRepository.updateUserAvatar(userId, downloadUrl);
+
+      // Update FirebaseAuth profile
+      final user = firebaseAuth.currentUser;
+      if (user != null) {
+        await user.updatePhotoURL(downloadUrl);
+        await user.reload();
+      }
+
+      // Reload profile to reflect changes
+      await loadUserProfile(userId);
+    } catch (e) {
+      emit(UserProfileError('Failed to upload avatar: ${e.toString()}'));
+    }
   }
 }

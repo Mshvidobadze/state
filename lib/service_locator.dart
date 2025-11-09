@@ -119,7 +119,11 @@ Future<void> initInjections() async {
     () => UserProfileRepositoryImpl(firestore: sl()),
   );
   sl.registerFactory(
-    () => UserProfileCubit(sl<UserProfileRepository>(), sl<FirebaseAuth>()),
+    () => UserProfileCubit(
+      sl<UserProfileRepository>(),
+      sl<FirebaseAuth>(),
+      sl<FirebaseStorage>(),
+    ),
   );
 
   // Search
