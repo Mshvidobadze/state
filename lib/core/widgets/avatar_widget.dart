@@ -50,31 +50,31 @@ class AvatarWidget extends StatelessWidget {
     } else if (imageUrl != null) {
       // Show network image
       avatarContent = Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: defaultBackgroundColor,
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: defaultBackgroundColor,
           image: DecorationImage(
-            image: NetworkImage(imageUrl!),
-            fit: BoxFit.cover,
-            onError: (exception, stackTrace) {
-              // This will be handled by the errorBuilder in Image.network
-            },
+                  image: NetworkImage(imageUrl!),
+                  fit: BoxFit.cover,
+                  onError: (exception, stackTrace) {
+                    // This will be handled by the errorBuilder in Image.network
+                  },
           ),
-        ),
+      ),
         child: ClipOval(
-          child: Image.network(
-            imageUrl!,
-            fit: BoxFit.cover,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return _buildLogoFallback();
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return _buildLogoFallback();
-            },
-          ),
+                child: Image.network(
+                  imageUrl!,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return _buildLogoFallback();
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildLogoFallback();
+                  },
+                ),
         ),
       );
     } else {
@@ -83,7 +83,7 @@ class AvatarWidget extends StatelessWidget {
         width: size,
         height: size,
         child: _buildLogoFallback(),
-      );
+    );
     }
 
     if (onTap != null) {

@@ -51,6 +51,6 @@ flutter_icons:
   android: true
   ios: true
   image_path: "assets/images/logo.png"
-  adaptive_icon_background: "#74182f"  # White background for Android adaptive icons
-  adaptive_icon_foreground: "assets/images/logo.png"  # Your logo as foreground
+  adaptive_icon_background: "#74182f"
+  adaptive_icon_foreground: "assets/images/logo.png"
   remove_alpha_ios: true

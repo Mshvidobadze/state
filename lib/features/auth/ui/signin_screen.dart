@@ -104,11 +104,15 @@ class SignInScreen extends StatelessWidget {
                                     horizontal: 16,
                                   ),
                                   child: SizedBox(
-                                    width: 220,
+                                    width: double.infinity,
                                     height: 48,
                                     child: SignInWithAppleButton(
                                       style: SignInWithAppleButtonStyle.white,
-                                      onPressed: () => context.read<AuthCubit>().signInWithApple(),
+                                      onPressed:
+                                          () =>
+                                              context
+                                                  .read<AuthCubit>()
+                                                  .signInWithApple(),
                                     ),
                                   ),
                                 );
