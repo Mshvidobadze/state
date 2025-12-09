@@ -13,6 +13,7 @@ import 'package:state/features/postDetails/ui/widgets/post_details_skeleton.dart
 import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
 import 'package:state/features/home/ui/widgets/report_confirmation_dialog.dart';
 import 'package:state/service_locator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostDetailsScreen extends StatefulWidget {
   final String postId;
@@ -28,6 +29,36 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   String? _replyingToCommentId;
   String? _replyingToUserName;
   final Set<String> _collapsedCommentIds = {};
+
+  Future<bool> _isInteractionBlockedWith(String otherUserId) async {
+    final me = context.read<PostDetailsCubit>().currentUserId;
+    if (me == null || otherUserId.isEmpty) return false;
+    try {
+      final docs = await Future.wait([
+        FirebaseFirestore.instance.collection('users').doc(me).get(),
+        FirebaseFirestore.instance.collection('users').doc(otherUserId).get(),
+      ]);
+      final a = (docs[0].data()?['blockedUsers'] as List?) ?? [];
+      final b = (docs[1].data()?['blockedUsers'] as List?) ?? [];
+      final aBlocked = a.map((e) => e.toString()).toSet();
+      final bBlocked = b.map((e) => e.toString()).toSet();
+      return aBlocked.contains(otherUserId) || bBlocked.contains(me);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<Set<String>> _getMyBlockedUsers() async {
+    final me = context.read<PostDetailsCubit>().currentUserId;
+    if (me == null) return {};
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(me).get();
+      final list = (doc.data()?['blockedUsers'] as List?) ?? [];
+      return list.map((e) => e.toString()).toSet();
+    } catch (_) {
+      return {};
+    }
+  }
 
   @override
   void initState() {
@@ -166,7 +197,17 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
             final hasMoreComments = state.hasMoreComments;
             final viewingSpecificComment = state.viewingSpecificComment;
 
-            return Column(
+            return FutureBuilder<List<dynamic>>(
+              future: Future.wait([
+                _isInteractionBlockedWith(post.authorId),
+                _getMyBlockedUsers(),
+              ]),
+              builder: (context, snapshot) {
+                final blockedWithAuthor =
+                    snapshot.hasData ? (snapshot.data![0] as bool) : false;
+                final myBlockedSet =
+                    snapshot.hasData ? (snapshot.data![1] as Set<String>) : <String>{};
+                return Column(
               children: [
                 Expanded(
                   child: RefreshIndicator(
@@ -298,6 +339,8 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                                         comment.userId,
                                       );
                                     },
+                                    canReply: !blockedWithAuthor &&
+                                        !myBlockedSet.contains(comment.userId),
                                   ),
                                 );
                               }, childCount: comments.length),
@@ -320,6 +363,9 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                 ),
                 // Comment Input
                 CommentInput(
+                  enabled: !blockedWithAuthor,
+                  disabledHint:
+                      'You cannot comment on this post due to blocking settings.',
                   onSubmit: (content, imageFile) {
                     context.read<PostDetailsCubit>().addComment(
                       postId: post.id,
@@ -334,6 +380,8 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                   onCancelReply: _cancelReply,
                 ),
               ],
+            );
+              },
             );
           }
 

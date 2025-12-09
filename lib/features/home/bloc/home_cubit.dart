@@ -8,6 +8,7 @@ import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/home/utils/advertisement_inserter.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/constants/regions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository homeRepository;
@@ -342,6 +343,44 @@ class HomeCubit extends Cubit<HomeState> {
     String? parentCommentId,
   }) async {
     try {
+      // Interaction-only blocking enforcement
+      String? targetUserId;
+      // Try to find post author from current state
+      if (state is HomeLoaded) {
+        final currentState = state as HomeLoaded;
+        PostModel? found;
+        for (final p in currentState.posts) {
+          if (p.id == postId) {
+            found = p;
+            break;
+          }
+        }
+        if (found != null) {
+          targetUserId = found.authorId;
+        }
+      }
+      // If replying to a comment, get the comment's author
+      if (parentCommentId != null && parentCommentId.isNotEmpty) {
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('posts')
+              .doc(postId)
+              .collection('comments')
+              .doc(parentCommentId)
+              .get();
+          final data = doc.data();
+          final uid = data?['userId'] as String?;
+          if (uid != null && uid.isNotEmpty) {
+            targetUserId = uid;
+          }
+        } catch (_) {}
+      }
+      if (targetUserId != null && targetUserId != userId) {
+        final isBlocked = await _isInteractionBlocked(userId, targetUserId!);
+        if (isBlocked) {
+          return;
+        }
+      }
       await homeRepository.addComment(
         postId: postId,
         userId: userId,
@@ -352,6 +391,22 @@ class HomeCubit extends Cubit<HomeState> {
       // Optionally, you can reload posts or comments here if needed
     } catch (e) {
       emit(HomeError(e.toString()));
+    }
+  }
+
+  Future<bool> _isInteractionBlocked(String me, String other) async {
+    try {
+      final docs = await Future.wait([
+        FirebaseFirestore.instance.collection('users').doc(me).get(),
+        FirebaseFirestore.instance.collection('users').doc(other).get(),
+      ]);
+      final a = (docs[0].data()?['blockedUsers'] as List?) ?? [];
+      final b = (docs[1].data()?['blockedUsers'] as List?) ?? [];
+      final aBlocked = a.map((e) => e.toString()).toSet();
+      final bBlocked = b.map((e) => e.toString()).toSet();
+      return aBlocked.contains(other) || bBlocked.contains(me);
+    } catch (_) {
+      return false;
     }
   }
 }

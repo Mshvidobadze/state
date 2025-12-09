@@ -141,6 +141,7 @@ class AuthRepositoryImpl implements AuthRepository {
           'phoneNumber': phoneNumber,
           'hasAcceptedTerms': false,
           'createdAt': FieldValue.serverTimestamp(),
+          'blockedUsers': <String>[],
         });
       }
     }

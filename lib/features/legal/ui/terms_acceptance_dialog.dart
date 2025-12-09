@@ -48,8 +48,6 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
               ),
             ),
             SizedBox(height: 8),
-            _Bullet('Hate speech'),
-            _Bullet('Harassment or bullying'),
             _Bullet('Illegal content or activity'),
             _Bullet('Nudity or sexually explicit content'),
             _Bullet('Political misinformation'),
@@ -72,10 +70,7 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'I agree to the Terms of Service and community guidelines.',
-                    style: TextStyle(
-                      color: Color(0xFF111418),
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Color(0xFF111418), fontSize: 13),
                   ),
                 ),
               ),
@@ -86,7 +81,8 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             TextButton(
-              onPressed: () => _launch('https://stateapp.net/terms-and-conditions'),
+              onPressed:
+                  () => _launch('https://stateapp.net/terms-and-conditions'),
               child: const Text(
                 'View Terms',
                 style: TextStyle(color: Color(0xFF74182f)),
@@ -106,7 +102,8 @@ class _TermsAcceptanceDialogState extends State<TermsAcceptanceDialog> {
           children: [
             Expanded(
               child: ElevatedButton(
-                onPressed: _checked ? () => Navigator.of(context).pop(true) : null,
+                onPressed:
+                    _checked ? () => Navigator.of(context).pop(true) : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF74182f),
                   foregroundColor: Colors.white,
@@ -142,7 +139,10 @@ class _Bullet extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('•  ', style: TextStyle(fontSize: 16, color: Color(0xFF111418))),
+          const Text(
+            '•  ',
+            style: TextStyle(fontSize: 16, color: Color(0xFF111418)),
+          ),
           Expanded(
             child: Text(
               text,
@@ -158,5 +158,3 @@ class _Bullet extends StatelessWidget {
     );
   }
 }
-
-

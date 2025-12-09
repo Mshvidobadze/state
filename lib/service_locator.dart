@@ -35,6 +35,7 @@ import 'package:state/core/services/notification_service.dart';
 import 'package:state/core/services/fcm_token_service.dart';
 import 'package:state/core/services/share_service.dart';
 import 'package:state/core/services/deep_link_service.dart';
+import 'package:state/core/services/block_service.dart';
 
 final sl = GetIt.instance;
 
@@ -57,6 +58,8 @@ Future<void> initInjections() async {
 
   // Deep Link Service
   sl.registerLazySingleton(() => DeepLinkService());
+  // Block Service
+  sl.registerLazySingleton(() => BlockService(firestore: sl(), auth: sl()));
 
   // Router
   sl.registerLazySingleton(() => AppRouter.router);

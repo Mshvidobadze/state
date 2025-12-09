@@ -166,6 +166,40 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
         throw Exception('User must be logged in to comment');
       }
 
+      // Interaction-only blocking enforcement
+      final String targetUserId;
+      if (parentCommentId == null) {
+        targetUserId = currentState.post.authorId;
+      } else {
+        // Try to find the parent comment locally first
+        String? parentAuthor;
+        void findAuthor(List<CommentModel> list) {
+          for (final c in list) {
+            if (c.id == parentCommentId) {
+              parentAuthor = c.userId;
+              return;
+            }
+            if (c.replies.isNotEmpty) {
+              findAuthor(c.replies);
+              if (parentAuthor != null) return;
+            }
+          }
+        }
+        findAuthor(currentState.comments);
+        if (parentAuthor == null) {
+          final parent = await _repository.fetchCommentById(postId, parentCommentId);
+          parentAuthor = parent?.userId;
+        }
+        targetUserId = parentAuthor ?? currentState.post.authorId;
+      }
+      // Skip if replying to self
+      // Check both directions
+      final isBlocked = await _isInteractionBlocked(currentUser.uid, targetUserId);
+      if (isBlocked) {
+        // Deny silently, keep UI stable
+        return;
+      }
+
       // Upload image if provided (this shows PostDetailsCommenting state)
       String? imageUrl;
       if (imageFile != null) {
@@ -252,6 +286,22 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
     } catch (e) {
       // Revert to loaded state on error, don't show error screen
       emit(currentState);
+    }
+  }
+
+  Future<bool> _isInteractionBlocked(String currentUserId, String targetUserId) async {
+    try {
+      final docs = await Future.wait([
+        FirebaseFirestore.instance.collection('users').doc(currentUserId).get(),
+        FirebaseFirestore.instance.collection('users').doc(targetUserId).get(),
+      ]);
+      final a = (docs[0].data()?['blockedUsers'] as List?) ?? [];
+      final b = (docs[1].data()?['blockedUsers'] as List?) ?? [];
+      final aBlocked = a.map((e) => e.toString()).toSet();
+      final bBlocked = b.map((e) => e.toString()).toSet();
+      return aBlocked.contains(targetUserId) || bBlocked.contains(currentUserId);
+    } catch (_) {
+      return false;
     }
   }
 
