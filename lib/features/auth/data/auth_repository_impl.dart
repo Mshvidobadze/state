@@ -139,6 +139,8 @@ class AuthRepositoryImpl implements AuthRepository {
           'email': email,
           'photoUrl': photoUrl,
           'phoneNumber': phoneNumber,
+          'hasAcceptedTerms': false,
+          'createdAt': FieldValue.serverTimestamp(),
         });
       }
     }

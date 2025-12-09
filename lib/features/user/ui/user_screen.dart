@@ -14,6 +14,7 @@ import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:state/features/userProfile/bloc/user_profile_state.dart';
 import 'package:state/features/home/ui/post_tile.dart';
 import 'package:state/features/postCreation/ui/widgets/image_source_selector.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -24,6 +25,26 @@ class UserScreen extends StatefulWidget {
 
 class _UserScreenState extends State<UserScreen> {
   File? _localAvatarFile; // Local file for optimistic UI
+
+  Future<void> _launchUrl(String url, BuildContext context) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    } else {
+      // Fallback: try to launch with external application mode
+      try {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        // If both fail, show an error message
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open link. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -220,6 +241,43 @@ class _UserScreenState extends State<UserScreen> {
                               textAlign: TextAlign.center,
                             ),
                           ],
+                        ),
+                      ),
+                    ),
+
+                    // Account actions / links
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: TextButton.icon(
+                            onPressed: () => _launchUrl(
+                              'https://stateapp.net/delete-account.html',
+                              context,
+                            ),
+                            icon: const Icon(
+                              Icons.delete_forever,
+                              color: Color(0xFF74182f),
+                              size: 18,
+                            ),
+                            label: const Text(
+                              'Delete Account',
+                              style: TextStyle(
+                                color: Color(0xFF74182f),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                              minimumSize: const Size(0, 0),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
                         ),
                       ),
                     ),
