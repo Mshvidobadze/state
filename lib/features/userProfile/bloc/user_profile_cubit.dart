@@ -23,9 +23,9 @@ class UserProfileCubit extends Cubit<UserProfileState> {
 
   UserProfileCubit(
     this.userProfileRepository,
-    this.firebaseAuth,
     this.firebaseStorage,
     this.homeRepository,
+    this.firebaseAuth,
   ) : super(UserProfileInitial());
 
   /// Load user profile and posts
@@ -137,6 +137,9 @@ class UserProfileCubit extends Cubit<UserProfileState> {
       await loadUserProfile(userId);
     } catch (e) {
       emit(UserProfileError('Failed to upload avatar: ${e.toString()}'));
+    }
+  }
+
   /// Report a post and update UI optimistically
   Future<void> reportPost(String postId, String userId) async {
     if (state is! UserProfileLoaded) return;
