@@ -8,6 +8,7 @@ import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:state/features/userProfile/bloc/user_profile_state.dart';
 import 'package:state/features/userProfile/data/models/user_profile_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// User Profile Screen displaying user information and their posts
 ///
@@ -177,29 +178,141 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 }
 
 /// Profile header widget showing user information
-class _ProfileHeader extends StatelessWidget {
+class _ProfileHeader extends StatefulWidget {
   final UserProfileModel userProfile;
 
   const _ProfileHeader({required this.userProfile});
 
   @override
+  State<_ProfileHeader> createState() => _ProfileHeaderState();
+}
+
+class _ProfileHeaderState extends State<_ProfileHeader> {
+  bool _loading = true;
+  bool _isBlocked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBlocked();
+  }
+
+  Future<void> _loadBlocked() async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(me.uid).get();
+      final list = (doc.data()?['blockedUsers'] as List?) ?? [];
+      setState(() {
+        _isBlocked = list.map((e) => e.toString()).contains(widget.userProfile.id);
+        _loading = false;
+      });
+    } catch (_) {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _toggleBlock() async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null) return;
+    if (!_isBlocked) {
+      // Show info/confirmation dialog before blocking
+      final confirmed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text(
+            'Block User?',
+            style: GoogleFonts.beVietnamPro(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Blocking limits interactions only:',
+                style: GoogleFonts.beVietnamPro(fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              _Bullet('You cannot comment on each other’s posts'),
+              _Bullet('You cannot reply to each other’s comments'),
+              const SizedBox(height: 8),
+              Text(
+                'You will still see each other’s public posts in global feeds.',
+                style: GoogleFonts.beVietnamPro(fontSize: 13, color: Colors.black54),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.beVietnamPro(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(
+                'Block',
+                style: GoogleFonts.beVietnamPro(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    setState(() => _loading = true);
+    try {
+      if (_isBlocked) {
+        await FirebaseFirestore.instance.collection('users').doc(me.uid).set({
+          'blockedUsers': FieldValue.arrayRemove([widget.userProfile.id]),
+        }, SetOptions(merge: true));
+        setState(() => _isBlocked = false);
+      } else {
+        await FirebaseFirestore.instance.collection('users').doc(me.uid).set({
+          'blockedUsers': FieldValue.arrayUnion([widget.userProfile.id]),
+        }, SetOptions(merge: true));
+        setState(() => _isBlocked = true);
+      }
+    } catch (_) {
+      // ignore errors for now
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final me = FirebaseAuth.instance.currentUser;
+    final isSelf = me?.uid == widget.userProfile.id;
     return Container(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
           // Avatar - no tap functionality
           Hero(
-            tag: 'user-avatar-${userProfile.id}',
+            tag: 'user-avatar-${widget.userProfile.id}',
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.grey[300]!, width: 2),
               ),
               child: AvatarWidget(
-                imageUrl: userProfile.photoUrl,
+                imageUrl: widget.userProfile.photoUrl,
                 size: 120,
-                displayName: userProfile.displayName,
+                displayName: widget.userProfile.displayName,
               ),
             ),
           ),
@@ -208,13 +321,59 @@ class _ProfileHeader extends StatelessWidget {
 
           // Display name
           Text(
-            userProfile.displayName,
+            widget.userProfile.displayName,
             style: GoogleFonts.beVietnamPro(
               fontSize: 24,
               fontWeight: FontWeight.w600,
               color: Colors.black,
             ),
             textAlign: TextAlign.center,
+          ),
+
+          if (!isSelf) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 40,
+              child: OutlinedButton(
+                onPressed: _loading ? null : _toggleBlock,
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: _isBlocked ? Colors.red : const Color(0xFF74182f),
+                  ),
+                ),
+                child: Text(
+                  _isBlocked ? 'Unblock User' : 'Block User',
+                  style: GoogleFonts.beVietnamPro(
+                    color: _isBlocked ? Colors.red : const Color(0xFF74182f),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Bullet extends StatelessWidget {
+  final String text;
+  const _Bullet(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(fontSize: 14)),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.beVietnamPro(fontSize: 14),
+            ),
           ),
         ],
       ),

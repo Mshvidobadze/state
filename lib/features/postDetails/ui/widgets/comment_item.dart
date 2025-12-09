@@ -16,6 +16,7 @@ class CommentItem extends StatelessWidget {
   final Set<String> collapsedCommentIds;
   final double indentLevel;
   final VoidCallback? onAuthorTap;
+  final bool canReply;
 
   const CommentItem({
     super.key,
@@ -28,6 +29,7 @@ class CommentItem extends StatelessWidget {
     this.collapsedCommentIds = const {},
     this.indentLevel = 0,
     this.onAuthorTap,
+    this.canReply = true,
   });
 
   @override
@@ -205,7 +207,7 @@ class CommentItem extends StatelessWidget {
                     const SizedBox(width: 12),
                     // Reply Button
                     TextButton(
-                      onPressed: () => onReply(comment.id),
+                      onPressed: canReply ? () => onReply(comment.id) : null,
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(0, 30),
@@ -214,7 +216,7 @@ class CommentItem extends StatelessWidget {
                       child: Text(
                         'Reply',
                         style: GoogleFonts.beVietnamPro(
-                          color: subtleColor,
+                          color: canReply ? subtleColor : Colors.grey,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -239,6 +241,7 @@ class CommentItem extends StatelessWidget {
               collapsedCommentIds: collapsedCommentIds,
               indentLevel: indentLevel + 1,
               onAuthorTap: onAuthorTap,
+              canReply: canReply,
             ),
           ),
       ],

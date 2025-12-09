@@ -8,12 +8,16 @@ class CommentInput extends StatefulWidget {
   final Function(String content, File? image) onSubmit;
   final String? replyingTo;
   final VoidCallback? onCancelReply;
+  final bool enabled;
+  final String? disabledHint;
 
   const CommentInput({
     super.key,
     required this.onSubmit,
     this.replyingTo,
     this.onCancelReply,
+    this.enabled = true,
+    this.disabledHint,
   });
 
   @override
@@ -165,13 +169,14 @@ class _CommentInputState extends State<CommentInput> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.image),
-                  onPressed: _pickImage,
+                  onPressed: widget.enabled ? _pickImage : null,
                   color: hintColor,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    enabled: widget.enabled,
                     onChanged: (text) {
                       setState(
                         () =>
@@ -182,7 +187,10 @@ class _CommentInputState extends State<CommentInput> {
                     },
                     style: GoogleFonts.beVietnamPro(fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: 'Add a comment...',
+                      hintText:
+                          widget.enabled
+                              ? 'Add a comment...'
+                              : (widget.disabledHint ?? 'You cannot comment here'),
                       hintStyle: GoogleFonts.beVietnamPro(
                         color: hintColor,
                         fontSize: 14,

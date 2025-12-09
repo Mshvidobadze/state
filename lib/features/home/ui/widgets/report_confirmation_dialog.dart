@@ -56,6 +56,14 @@ class ReportConfirmationDialog extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
+            'Moderation actions are performed manually within 24 hours.',
+            style: GoogleFonts.beVietnamPro(
+              fontSize: 12,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
             'Do you want to report this post?',
             style: GoogleFonts.beVietnamPro(
               fontSize: 14,
