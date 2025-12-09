@@ -57,6 +57,7 @@ class PostCreationCubit extends Cubit<PostCreationState> {
         createdAt: DateTime.now(),
         followers: [],
         upvoters: [],
+        reporters: [],
       );
       await homeRepository.createPost(post);
       emit(PostCreationSuccess());

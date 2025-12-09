@@ -14,7 +14,9 @@ import 'package:state/features/following/data/repository/following_repository_im
 import 'package:state/features/following/domain/following_repository.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
 import 'package:state/features/home/data/repository/home_repository_impl.dart';
+import 'package:state/features/home/data/repository/advertisement_repository_impl.dart';
 import 'package:state/features/home/domain/home_repository.dart';
+import 'package:state/features/home/domain/advertisement_repository.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postDetails/bloc/post_details_cubit.dart';
 import 'package:state/features/postDetails/data/repository/post_details_repository_impl.dart';
@@ -79,7 +81,16 @@ Future<void> initInjections() async {
   sl.registerLazySingleton<HomeRepository>(
     () => HomeRepositoryImpl(firestore: sl()),
   );
-  sl.registerFactory(() => HomeCubit(sl<HomeRepository>(), sl<FirebaseAuth>()));
+  sl.registerLazySingleton<AdvertisementRepository>(
+    () => AdvertisementRepositoryImpl(firestore: sl()),
+  );
+  sl.registerFactory(
+    () => HomeCubit(
+      sl<HomeRepository>(),
+      sl<AdvertisementRepository>(),
+      sl<FirebaseAuth>(),
+    ),
+  );
 
   // Post Creation
   sl.registerFactory(
@@ -121,8 +132,9 @@ Future<void> initInjections() async {
   sl.registerFactory(
     () => UserProfileCubit(
       sl<UserProfileRepository>(),
-      sl<FirebaseAuth>(),
       sl<FirebaseStorage>(),
+      sl<HomeRepository>(),
+      sl<FirebaseAuth>(),
     ),
   );
 

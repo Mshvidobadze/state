@@ -240,14 +240,17 @@ class HomeScreenState extends State<HomeScreen> {
                                     post: post,
                                     currentUserId: state.currentUserId,
                                     currentUserName: state.currentUserName,
-                                    onAuthorTap: () {
-                                      final navigationService =
-                                          sl<INavigationService>();
-                                      navigationService.goToUserProfile(
-                                        context,
-                                        post.authorId,
-                                      );
-                                    },
+                                    onAuthorTap:
+                                        post.authorId.isNotEmpty
+                                            ? () {
+                                              final navigationService =
+                                                  sl<INavigationService>();
+                                              navigationService.goToUserProfile(
+                                                context,
+                                                post.authorId,
+                                              );
+                                            }
+                                            : null, // Don't navigate for ads
                                   ),
                                   Container(
                                     height: 1,
