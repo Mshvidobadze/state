@@ -5,7 +5,7 @@ class Quotes {
     '"If even then, in an independent country, you stop fighting for freedom, you will lose that freedom — both you and the country." — Merab Kostava',
     '“A nation may lose its liberties in a day and not miss them in a century.” — Montesquieu',
     '“What belongs to others is my duty, what is mine is my right.” — Ilia Chavchavadze',
-    '“The inviolability of private property … is recognized as the cornerstone of the future, and everything that limits and suffocates this inviolability is hardly tolerated by law.” — Ilia Chavchavadze',
+    '“The inviolability of private property is recognized as the cornerstone of the future, and everything that limits and suffocates this inviolability is hardly tolerated by law.” — Ilia Chavchavadze',
     '“True conservatism defends only that old which, in one’s sincere judgement, is still useful and necessary to life. True liberalism likewise rejects only that old which its time has consumed, which is no longer useful, and which blocks progress.” — Ilia Chavchavadze',
     '“Ignorance alone is not good, nor is viewing everything only through books.” — Ilia Chavchavadze',
     '“We can disagree and still love each other — unless your disagreement is rooted in my oppression.” — James Baldwin',

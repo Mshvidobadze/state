@@ -17,6 +17,9 @@ import 'package:state/core/services/preferences_service.dart';
 import 'package:state/core/services/navigation_service.dart';
 import 'package:state/core/services/deep_link_service.dart';
 import 'package:state/service_locator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:state/features/legal/ui/terms_acceptance_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +31,7 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   late FilterModel _currentFilter;
   final ScrollController _scrollController = ScrollController();
+  bool _termsChecked = false;
 
   @override
   void initState() {
@@ -41,6 +45,7 @@ class HomeScreenState extends State<HomeScreen> {
         '🏠 [HOME SCREEN] PostFrameCallback - checking for pending deep links',
       );
       sl<DeepLinkService>().handlePendingDeepLink();
+      _checkTermsAndPrompt();
     });
   }
 
@@ -103,6 +108,41 @@ class HomeScreenState extends State<HomeScreen> {
     await PreferencesService.saveRegion(newFilter.region);
 
     context.read<HomeCubit>().loadPosts(filter: newFilter);
+  }
+
+  Future<void> _checkTermsAndPrompt() async {
+    if (_termsChecked) return;
+    _termsChecked = true;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final hasAccepted = (doc.data()?['hasAcceptedTerms'] as bool?) ?? false;
+      if (!mounted) return;
+      if (!hasAccepted) {
+        final accepted = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const TermsAcceptanceDialog(),
+        );
+        if (!mounted) return;
+        if (accepted == true) {
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
+            {
+              'hasAcceptedTerms': true,
+              'acceptedTermsVersion': 1,
+              'acceptedAt': FieldValue.serverTimestamp(),
+            },
+            SetOptions(merge: true),
+          );
+        } else {
+          // If declined, sign out
+          context.read<AuthCubit>().signOut();
+        }
+      }
+    } catch (_) {
+      // Fail silently
+    }
   }
 
   @override

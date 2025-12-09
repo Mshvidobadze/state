@@ -308,7 +308,7 @@ class PostTile extends StatelessWidget {
 
   void _handleShare(BuildContext context) {
     final shareService = sl<ShareService>();
-    shareService.sharePost(post);
+    shareService.sharePost(context, post);
   }
 
   void _showPostOptions(BuildContext context) {

@@ -155,7 +155,7 @@ class PostContentSection extends StatelessWidget {
                   icon: Icons.share_outlined,
                   label: '',
                   isActive: false,
-                  onPressed: () => _handleShare(),
+                  onPressed: () => _handleShare(context),
                   horizontalPadding: 8,
                 ),
               ],
@@ -202,9 +202,9 @@ class PostContentSection extends StatelessWidget {
     );
   }
 
-  void _handleShare() {
+  void _handleShare(BuildContext context) {
     final shareService = sl<ShareService>();
-    shareService.sharePost(post);
+    shareService.sharePost(context, post);
   }
 
   String _getTimeAgo(DateTime dateTime) {

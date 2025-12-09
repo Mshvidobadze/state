@@ -61,11 +61,58 @@ class AuthRepositoryImpl implements AuthRepository {
         nonce: hashedNonce,
       );
 
+      // Identity token must be present to sign in with Firebase
+      if (appleCredential.identityToken == null ||
+          (appleCredential.identityToken?.isEmpty ?? true)) {
+        throw Exception(
+          'Apple did not return an identity token. On Simulator, ensure you are signed into an Apple ID (Settings → Apple ID) or enable Developer → Sign in with Apple testing. Otherwise test on a real device.',
+        );
+      }
+
       final oauthCredential = OAuthProvider(
         'apple.com',
-      ).credential(idToken: appleCredential.identityToken, rawNonce: rawNonce);
+      ).credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode, // Required by Firebase for Apple OAuth
+      );
 
       await _firebaseAuth.signInWithCredential(oauthCredential);
+
+      // After successful sign-in, update display name if provided on first sign-in
+      final String? givenName = appleCredential.givenName;
+      final String? familyName = appleCredential.familyName;
+      final String? email = appleCredential.email;
+      final String? appleUserId = appleCredential.userIdentifier;
+
+      final user = _firebaseAuth.currentUser;
+      if (user != null) {
+        String? fullName;
+        if ((givenName != null && givenName.isNotEmpty) ||
+            (familyName != null && familyName.isNotEmpty)) {
+          fullName = [givenName, familyName].where((e) => (e ?? '').isNotEmpty).join(' ').trim();
+        }
+
+        // Update FirebaseAuth profile display name if we have one
+        if (fullName != null && fullName.isNotEmpty) {
+          await user.updateDisplayName(fullName);
+        }
+
+        // Upsert Apple-specific fields in Firestore (merge)
+        final Map<String, dynamic> update = {};
+        if (appleUserId != null && appleUserId.isNotEmpty) {
+          update['appleUserId'] = appleUserId;
+        }
+        if (fullName != null && fullName.isNotEmpty) {
+          update['displayName'] = fullName;
+        }
+        if (email != null && email.isNotEmpty) {
+          update['email'] = email;
+        }
+        if (update.isNotEmpty) {
+          await _firestore.collection('users').doc(user.uid).set(update, SetOptions(merge: true));
+        }
+      }
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
         throw Exception('Sign in with Apple cancelled');
@@ -92,6 +139,8 @@ class AuthRepositoryImpl implements AuthRepository {
           'email': email,
           'photoUrl': photoUrl,
           'phoneNumber': phoneNumber,
+          'hasAcceptedTerms': false,
+          'createdAt': FieldValue.serverTimestamp(),
         });
       }
     }
@@ -106,5 +155,26 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<bool> isSignedIn() async {
     return _firebaseAuth.currentUser != null;
+  }
+
+  @override
+  Future<bool> isAppleCredentialRevoked() async {
+    try {
+      // Only applicable if user is signed in and we have an Apple user identifier stored
+      final user = _firebaseAuth.currentUser;
+      if (user == null) return false;
+
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      final appleUserId = userDoc.data()?['appleUserId'] as String?;
+      if (appleUserId == null || appleUserId.isEmpty) {
+        return false;
+      }
+
+      final state = await SignInWithApple.getCredentialState(appleUserId);
+      return state == CredentialState.revoked;
+    } catch (_) {
+      // If API is unavailable or throws, assume not revoked to avoid false sign-outs
+      return false;
+    }
   }
 }

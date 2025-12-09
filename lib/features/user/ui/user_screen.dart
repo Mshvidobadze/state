@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/core/widgets/error_state.dart';
 import 'package:state/core/services/navigation_service.dart';
@@ -11,6 +13,8 @@ import 'package:state/features/auth/bloc/auth_state.dart';
 import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:state/features/userProfile/bloc/user_profile_state.dart';
 import 'package:state/features/home/ui/post_tile.dart';
+import 'package:state/features/postCreation/ui/widgets/image_source_selector.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -20,6 +24,28 @@ class UserScreen extends StatefulWidget {
 }
 
 class _UserScreenState extends State<UserScreen> {
+  File? _localAvatarFile; // Local file for optimistic UI
+
+  Future<void> _launchUrl(String url, BuildContext context) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    } else {
+      // Fallback: try to launch with external application mode
+      try {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        // If both fail, show an error message
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open link. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -27,6 +53,68 @@ class _UserScreenState extends State<UserScreen> {
     if (user != null) {
       // Load current user's profile and posts
       context.read<UserProfileCubit>().loadUserProfile(user.uid);
+    }
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final result = await ImageSourceSelector.show(context);
+    if (result != null && mounted) {
+      final picker = ImagePicker();
+      XFile? image;
+
+      if (result == true) {
+        // Camera
+        image = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 80,
+          maxWidth: 512,
+          maxHeight: 512,
+        );
+      } else if (result == false) {
+        // Gallery
+        image = await picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 80,
+          maxWidth: 512,
+          maxHeight: 512,
+        );
+      }
+
+      if (image != null && mounted) {
+        final imageFile = File(image.path);
+        
+        // Immediately show local image (optimistic UI)
+        setState(() {
+          _localAvatarFile = imageFile;
+        });
+
+        // Upload in background
+        context.read<UserProfileCubit>().uploadAvatar(imageFile, user.uid).then((_) async {
+          // After upload completes, reload FirebaseAuth and clear local file
+          await user.reload();
+          if (mounted) {
+            setState(() {
+              _localAvatarFile = null; // Now use network URL
+            });
+          }
+        }).catchError((error) {
+          // On error, revert to original
+          if (mounted) {
+            setState(() {
+              _localAvatarFile = null;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to upload avatar: $error'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        });
+      }
     }
   }
 
@@ -88,14 +176,42 @@ class _UserScreenState extends State<UserScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           children: [
-                            // Profile picture - no tap functionality
-                            Hero(
-                              tag: 'user-avatar-${user.uid}',
-                              child: AvatarWidget(
-                                imageUrl: user.photoURL,
-                                size: 80,
-                                displayName: user.displayName ?? 'User',
-                              ),
+                            // Profile picture with edit button
+                            Stack(
+                              children: [
+                                Hero(
+                                  tag: 'user-avatar-${user.uid}',
+                                  child: AvatarWidget(
+                                    imageUrl: user.photoURL,
+                                    localImageFile: _localAvatarFile,
+                                    size: 80,
+                                    displayName: user.displayName ?? 'User',
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: GestureDetector(
+                                    onTap: _pickAndUploadAvatar,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF74182f),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
 
                             const SizedBox(height: 12),
@@ -125,6 +241,43 @@ class _UserScreenState extends State<UserScreen> {
                               textAlign: TextAlign.center,
                             ),
                           ],
+                        ),
+                      ),
+                    ),
+
+                    // Account actions / links
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: TextButton.icon(
+                            onPressed: () => _launchUrl(
+                              'https://stateapp.net/delete-account.html',
+                              context,
+                            ),
+                            icon: const Icon(
+                              Icons.delete_forever,
+                              color: Color(0xFF74182f),
+                              size: 18,
+                            ),
+                            label: const Text(
+                              'Delete Account',
+                              style: TextStyle(
+                                color: Color(0xFF74182f),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                              minimumSize: const Size(0, 0),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
                         ),
                       ),
                     ),

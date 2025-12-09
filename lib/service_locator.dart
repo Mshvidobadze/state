@@ -132,6 +132,7 @@ Future<void> initInjections() async {
   sl.registerFactory(
     () => UserProfileCubit(
       sl<UserProfileRepository>(),
+      sl<FirebaseStorage>(),
       sl<HomeRepository>(),
       sl<FirebaseAuth>(),
     ),

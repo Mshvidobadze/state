@@ -41,4 +41,15 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
       throw Exception('Failed to fetch user posts: $e');
     }
   }
+
+  @override
+  Future<void> updateUserAvatar(String userId, String photoUrl) async {
+    try {
+      await firestore.collection('users').doc(userId).update({
+        'photoUrl': photoUrl,
+      });
+    } catch (e) {
+      throw Exception('Failed to update user avatar: $e');
+    }
+  }
 }
