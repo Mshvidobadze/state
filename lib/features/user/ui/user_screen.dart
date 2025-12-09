@@ -196,11 +196,19 @@ class _UserScreenState extends State<UserScreen> {
                           ) {
                             final post = state.posts[index];
 
-                            return PostTile(
-                              post: post,
-                              currentUserId: user.uid,
-                              currentUserName: user.displayName ?? '',
-                              showOptions: false,
+                            return Column(
+                              children: [
+                                PostTile(
+                                  post: post,
+                                  currentUserId: user.uid,
+                                  currentUserName: user.displayName ?? '',
+                                  showOptions: false,
+                                ),
+                                Container(
+                                  height: 1,
+                                  color: const Color(0xFFE5E7EB),
+                                ),
+                              ],
                             );
                           }, childCount: state.posts.length),
                         )

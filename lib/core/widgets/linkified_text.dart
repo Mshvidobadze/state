@@ -37,6 +37,7 @@ class LinkifiedText extends StatelessWidget {
       context: context,
       builder:
           (context) => AlertDialog(
+            backgroundColor: Colors.white,
             title: Text(
               'Leaving State',
               style: GoogleFonts.beVietnamPro(

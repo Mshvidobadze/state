@@ -130,23 +130,35 @@ class FollowingScreenState extends State<FollowingScreen> {
                               itemCount: state.posts.length,
                               itemBuilder: (context, index) {
                                 final post = state.posts[index];
-                                return PostTile(
-                                  post: post,
-                                  currentUserId: state.currentUserId,
-                                  currentUserName: state.currentUserName,
-                                  cubit: context.read<FollowingCubit>(),
-                                  onUnfollow:
-                                      () => context
-                                          .read<FollowingCubit>()
-                                          .unfollowPost(post.id),
-                                  onAuthorTap: () {
-                                    final navigationService =
-                                        sl<INavigationService>();
-                                    navigationService.goToUserProfile(
-                                      context,
-                                      post.authorId,
-                                    );
-                                  },
+                                return Column(
+                                  children: [
+                                    PostTile(
+                                      post: post,
+                                      currentUserId: state.currentUserId,
+                                      currentUserName: state.currentUserName,
+                                      cubit: context.read<FollowingCubit>(),
+                                      onUnfollow:
+                                          () => context
+                                              .read<FollowingCubit>()
+                                              .unfollowPost(post.id),
+                                      onAuthorTap:
+                                          post.authorId.isNotEmpty
+                                              ? () {
+                                                final navigationService =
+                                                    sl<INavigationService>();
+                                                navigationService
+                                                    .goToUserProfile(
+                                                      context,
+                                                      post.authorId,
+                                                    );
+                                              }
+                                              : null, // Don't navigate for ads
+                                    ),
+                                    Container(
+                                      height: 1,
+                                      color: const Color(0xFFE5E7EB),
+                                    ),
+                                  ],
                                 );
                               },
                             ),

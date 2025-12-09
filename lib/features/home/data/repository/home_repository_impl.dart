@@ -146,6 +146,32 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
+  Future<void> reportPost(String postId, String userId) async {
+    try {
+      // Use batch write for atomic operation
+      final batch = firestore.batch();
+
+      // Update post's reporters array
+      final postRef = firestore.collection('posts').doc(postId);
+      batch.update(postRef, {
+        'reporters': FieldValue.arrayUnion([userId]),
+      });
+
+      // Store report details in a separate collection
+      final reportRef = firestore.collection('reports').doc();
+      batch.set(reportRef, {
+        'postId': postId,
+        'userId': userId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to report post: $e');
+    }
+  }
+
+  @override
   Future<void> addComment({
     required String postId,
     required String userId,
