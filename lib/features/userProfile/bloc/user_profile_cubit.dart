@@ -140,6 +140,44 @@ class UserProfileCubit extends Cubit<UserProfileState> {
     }
   }
 
+  /// Update display name in FirebaseAuth and Firestore, then refresh profile.
+  /// Returns `true` on success and `false` on failure so callers can show local UI errors
+  /// without blowing away the current screen state.
+  Future<bool> updateDisplayName(String userId, String displayName) async {
+    final trimmedName = displayName.trim();
+    if (trimmedName.isEmpty) return false;
+
+    try {
+      // Update FirebaseAuth profile
+      final user = firebaseAuth.currentUser;
+      if (user != null) {
+        await user.updateDisplayName(trimmedName);
+      }
+
+      // Update Firestore profile
+      await userProfileRepository.updateDisplayName(userId, trimmedName);
+
+      // Reload auth user to ensure UI reflects changes
+      await firebaseAuth.currentUser?.reload();
+
+      // Update local state without reloading posts
+      final currentState = state;
+      if (currentState is UserProfileLoaded) {
+        emit(
+          currentState.copyWith(
+            userProfile: currentState.userProfile.copyWith(
+              displayName: trimmedName,
+            ),
+          ),
+        );
+      }
+      return true;
+    } catch (_) {
+      // Keep UI intact; let caller show a non-destructive error
+      return false;
+    }
+  }
+
   /// Report a post and update UI optimistically
   Future<void> reportPost(String postId, String userId) async {
     if (state is! UserProfileLoaded) return;

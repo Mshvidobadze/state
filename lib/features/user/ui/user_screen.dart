@@ -23,8 +23,154 @@ class UserScreen extends StatefulWidget {
   State<UserScreen> createState() => _UserScreenState();
 }
 
+class _EditNameSheet extends StatefulWidget {
+  final String currentName;
+  final String userId;
+  final int minLength;
+  final int maxLength;
+
+  const _EditNameSheet({
+    required this.currentName,
+    required this.userId,
+    required this.minLength,
+    required this.maxLength,
+  });
+
+  @override
+  State<_EditNameSheet> createState() => _EditNameSheetState();
+}
+
+class _EditNameSheetState extends State<_EditNameSheet> {
+  late final TextEditingController _controller;
+  String? _errorText;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.currentName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = _controller.text.trim();
+    final isValid =
+        trimmed.length >= widget.minLength && trimmed.length <= widget.maxLength;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        top: 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Edit name',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111418),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            maxLength: widget.maxLength,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: 'Display name',
+              hintText:
+                  'Enter between ${widget.minLength} and ${widget.maxLength} characters',
+              errorText: _errorText,
+              counterText: '',
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (_) {
+              setState(() {
+                _errorText = null;
+              });
+            },
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${trimmed.length}/${widget.maxLength}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF60748A),
+                ),
+              ),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: _isSaving
+                        ? null
+                        : () {
+                            Navigator.of(context).maybePop();
+                          },
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _isSaving || !isValid
+                        ? null
+                        : () async {
+                            setState(() {
+                              _isSaving = true;
+                            });
+                            final success = await context
+                                .read<UserProfileCubit>()
+                                .updateDisplayName(widget.userId, trimmed);
+                            if (!mounted) return;
+
+                            if (success) {
+                              Navigator.of(context).maybePop();
+                            } else {
+                              setState(() {
+                                _isSaving = false;
+                                _errorText =
+                                    'Failed to update name. Please try again.';
+                              });
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF74182f),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _UserScreenState extends State<UserScreen> {
   File? _localAvatarFile; // Local file for optimistic UI
+  static const int _minNameLength = 3;
+  static const int _maxNameLength = 30;
 
   Future<void> _launchUrl(String url, BuildContext context) async {
     final Uri uri = Uri.parse(url);
@@ -116,6 +262,26 @@ class _UserScreenState extends State<UserScreen> {
         });
       }
     }
+  }
+
+  Future<void> _showEditNameSheet({
+    required String currentName,
+    required String userId,
+  }) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _EditNameSheet(
+        currentName: currentName,
+        userId: userId,
+        minLength: _minNameLength,
+        maxLength: _maxNameLength,
+      ),
+    );
   }
 
   @override
@@ -216,16 +382,59 @@ class _UserScreenState extends State<UserScreen> {
 
                             const SizedBox(height: 12),
 
-                            // User name
-                            Text(
-                              user.displayName ?? 'Anonymous User',
-                              style: const TextStyle(
-                                color: Color(0xFF111418),
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.015,
-                              ),
-                              textAlign: TextAlign.center,
+                            // User name with inline edit
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: BlocBuilder<UserProfileCubit, UserProfileState>(
+                                    builder: (context, state) {
+                                      String displayName =
+                                          user.displayName ?? 'Anonymous User';
+                                      if (state is UserProfileLoaded &&
+                                          state.userProfile.displayName.isNotEmpty) {
+                                        displayName = state.userProfile.displayName;
+                                      }
+
+                                      return Text(
+                                        displayName,
+                                        style: const TextStyle(
+                                          color: Color(0xFF111418),
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: -0.015,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.edit_outlined,
+                                      size: 18,
+                                      color: Color(0xFF60748A),
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () {
+                                      final currentName =
+                                          FirebaseAuth.instance.currentUser?.displayName ??
+                                              'Anonymous User';
+                                      _showEditNameSheet(
+                                        currentName: currentName,
+                                        userId: user.uid,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
 
                             const SizedBox(height: 4),
