@@ -16,4 +16,7 @@ abstract class UserProfileRepository {
 
   /// Update user avatar (photoUrl) in Firestore
   Future<void> updateUserAvatar(String userId, String photoUrl);
+
+  /// Update display name in Firestore
+  Future<void> updateDisplayName(String userId, String displayName);
 }

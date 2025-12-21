@@ -143,14 +143,12 @@ class SignInScreen extends StatelessWidget {
                                 final available = snapshot.data == true;
                                 if (!available) return const SizedBox.shrink();
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: SizedBox(
-                                    width: double.infinity,
+                                    width: 220,
                                     height: 48,
                                     child: SignInWithAppleButton(
-                                      style: SignInWithAppleButtonStyle.white,
+                                      style: SignInWithAppleButtonStyle.black,
                                       onPressed: () => context.read<AuthCubit>().signInWithApple(),
                                     ),
                                   ),

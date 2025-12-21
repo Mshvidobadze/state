@@ -52,4 +52,15 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
       throw Exception('Failed to update user avatar: $e');
     }
   }
+
+  @override
+  Future<void> updateDisplayName(String userId, String displayName) async {
+    try {
+      await firestore.collection('users').doc(userId).update({
+        'displayName': displayName,
+      });
+    } catch (e) {
+      throw Exception('Failed to update display name: $e');
+    }
+  }
 }
