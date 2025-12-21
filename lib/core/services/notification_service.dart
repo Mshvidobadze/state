@@ -229,7 +229,7 @@ class NotificationService {
   /// to be expanded in the future.
   Future<void> _initializeLocalNotifications() async {
     const androidInitializationSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher', // Use app launcher icon as fallback
+      '@mipmap/ic_stat_name', // Use notification icon
     );
     const iosInitializationSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
