@@ -16,7 +16,10 @@
         <!-- Firebase Messaging Configuration -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_stat_name" />
+            android:resource="@mipmap/ic_launcher" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="state_notifications_channel" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notificationBackground" />
@@ -41,13 +44,15 @@
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-            <!-- Deep link intent filter for HTTPS/HTTP -->
+            <!-- Verified Android App Links (HTTPS only). -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="stateapp.net" />
-                <data android:scheme="http" android:host="stateapp.net" />
+                <data
+                    android:scheme="https"
+                    android:host="stateapp.net"
+                    android:pathPrefix="/" />
             </intent-filter>
             <!-- Custom URL Scheme for deep links -->
             <intent-filter>

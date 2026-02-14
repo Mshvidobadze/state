@@ -12,6 +12,7 @@ import 'package:state/app/app_router.dart';
 import 'package:state/features/home/ui/filters_row.dart';
 import 'package:state/features/home/ui/widgets/filters_row_skeleton.dart';
 import 'package:state/features/home/ui/widgets/post_tile_skeleton.dart';
+import 'package:state/features/home/ui/widgets/feed_options_bottom_sheet.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/core/services/preferences_service.dart';
 import 'package:state/core/services/navigation_service.dart';
@@ -32,6 +33,7 @@ class HomeScreenState extends State<HomeScreen> {
   late FilterModel _currentFilter;
   final ScrollController _scrollController = ScrollController();
   bool _termsChecked = false;
+  bool _feedOptionsPromptQueued = false;
 
   @override
   void initState() {
@@ -88,7 +90,36 @@ class HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       setState(() {});
       context.read<HomeCubit>().loadPosts(filter: _currentFilter);
+      _maybeShowFirstLaunchFeedOptions();
     }
+  }
+
+  Future<void> _maybeShowFirstLaunchFeedOptions() async {
+    if (_feedOptionsPromptQueued) return;
+
+    final hasSeenPrompt = await PreferencesService.hasSeenFeedOptionsPrompt();
+    if (hasSeenPrompt || !mounted) return;
+
+    _feedOptionsPromptQueued = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        isDismissible: true,
+        enableDrag: true,
+        builder:
+            (context) => FeedOptionsBottomSheet(
+              currentFilter: _currentFilter,
+              onFilterChanged: _onFilterChanged,
+            ),
+      );
+
+      await PreferencesService.markFeedOptionsPromptShown();
+    });
   }
 
   Future<void> _onRefresh() async {

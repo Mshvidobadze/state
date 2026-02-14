@@ -21,11 +21,18 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
   late FilterModel _currentFilter;
   String? _selectedOption;
   String _regionQuery = '';
+  final TextEditingController _regionSearchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _currentFilter = widget.currentFilter;
+  }
+
+  @override
+  void dispose() {
+    _regionSearchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -38,47 +45,51 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
       key: ValueKey(_selectedOption), // Force rebuild when option changes
       initialChildSize:
           isShowingRegions
-              ? 0.6
+              ? 1.0
               : isShowingTime
               ? 0.5
               : 0.35,
       minChildSize: 0.2,
-      maxChildSize: 0.9,
+      maxChildSize: isShowingRegions ? 1.0 : 0.9,
       builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          child: Column(
-            children: [
-              // Handle bar
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-
-              // Title
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Feed Options',
-                  style: GoogleFonts.beVietnamPro(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+        return SafeArea(
+          top: true,
+          bottom: false,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              ),
 
-              // Scrollable content
-              Expanded(child: _buildContent(scrollController)),
-            ],
+                // Title
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Feed Options',
+                    style: GoogleFonts.beVietnamPro(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+
+                // Scrollable content
+                Expanded(child: _buildContent(scrollController)),
+              ],
+            ),
           ),
         );
       },
@@ -95,7 +106,13 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
             icon: Icons.public,
             title: 'Region',
             subtitle: _currentFilter.region,
-            onTap: () => setState(() => _selectedOption = 'region'),
+            onTap: () {
+              setState(() {
+                _regionQuery = '';
+                _regionSearchController.clear();
+                _selectedOption = 'region';
+              });
+            },
           ),
           _buildOptionItem(
             icon: Icons.new_releases,
@@ -138,6 +155,7 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: TextField(
+              controller: _regionSearchController,
               onChanged: (v) => setState(() => _regionQuery = v),
               decoration: InputDecoration(
                 isDense: true,
@@ -284,7 +302,13 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
 
   Widget _buildBackButton() {
     return InkWell(
-      onTap: () => setState(() => _selectedOption = null),
+      onTap: () {
+        setState(() {
+          _selectedOption = null;
+          _regionQuery = '';
+          _regionSearchController.clear();
+        });
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
