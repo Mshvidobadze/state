@@ -19,6 +19,7 @@ import 'package:state/core/services/share_service.dart';
 import 'package:flutter/rendering.dart';
 
 class PostTile extends StatelessWidget {
+  static const int _previewMaxCharacters = 400;
   final PostModel post;
   final String currentUserId;
   final String currentUserName;
@@ -137,7 +138,7 @@ class PostTile extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                     child: LinkifiedText(
-                      text: post.content,
+                      text: _buildPreviewText(post.content),
                       style: GoogleFonts.beVietnamPro(
                         color: const Color(0xFF121416),
                         fontSize: 16,
@@ -214,6 +215,14 @@ class PostTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _buildPreviewText(String content) {
+    if (content.length <= _previewMaxCharacters) {
+      return content;
+    }
+
+    return '${content.substring(0, _previewMaxCharacters).trimRight()}...';
   }
 
   Widget _buildActionButton({

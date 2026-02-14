@@ -19,6 +19,8 @@ import 'package:state/features/legal/ui/terms_acceptance_dialog.dart';
 
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
+  static const double _authButtonWidth = 260;
+  static const double _authButtonHeight = 48;
 
   Future<void> _launchUrl(String url, BuildContext context) async {
     final Uri uri = Uri.parse(url);
@@ -135,62 +137,86 @@ class SignInScreen extends StatelessWidget {
 
                           const SizedBox(height: 32),
 
-                          // Apple sign-in (iOS only) with availability check and official button
-                          if (Platform.isIOS)
-                            FutureBuilder<bool>(
-                              future: SignInWithApple.isAvailable(),
-                              builder: (context, snapshot) {
-                                final available = snapshot.data == true;
-                                if (!available) return const SizedBox.shrink();
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                          MediaQuery(
+                            data: MediaQuery.of(
+                              context,
+                            ).copyWith(textScaler: const TextScaler.linear(1.0)),
+                            child: Column(
+                              children: [
+                                // Apple sign-in (iOS only) with availability check and official button
+                                if (Platform.isIOS)
+                                  FutureBuilder<bool>(
+                                    future: SignInWithApple.isAvailable(),
+                                    builder: (context, snapshot) {
+                                      final available = snapshot.data == true;
+                                      if (!available) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                        ),
+                                        child: SizedBox(
+                                          width: _authButtonWidth,
+                                          height: _authButtonHeight,
+                                          child: SignInWithAppleButton(
+                                            style: SignInWithAppleButtonStyle.black,
+                                            onPressed:
+                                                () => context
+                                                    .read<AuthCubit>()
+                                                    .signInWithApple(),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+
+                                if (Platform.isIOS) const SizedBox(height: 12),
+
+                                // Google sign in (same style)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                   child: SizedBox(
-                                    width: 220,
-                                    height: 48,
-                                    child: SignInWithAppleButton(
-                                      style: SignInWithAppleButtonStyle.black,
-                                      onPressed: () => context.read<AuthCubit>().signInWithApple(),
+                                    width: _authButtonWidth,
+                                    height: _authButtonHeight,
+                                    child: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: const Color(0xFF111418),
+                                        elevation: 0,
+                                        side: const BorderSide(
+                                          color: Color(0xFFE0E0E0),
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed:
+                                          () => context
+                                              .read<AuthCubit>()
+                                              .signInWithGoogle(),
+                                      icon: SvgPicture.asset(
+                                        AppVectors.googleSignIn,
+                                        width: 20,
+                                        height: 20,
+                                      ),
+                                      label: const Text(
+                                        'Sign in with Google',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: false,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.015,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                );
-                              },
-                            ),
-
-                          if (Platform.isIOS) const SizedBox(height: 12),
-
-                          // Google sign in (same style)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: SizedBox(
-                              width: 220,
-                              height: 48,
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: const Color(0xFF111418),
-                                  elevation: 0,
-                                  side: const BorderSide(
-                                    color: Color(0xFFE0E0E0),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
                                 ),
-                                onPressed: () => context.read<AuthCubit>().signInWithGoogle(),
-                                icon: SvgPicture.asset(
-                                  AppVectors.googleSignIn,
-                                  width: 20,
-                                  height: 20,
-                                ),
-                                label: const Text(
-                                  'Sign in with Google',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.015,
-                                  ),
-                                ),
-                              ),
+                              ],
                             ),
                           ),
 
