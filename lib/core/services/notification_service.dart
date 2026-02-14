@@ -57,15 +57,19 @@ class NotificationService {
       _deeplinkNotificationStream.stream;
 
   final _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  static const _androidChannelId = 'state_notifications_channel';
+  static const _androidChannelName = 'State Notifications';
+  static const _androidChannelDescription =
+      'Main channel for State app notifications';
 
   /// The default notification channel configuration for Android devices. The app currently
   /// uses a single main channel for all notifications. In the future, additional channels
   /// may be added for different notification categories to provide users with more granular
   /// control over notification settings.
   static final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-    'state_notifications_channel',
-    'State Notifications',
-    channelDescription: 'Main channel for State app notifications',
+    _androidChannelId,
+    _androidChannelName,
+    channelDescription: _androidChannelDescription,
     importance: Importance.max,
     priority: Priority.high,
     color: Color(0xFF74182f), // Brand color
@@ -229,7 +233,7 @@ class NotificationService {
   /// to be expanded in the future.
   Future<void> _initializeLocalNotifications() async {
     const androidInitializationSettings = AndroidInitializationSettings(
-      '@mipmap/ic_stat_name', // Use notification icon
+      '@mipmap/ic_launcher',
     );
     const iosInitializationSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
@@ -250,6 +254,22 @@ class NotificationService {
         _handleNotificationData(local: notificationData);
       },
     );
+
+    // Ensure the channel exists before background/terminated FCM display attempts.
+    if (Platform.isAndroid) {
+      final androidPlugin =
+          _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await androidPlugin?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _androidChannelId,
+          _androidChannelName,
+          description: _androidChannelDescription,
+          importance: Importance.max,
+        ),
+      );
+    }
   }
 
   /// Processes incoming messages when the app is in the foreground by displaying
