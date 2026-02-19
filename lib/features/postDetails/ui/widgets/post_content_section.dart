@@ -6,6 +6,7 @@ import 'package:state/core/constants/app_colors.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
 import 'package:state/core/widgets/fullscreen_image_viewer.dart';
 import 'package:state/core/widgets/linkified_text.dart';
+import 'package:state/core/widgets/post_image_carousel.dart';
 import 'package:state/core/services/share_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/features/home/data/models/post_model.dart';
@@ -99,34 +100,25 @@ class PostContentSection extends StatelessWidget {
               ),
             ),
           ],
-          if (post.imageUrl != null) ...[
+          if (post.resolvedImageUrls.isNotEmpty) ...[
             const SizedBox(height: UIConstants.spacingLarge),
-            GestureDetector(
-              onTap: () {
-                // Single tap - open fullscreen viewer
+            PostImageCarousel(
+              imageUrls: post.resolvedImageUrls,
+              height: 320,
+              borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
+              heroTagBuilder: (index) => 'post-image-${post.id}-$index',
+              onImageTap: (index) {
                 FullscreenImageViewer.show(
                   context,
-                  imageUrl: post.imageUrl!,
-                  heroTag: 'post-image-${post.id}',
+                  imageUrl: post.resolvedImageUrls[index],
+                  heroTag: 'post-image-${post.id}-$index',
                 );
               },
               onDoubleTap: () {
-                // Double tap - upvote (only if not already upvoted)
                 if (!isUpvoted) {
                   context.read<PostDetailsCubit>().toggleUpvote(post.id);
                 }
               },
-              child: Hero(
-                tag: 'post-image-${post.id}',
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
-                  child: Image.network(
-                    post.imageUrl!,
-                    width: double.infinity,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
             ),
           ],
 

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/constants/app_colors.dart';
 import 'package:state/core/widgets/avatar_widget.dart';
+import 'package:state/core/widgets/fullscreen_image_viewer.dart';
 import 'package:state/core/widgets/linkified_text.dart';
+import 'package:state/core/widgets/post_image_carousel.dart';
 import 'package:state/core/services/navigation_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
@@ -16,7 +16,6 @@ import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:state/features/following/bloc/following_cubit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/services/share_service.dart';
-import 'package:flutter/rendering.dart';
 
 class PostTile extends StatelessWidget {
   static const int _previewMaxCharacters = 400;
@@ -149,18 +148,29 @@ class PostTile extends StatelessWidget {
                     ),
                   ),
 
-                // Post image if exists (reserve space immediately)
-                if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+                // Post images
+                if (post.resolvedImageUrls.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: UIConstants.spacingLarge,
                     ),
-                    child: GestureDetector(
+                    child: PostImageCarousel(
+                      imageUrls: post.resolvedImageUrls,
+                      height: UIConstants.loadingPlaceholderHeight,
+                      borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
+                      fit: BoxFit.cover,
+                      heroTagBuilder: (index) => 'post-image-${post.id}-$index',
+                      onImageTap: (index) {
+                        FullscreenImageViewer.show(
+                          context,
+                          imageUrl: post.resolvedImageUrls[index],
+                          heroTag: 'post-image-${post.id}-$index',
+                        );
+                      },
                       onDoubleTap:
                           isAdvertisement
-                              ? null // Don't allow upvote for ads
+                              ? null
                               : () {
-                                // Double tap - upvote (only if not already upvoted)
                                 final isUpvoted = post.upvoters.contains(
                                   currentUserId,
                                 );
@@ -168,7 +178,6 @@ class PostTile extends StatelessWidget {
                                   _handleUpvote(context);
                                 }
                               },
-                      child: _MeasuredNetworkImage(url: post.imageUrl!),
                     ),
                   ),
               ],
@@ -397,132 +406,5 @@ class PostTile extends StatelessWidget {
     }
 
     debugPrint('🚩 [POST_TILE] Report process completed');
-  }
-}
-
-/// Displays a reserved placeholder, then adopts the true image aspect ratio once
-/// the first frame is available, eliminating layout jumps while avoiding a fixed height.
-class _MeasuredNetworkImage extends StatefulWidget {
-  final String url;
-  const _MeasuredNetworkImage({required this.url});
-
-  @override
-  State<_MeasuredNetworkImage> createState() => _MeasuredNetworkImageState();
-}
-
-class _MeasuredNetworkImageState extends State<_MeasuredNetworkImage> {
-  double? _aspectRatio; // width / height
-  late ImageProvider _provider;
-  ImageStream? _stream;
-  ImageStreamListener? _listener;
-
-  @override
-  void initState() {
-    super.initState();
-    _provider = NetworkImage(widget.url);
-    _resolveIntrinsicSize();
-  }
-
-  @override
-  void didUpdateWidget(covariant _MeasuredNetworkImage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) {
-      // Clean up old listener
-      if (_stream != null && _listener != null) {
-        _stream!.removeListener(_listener!);
-      }
-      _aspectRatio = null;
-      _provider = NetworkImage(widget.url);
-      _resolveIntrinsicSize();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final placeholder = Container(
-      height: UIConstants.loadingPlaceholderHeight,
-      width: double.infinity,
-      color: Colors.grey[100],
-      child: Center(
-        child: SvgPicture.asset(
-          'assets/vectors/logo.svg',
-          width: UIConstants.loadingPlaceholderSize,
-          height: UIConstants.loadingPlaceholderSize,
-          colorFilter: const ColorFilter.mode(Colors.grey, BlendMode.srcIn),
-        ),
-      ),
-    );
-
-    final image = Image(
-      image: _provider,
-      fit: BoxFit.cover,
-      gaplessPlayback: true,
-      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-        if (frame == null) {
-          return placeholder; // still loading, keep reserved space
-        }
-        // Measure the rendered image to compute aspect ratio once
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            _aspectRatio ??= 16 / 9;
-            return AspectRatio(
-              aspectRatio: _aspectRatio!,
-              child: AnimatedOpacity(
-                opacity: 1.0,
-                duration: const Duration(milliseconds: 150),
-                child: child,
-              ),
-            );
-          },
-        );
-      },
-      // Once loading completes or errors, update appropriately
-      loadingBuilder: (context, child, event) {
-        if (event == null) {
-          _resolveIntrinsicSize();
-          return child;
-        }
-        return placeholder;
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return placeholder;
-      },
-    );
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
-      child: image,
-    );
-  }
-
-  void _resolveIntrinsicSize() {
-    _stream?.removeListener(_listener ?? const ImageStreamListener(_noop));
-    _stream = _provider.resolve(const ImageConfiguration());
-    _listener = ImageStreamListener(
-      (info, _) {
-        if (mounted && _aspectRatio == null) {
-          setState(() {
-            _aspectRatio = info.image.width / info.image.height;
-          });
-        }
-      },
-      onError: (error, stackTrace) {
-        if (!mounted) return;
-        setState(() {
-          _aspectRatio = 16 / 9; // fallback ratio on error
-        });
-      },
-    );
-    _stream!.addListener(_listener!);
-  }
-
-  static void _noop(ImageInfo _, bool __) {}
-
-  @override
-  void dispose() {
-    if (_stream != null && _listener != null) {
-      _stream!.removeListener(_listener!);
-    }
-    super.dispose();
   }
 }

@@ -10,6 +10,7 @@ class PostModel extends Equatable {
   final String title;
   final String content;
   final String? imageUrl;
+  final List<String> imageUrls;
   final int upvotes;
   final int downvotes;
   final int commentsCount;
@@ -19,7 +20,7 @@ class PostModel extends Equatable {
   final List<String> downvoters;
   final List<String> reporters;
 
-  PostModel({
+  const PostModel({
     required this.id,
     required this.authorId,
     required this.authorName,
@@ -28,6 +29,7 @@ class PostModel extends Equatable {
     required this.title,
     required this.content,
     this.imageUrl,
+    required this.imageUrls,
     required this.upvotes,
     required this.downvotes,
     required this.commentsCount,
@@ -40,6 +42,14 @@ class PostModel extends Equatable {
 
   factory PostModel.fromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final parsedImageUrls = List<String>.from(data['imageUrls'] ?? []);
+    final legacyImageUrl = data['imageUrl'] as String?;
+    final normalizedImageUrls =
+        parsedImageUrls.isNotEmpty
+            ? parsedImageUrls
+            : (legacyImageUrl != null && legacyImageUrl.isNotEmpty)
+            ? [legacyImageUrl]
+            : <String>[];
     return PostModel(
       id: doc.id,
       authorId: data['authorId'] ?? '',
@@ -48,7 +58,9 @@ class PostModel extends Equatable {
       region: data['region'] ?? '',
       title: data['title'] ?? '',
       content: data['content'] ?? '',
-      imageUrl: data['imageUrl'],
+      imageUrl:
+          normalizedImageUrls.isNotEmpty ? normalizedImageUrls.first : null,
+      imageUrls: normalizedImageUrls,
       upvotes: data['upvotes'] ?? 0,
       downvotes: data['downvotes'] ?? 0,
       commentsCount: data['commentsCount'] ?? 0,
@@ -67,7 +79,8 @@ class PostModel extends Equatable {
     'region': region,
     'title': title,
     'content': content,
-    'imageUrl': imageUrl,
+    'imageUrl': imageUrls.isNotEmpty ? imageUrls.first : imageUrl,
+    'imageUrls': imageUrls,
     'upvotes': upvotes,
     'downvotes': downvotes,
     'commentsCount': commentsCount,
@@ -87,6 +100,7 @@ class PostModel extends Equatable {
     String? title,
     String? content,
     String? imageUrl,
+    List<String>? imageUrls,
     int? upvotes,
     int? downvotes,
     int? commentsCount,
@@ -105,6 +119,7 @@ class PostModel extends Equatable {
       title: title ?? this.title,
       content: content ?? this.content,
       imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
       upvotes: upvotes ?? this.upvotes,
       downvotes: downvotes ?? this.downvotes,
       commentsCount: commentsCount ?? this.commentsCount,
@@ -126,6 +141,7 @@ class PostModel extends Equatable {
     title,
     content,
     imageUrl,
+    imageUrls,
     upvotes,
     downvotes,
     commentsCount,
@@ -135,4 +151,10 @@ class PostModel extends Equatable {
     downvoters,
     reporters,
   ];
+
+  List<String> get resolvedImageUrls {
+    if (imageUrls.isNotEmpty) return imageUrls;
+    if (imageUrl != null && imageUrl!.isNotEmpty) return [imageUrl!];
+    return const <String>[];
+  }
 }

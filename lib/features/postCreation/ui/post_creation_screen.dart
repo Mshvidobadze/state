@@ -21,7 +21,9 @@ class PostCreationScreen extends StatefulWidget {
 class _PostCreationScreenState extends State<PostCreationScreen> {
   String selectedRegion = 'Global'; // Will be updated in initState
   final TextEditingController contentController = TextEditingController();
-  File? _selectedImage;
+  final List<File> _selectedImages = [];
+  final PageController _imagesPageController = PageController();
+  int _currentImagePage = 0;
 
   @override
   void initState() {
@@ -51,33 +53,80 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
   }
 
   Future<void> _pickImage() async {
+    if (_selectedImages.length >= PostCreationCubit.maxImagesPerPost) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'You can add up to ${PostCreationCubit.maxImagesPerPost} photos per post.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     final result = await ImageSourceSelector.show(context);
     if (result != null && mounted) {
       final picker = ImagePicker();
-      XFile? image;
+      final remainingSlots =
+          PostCreationCubit.maxImagesPerPost - _selectedImages.length;
 
       // Opens camera or gallery based on user selection from ImageSourceSelector
       if (result == true) {
-        image = await picker.pickImage(
+        final image = await picker.pickImage(
           source: ImageSource.camera,
           imageQuality: 80,
           maxWidth: 1920,
           maxHeight: 1080,
         );
+        if (image != null && mounted) {
+          setState(() => _selectedImages.add(File(image.path)));
+        }
       } else if (result == false) {
-        image = await picker.pickImage(
-          source: ImageSource.gallery,
+        final images = await picker.pickMultiImage(
           imageQuality: 80,
           maxWidth: 1920,
           maxHeight: 1080,
         );
-      }
-
-      // Updates the selected image if an image was selected
-      if (image != null && mounted) {
-        setState(() => _selectedImage = File(image!.path));
+        if (images.isNotEmpty && mounted) {
+          final selected = images.take(remainingSlots).map((x) => File(x.path));
+          setState(() => _selectedImages.addAll(selected));
+          if (images.length > remainingSlots) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Only first $remainingSlots photos were added (max ${PostCreationCubit.maxImagesPerPost}).',
+                ),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
       }
     }
+  }
+
+  void _removeSelectedImage(int index) {
+    if (index < 0 || index >= _selectedImages.length) return;
+    setState(() {
+      _selectedImages.removeAt(index);
+      if (_selectedImages.isEmpty) {
+        _currentImagePage = 0;
+      } else if (_currentImagePage >= _selectedImages.length) {
+        _currentImagePage = _selectedImages.length - 1;
+      }
+    });
+
+    if (_selectedImages.isNotEmpty && _imagesPageController.hasClients) {
+      _imagesPageController.jumpToPage(_currentImagePage);
+    }
+  }
+
+  @override
+  void dispose() {
+    contentController.dispose();
+    _imagesPageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -117,11 +166,11 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                           : () {
                             final content = contentController.text.trim();
                             // Allow posting with just image or just text or both
-                            if (content.isNotEmpty || _selectedImage != null) {
+                            if (content.isNotEmpty || _selectedImages.isNotEmpty) {
                               context.read<PostCreationCubit>().createPost(
                                 region: selectedRegion,
                                 content: content,
-                                imageFile: _selectedImage,
+                                imageFiles: _selectedImages,
                               );
                             }
                           },
@@ -200,11 +249,17 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                             vertical: 10,
                           ),
                           child: Row(
-                            children: const [
-                              Icon(Icons.add, size: 20, color: Colors.black87),
-                              SizedBox(width: 8),
+                            children: [
+                              const Icon(
+                                Icons.add,
+                                size: 20,
+                                color: Colors.black87,
+                              ),
+                              const SizedBox(width: 8),
                               Text(
-                                'Add Image',
+                                _selectedImages.isEmpty
+                                    ? 'Add Photos'
+                                    : '${_selectedImages.length}/${PostCreationCubit.maxImagesPerPost} Photos',
                                 style: TextStyle(
                                   color: Colors.black87,
                                   fontSize: 14,
@@ -217,7 +272,7 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                     ],
                   ),
                 ),
-                if (_selectedImage != null)
+                if (_selectedImages.isNotEmpty)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
@@ -233,21 +288,64 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                     ),
                     child: Stack(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            UIConstants.radiusMedium,
-                          ),
-                          child: Image.file(
-                            _selectedImage!,
-                            width: double.infinity,
-                            fit: BoxFit.contain,
-                          ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                UIConstants.radiusMedium,
+                              ),
+                              child: SizedBox(
+                                height: 280,
+                                child: PageView.builder(
+                                  controller: _imagesPageController,
+                                  itemCount: _selectedImages.length,
+                                  onPageChanged: (index) {
+                                    setState(() => _currentImagePage = index);
+                                  },
+                                  itemBuilder: (context, index) {
+                                    return Image.file(
+                                      _selectedImages[index],
+                                      width: double.infinity,
+                                      fit: BoxFit.contain,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                            if (_selectedImages.length > 1) ...[
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(_selectedImages.length, (
+                                  index,
+                                ) {
+                                  final isActive = index == _currentImagePage;
+                                  return AnimatedContainer(
+                                    duration: const Duration(milliseconds: 150),
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 3,
+                                    ),
+                                    width: isActive ? 8 : 6,
+                                    height: isActive ? 8 : 6,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          isActive
+                                              ? const Color(0xFF111418)
+                                              : const Color(0xFFBFC5CC),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ],
+                          ],
                         ),
                         Positioned(
                           top: UIConstants.spacingSmall,
                           right: UIConstants.spacingSmall,
                           child: GestureDetector(
-                            onTap: () => setState(() => _selectedImage = null),
+                            onTap: () => _removeSelectedImage(_currentImagePage),
                             child: Container(
                               padding: const EdgeInsets.all(
                                 UIConstants.spacingXSmall,
