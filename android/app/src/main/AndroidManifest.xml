@@ -52,7 +52,7 @@
                 <data
                     android:scheme="https"
                     android:host="stateapp.net"
-                    android:pathPrefix="/" />
+                    android:pathPrefix="/post/" />
             </intent-filter>
             <!-- Custom URL Scheme for deep links -->
             <intent-filter>

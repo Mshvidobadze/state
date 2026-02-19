@@ -11,10 +11,12 @@ class PostModel extends Equatable {
   final String content;
   final String? imageUrl;
   final int upvotes;
+  final int downvotes;
   final int commentsCount;
   final DateTime createdAt;
   final List<String> followers;
   final List<String> upvoters;
+  final List<String> downvoters;
   final List<String> reporters;
 
   PostModel({
@@ -27,10 +29,12 @@ class PostModel extends Equatable {
     required this.content,
     this.imageUrl,
     required this.upvotes,
+    required this.downvotes,
     required this.commentsCount,
     required this.createdAt,
     required this.followers,
     required this.upvoters,
+    required this.downvoters,
     required this.reporters,
   });
 
@@ -46,10 +50,12 @@ class PostModel extends Equatable {
       content: data['content'] ?? '',
       imageUrl: data['imageUrl'],
       upvotes: data['upvotes'] ?? 0,
+      downvotes: data['downvotes'] ?? 0,
       commentsCount: data['commentsCount'] ?? 0,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       followers: List<String>.from(data['followers'] ?? []),
       upvoters: List<String>.from(data['upvoters'] ?? []),
+      downvoters: List<String>.from(data['downvoters'] ?? []),
       reporters: List<String>.from(data['reporters'] ?? []),
     );
   }
@@ -63,10 +69,12 @@ class PostModel extends Equatable {
     'content': content,
     'imageUrl': imageUrl,
     'upvotes': upvotes,
+    'downvotes': downvotes,
     'commentsCount': commentsCount,
     'createdAt': createdAt,
     'followers': followers,
     'upvoters': upvoters,
+    'downvoters': downvoters,
     'reporters': reporters,
   };
 
@@ -80,10 +88,12 @@ class PostModel extends Equatable {
     String? content,
     String? imageUrl,
     int? upvotes,
+    int? downvotes,
     int? commentsCount,
     DateTime? createdAt,
     List<String>? followers,
     List<String>? upvoters,
+    List<String>? downvoters,
     List<String>? reporters,
   }) {
     return PostModel(
@@ -96,10 +106,12 @@ class PostModel extends Equatable {
       content: content ?? this.content,
       imageUrl: imageUrl ?? this.imageUrl,
       upvotes: upvotes ?? this.upvotes,
+      downvotes: downvotes ?? this.downvotes,
       commentsCount: commentsCount ?? this.commentsCount,
       createdAt: createdAt ?? this.createdAt,
       followers: followers ?? this.followers,
       upvoters: upvoters ?? this.upvoters,
+      downvoters: downvoters ?? this.downvoters,
       reporters: reporters ?? this.reporters,
     );
   }
@@ -115,10 +127,12 @@ class PostModel extends Equatable {
     content,
     imageUrl,
     upvotes,
+    downvotes,
     commentsCount,
     createdAt,
     followers,
     upvoters,
+    downvoters,
     reporters,
   ];
 }

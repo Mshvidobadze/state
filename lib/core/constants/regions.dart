@@ -213,6 +213,7 @@ const List<String> kRegions = [
 class FilterType {
   static const String newest = 'new';
   static const String top = 'top';
+  static const String mostDownvoted = 'downvoted';
 }
 
 class TimeFilter {

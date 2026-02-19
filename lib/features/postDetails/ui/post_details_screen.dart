@@ -193,6 +193,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
             final post = state.post;
             final comments = state.comments;
             final isUpvoted = state.isUpvoted;
+            final isDownvoted = state.isDownvoted;
             final isFollowing = state.isFollowing;
             final hasMoreComments = state.hasMoreComments;
             final viewingSpecificComment = state.viewingSpecificComment;
@@ -239,6 +240,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
                             child: PostContentSection(
                               post: post,
                               isUpvoted: isUpvoted,
+                              isDownvoted: isDownvoted,
                               isFollowing: isFollowing,
                               commentsCount: post.commentsCount,
                               onAuthorTap: () {

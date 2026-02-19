@@ -53,10 +53,12 @@ class PostCreationCubit extends Cubit<PostCreationState> {
         content: content,
         imageUrl: imageUrl,
         upvotes: 0,
+        downvotes: 0,
         commentsCount: 0,
         createdAt: DateTime.now(),
         followers: [],
         upvoters: [],
+        downvoters: [],
         reporters: [],
       );
       await homeRepository.createPost(post);

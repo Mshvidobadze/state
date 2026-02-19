@@ -25,44 +25,47 @@ class FiltersRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       child: Row(
         children: [
-          InkWell(
-            onTap: () => _showFeedOptions(context),
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.tune, color: Colors.black54, size: 20),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Feed Options',
-                        style: GoogleFonts.beVietnamPro(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87,
-                        ),
+          Expanded(
+            child: InkWell(
+              onTap: () => _showFeedOptions(context),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    const Icon(Icons.tune, color: Colors.black54, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Feed Options',
+                            style: GoogleFonts.beVietnamPro(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            '${currentFilter.region} • ${_getFilterLabel(currentFilter)}',
+                            style: GoogleFonts.beVietnamPro(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      Text(
-                        '${currentFilter.region} • ${_getFilterLabel(currentFilter)}',
-                        style: GoogleFonts.beVietnamPro(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 4),
           IconButton(
             onPressed: onCreatePost,
             icon: const Icon(Icons.add, size: 28, color: Colors.black87),
@@ -96,12 +99,21 @@ class FiltersRow extends StatelessWidget {
   String _getFilterLabel(FilterModel filter) {
     if (filter.filterType == FilterType.newest) {
       return 'New';
+    } else if (filter.filterType == FilterType.mostDownvoted) {
+      return 'Criticized • ${_getTimeFilterLabel(filter.timeFilter)}';
     } else {
-      return _getTimeFilterLabel(filter.timeFilter);
+      return 'Top • ${_getTimeFilterLabel(filter.timeFilter)}';
     }
   }
 
   String _getTimeFilterLabel(String timeFilter) {
+    if (timeFilter.isEmpty) {
+      return 'All Time';
+    }
+    return _getTimeFilterLabelRaw(timeFilter);
+  }
+
+  String _getTimeFilterLabelRaw(String timeFilter) {
     switch (timeFilter) {
       case 'past_hour':
         return 'Past Hour';
@@ -116,7 +128,7 @@ class FiltersRow extends StatelessWidget {
       case 'all_time':
         return 'All Time';
       default:
-        return '';
+        return 'All Time';
     }
   }
 }

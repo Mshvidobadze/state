@@ -25,9 +25,10 @@ class HomeRepositoryImpl implements HomeRepository {
           .collection('posts')
           .where('region', isEqualTo: filter.region);
 
-      // Apply time filter only for "top" filter type
+      // Apply time filter only for ranking-based filter types.
       bool hasTimeFilter = false;
-      if (filter.filterType == FilterType.top &&
+      if ((filter.filterType == FilterType.top ||
+              filter.filterType == FilterType.mostDownvoted) &&
           filter.timeFilter != TimeFilter.allTime &&
           filter.timeFilter.isNotEmpty) {
         final duration = TimeFilter.timeFilterDurations[filter.timeFilter];
@@ -37,29 +38,37 @@ class HomeRepositoryImpl implements HomeRepository {
           hasTimeFilter = true;
         }
       }
+      final usesInMemoryRanking =
+          filter.filterType == FilterType.mostDownvoted || hasTimeFilter;
 
-      // Sort by creation date for "new" filter, otherwise by upvotes
+      // Sort by creation date for "new", otherwise by score field.
       if (filter.filterType == FilterType.newest) {
         query = query.orderBy('createdAt', descending: true);
       } else {
-        // For top posts with time filter, Firestore requires ordering by createdAt first
-        // We'll sort by upvotes in memory after fetching
-        if (hasTimeFilter) {
+        // For time-filtered ranking, Firestore requires ordering by createdAt first.
+        // We'll sort by the selected score field in memory after fetching.
+        if (usesInMemoryRanking) {
           query = query.orderBy('createdAt', descending: true);
         } else {
-          query = query.orderBy('upvotes', descending: true);
+          final scoreField =
+              filter.filterType == FilterType.mostDownvoted
+                  ? 'downvotes'
+                  : 'upvotes';
+          query = query.orderBy(scoreField, descending: true);
         }
       }
 
       // For time-filtered top posts, fetch a larger batch to enable proper sorting
       // Pagination will be handled in-memory
       final fetchLimit =
-          (filter.filterType == FilterType.top && hasTimeFilter)
+          ((filter.filterType == FilterType.top ||
+                      filter.filterType == FilterType.mostDownvoted) &&
+                  usesInMemoryRanking)
               ? 100 // Fetch all posts in time range (up to 100)
               : limit;
 
       // Apply pagination (only for non-time-filtered queries)
-      if (lastDocumentId != null && !hasTimeFilter) {
+      if (lastDocumentId != null && !usesInMemoryRanking) {
         final lastDoc =
             await firestore.collection('posts').doc(lastDocumentId).get();
         if (lastDoc.exists) {
@@ -70,10 +79,16 @@ class HomeRepositoryImpl implements HomeRepository {
       final snapshot = await query.limit(fetchLimit).get();
       final posts = snapshot.docs.map((doc) => PostModel.fromDoc(doc)).toList();
 
-      // For top posts with time filter, sort by upvotes in memory
-      // since Firestore ordered by createdAt for the range query
-      if (filter.filterType == FilterType.top && hasTimeFilter) {
-        posts.sort((a, b) => b.upvotes.compareTo(a.upvotes));
+      // For time-filtered ranking, sort by score in memory since Firestore query
+      // is ordered by createdAt for the range constraint.
+      if ((filter.filterType == FilterType.top ||
+              filter.filterType == FilterType.mostDownvoted) &&
+          usesInMemoryRanking) {
+        if (filter.filterType == FilterType.mostDownvoted) {
+          posts.sort((a, b) => b.downvotes.compareTo(a.downvotes));
+        } else {
+          posts.sort((a, b) => b.upvotes.compareTo(a.upvotes));
+        }
       }
 
       return posts;
@@ -118,6 +133,34 @@ class HomeRepositoryImpl implements HomeRepository {
       });
     } catch (e) {
       throw Exception('Failed to toggle upvote: $e');
+    }
+  }
+
+  @override
+  Future<void> downvotePost(String postId, String userId) async {
+    try {
+      final postRef = firestore.collection('posts').doc(postId);
+      await firestore.runTransaction((tx) async {
+        final doc = await tx.get(postRef);
+        if (!doc.exists) throw Exception('Post not found');
+        final data = doc.data() as Map<String, dynamic>;
+        final List<dynamic> downvoters = data['downvoters'] ?? [];
+        final int downvotes = data['downvotes'] ?? 0;
+
+        if (downvoters.contains(userId)) {
+          tx.update(postRef, {
+            'downvotes': downvotes > 0 ? downvotes - 1 : 0,
+            'downvoters': FieldValue.arrayRemove([userId]),
+          });
+        } else {
+          tx.update(postRef, {
+            'downvotes': downvotes + 1,
+            'downvoters': FieldValue.arrayUnion([userId]),
+          });
+        }
+      });
+    } catch (e) {
+      throw Exception('Failed to toggle downvote: $e');
     }
   }
 

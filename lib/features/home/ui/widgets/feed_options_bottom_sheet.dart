@@ -20,6 +20,7 @@ class FeedOptionsBottomSheet extends StatefulWidget {
 class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
   late FilterModel _currentFilter;
   String? _selectedOption;
+  String? _timeFilterType;
   String _regionQuery = '';
   final TextEditingController _regionSearchController = TextEditingController();
 
@@ -40,15 +41,16 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
     // Use larger size only when showing regions (long list)
     final isShowingRegions = _selectedOption == 'region';
     final isShowingTime = _selectedOption == 'time';
+    final initialChildSize =
+        isShowingRegions
+            ? 1.0
+            : isShowingTime
+            ? 0.5
+            : _mainOptionsInitialSize(context);
 
     return DraggableScrollableSheet(
       key: ValueKey(_selectedOption), // Force rebuild when option changes
-      initialChildSize:
-          isShowingRegions
-              ? 1.0
-              : isShowingTime
-              ? 0.5
-              : 0.35,
+      initialChildSize: initialChildSize,
       minChildSize: 0.2,
       maxChildSize: isShowingRegions ? 1.0 : 0.9,
       builder: (context, scrollController) {
@@ -96,6 +98,20 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
     );
   }
 
+  // Dynamically size the main options sheet so all options fit on small screens.
+  double _mainOptionsInitialSize(BuildContext context) {
+    const mainOptionsCount = 4; // Region, New, Top, Criticized
+    const optionRowApproxHeight = 74.0;
+    const chromeHeight = 84.0; // handle + title area
+
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final safeTop = MediaQuery.paddingOf(context).top;
+    final requiredHeight =
+        chromeHeight + (mainOptionsCount * optionRowApproxHeight) + safeTop;
+
+    return (requiredHeight / screenHeight).clamp(0.35, 0.7);
+  }
+
   Widget _buildContent(ScrollController scrollController) {
     if (_selectedOption == null) {
       // Main options
@@ -134,7 +150,26 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
             subtitle:
                 TimeFilter.timeFilterLabels[_currentFilter.timeFilter] ?? '',
             isSelected: _currentFilter.filterType == FilterType.top,
-            onTap: () => setState(() => _selectedOption = 'time'),
+            onTap: () {
+              setState(() {
+                _timeFilterType = FilterType.top;
+                _selectedOption = 'time';
+              });
+            },
+          ),
+          _buildOptionItem(
+            icon: Icons.trending_down,
+            title: 'Criticized',
+            subtitle:
+                TimeFilter.timeFilterLabels[_currentFilter.timeFilter] ?? '',
+            isSelected:
+                _currentFilter.filterType == FilterType.mostDownvoted,
+            onTap: () {
+              setState(() {
+                _timeFilterType = FilterType.mostDownvoted;
+                _selectedOption = 'time';
+              });
+            },
           ),
         ],
       );
@@ -201,11 +236,12 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
             (timeFilter) => _buildSubOptionItem(
               title: TimeFilter.timeFilterLabels[timeFilter] ?? timeFilter,
               isSelected:
-                  _currentFilter.filterType == FilterType.top &&
+                  _currentFilter.filterType ==
+                      (_timeFilterType ?? FilterType.top) &&
                   _currentFilter.timeFilter == timeFilter,
               onTap: () {
                 final newFilter = _currentFilter.copyWith(
-                  filterType: FilterType.top,
+                  filterType: _timeFilterType ?? FilterType.top,
                   timeFilter: timeFilter,
                 );
                 widget.onFilterChanged(newFilter);
@@ -305,6 +341,7 @@ class _FeedOptionsBottomSheetState extends State<FeedOptionsBottomSheet> {
       onTap: () {
         setState(() {
           _selectedOption = null;
+          _timeFilterType = null;
           _regionQuery = '';
           _regionSearchController.clear();
         });

@@ -21,6 +21,7 @@ class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
   static const double _authButtonWidth = 260;
   static const double _authButtonHeight = 48;
+  static const String _betaVersionLabel = 'Beta - 1.0.6';
 
   Future<void> _launchUrl(String url, BuildContext context) async {
     final Uri uri = Uri.parse(url);
@@ -114,12 +115,14 @@ class SignInScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: Colors.white,
-          body: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 360),
-                child: Column(
-                  children: [
+          body: Stack(
+            children: [
+              SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    child: Column(
+                      children: [
                     // Main content - vertically centered
                     Expanded(
                       child: Column(
@@ -241,68 +244,119 @@ class SignInScreen extends StatelessWidget {
                       ),
                     ),
 
-                    // Bottom legal text
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          style: const TextStyle(
-                            color: Color(0xFF637488),
-                            fontSize: 12,
-                            fontWeight: FontWeight.normal,
-                          ),
-                          children: [
-                            const TextSpan(
-                              text: 'By continuing, you agree to our ',
-                            ),
-                            WidgetSpan(
-                              child: GestureDetector(
+                        // Bottom legal text
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              const Text(
+                                'By continuing, you agree to our ',
+                                style: TextStyle(
+                                  color: Color(0xFF637488),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                              InkWell(
                                 onTap:
                                     () => _launchUrl(
                                       'https://stateapp.net/terms-and-conditions',
                                       context,
                                     ),
-                                child: const Text(
-                                  'Terms of Service',
-                                  style: TextStyle(
-                                    color: Color(0xFF637488),
-                                    decoration: TextDecoration.underline,
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 2),
+                                  child: Text(
+                                    'Terms of Service',
+                                    style: TextStyle(
+                                      color: Color(0xFF637488),
+                                      fontSize: 12,
+                                      decoration: TextDecoration.underline,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const TextSpan(text: ' and '),
-                            WidgetSpan(
-                              child: GestureDetector(
+                              const Text(
+                                ' and ',
+                                style: TextStyle(
+                                  color: Color(0xFF637488),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                              InkWell(
                                 onTap:
                                     () => _launchUrl(
                                       'https://stateapp.net/privacy-policy',
                                       context,
                                     ),
-                                child: const Text(
-                                  'Privacy Policy',
-                                  style: TextStyle(
-                                    color: Color(0xFF637488),
-                                    decoration: TextDecoration.underline,
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 2),
+                                  child: Text(
+                                    'Privacy Policy',
+                                    style: TextStyle(
+                                      color: Color(0xFF637488),
+                                      fontSize: 12,
+                                      decoration: TextDecoration.underline,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const TextSpan(text: '.'),
-                          ],
+                              const Text(
+                                '.',
+                                style: TextStyle(
+                                  color: Color(0xFF637488),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
 
                     const SizedBox(height: 8),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
+              const Positioned(top: 0, right: 0, child: _SignInVersionBadge()),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+class _SignInVersionBadge extends StatelessWidget {
+  const _SignInVersionBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8, right: 12),
+        child: IgnorePointer(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xE674182F),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const Text(
+              SignInScreen._betaVersionLabel,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
