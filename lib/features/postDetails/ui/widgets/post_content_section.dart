@@ -15,6 +15,7 @@ import 'package:state/features/postDetails/ui/widgets/post_details_theme.dart';
 class PostContentSection extends StatelessWidget {
   final PostModel post;
   final bool isUpvoted;
+  final bool isDownvoted;
   final bool isFollowing;
   final int commentsCount;
   final VoidCallback? onAuthorTap;
@@ -23,6 +24,7 @@ class PostContentSection extends StatelessWidget {
     super.key,
     required this.post,
     required this.isUpvoted,
+    required this.isDownvoted,
     required this.isFollowing,
     required this.commentsCount,
     this.onAuthorTap,
@@ -139,6 +141,17 @@ class PostContentSection extends StatelessWidget {
                   isActive: isUpvoted,
                   onPressed:
                       () => context.read<PostDetailsCubit>().toggleUpvote(
+                        post.id,
+                      ),
+                  horizontalPadding: 0,
+                ),
+                const SizedBox(width: 4),
+                _buildActionButton(
+                  icon: Icons.arrow_downward,
+                  label: post.downvotes.toString(),
+                  isActive: isDownvoted,
+                  onPressed:
+                      () => context.read<PostDetailsCubit>().toggleDownvote(
                         post.id,
                       ),
                   horizontalPadding: 0,

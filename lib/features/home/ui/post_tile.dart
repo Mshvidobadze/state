@@ -42,6 +42,7 @@ class PostTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUpvoted = post.upvoters.contains(currentUserId);
+    final isDownvoted = post.downvoters.contains(currentUserId);
     final isAdvertisement = post.authorId.isEmpty;
 
     return Container(
@@ -191,6 +192,13 @@ class PostTile extends StatelessWidget {
                   ),
                   const SizedBox(width: UIConstants.spacingXSmall),
                   _buildActionButton(
+                    icon: Icons.arrow_downward,
+                    label: post.downvotes.toString(),
+                    isActive: isDownvoted,
+                    onPressed: () => _handleDownvote(context),
+                  ),
+                  const SizedBox(width: UIConstants.spacingXSmall),
+                  _buildActionButton(
                     icon: Icons.chat_bubble_outline,
                     label: post.commentsCount.toString(),
                     isActive: false,
@@ -266,6 +274,14 @@ class PostTile extends StatelessWidget {
       cubit.upvotePost(post.id, currentUserId);
     } else {
       context.read<HomeCubit>().upvotePost(post.id, currentUserId);
+    }
+  }
+
+  void _handleDownvote(BuildContext context) {
+    if (cubit != null) {
+      cubit.downvotePost(post.id, currentUserId);
+    } else {
+      context.read<HomeCubit>().downvotePost(post.id, currentUserId);
     }
   }
 

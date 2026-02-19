@@ -55,6 +55,8 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
       final currentUser = _auth.currentUser;
       final isUpvoted =
           currentUser != null && post.upvoters.contains(currentUser.uid);
+      final isDownvoted =
+          currentUser != null && post.downvoters.contains(currentUser.uid);
       final isFollowing =
           currentUser != null && post.followers.contains(currentUser.uid);
       final isReported =
@@ -65,6 +67,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: post,
           comments: comments,
           isUpvoted: isUpvoted,
+          isDownvoted: isDownvoted,
           isFollowing: isFollowing,
           isReported: isReported,
           hasMoreComments: hasMoreComments,
@@ -90,6 +93,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: currentState.post,
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
+          isDownvoted: currentState.isDownvoted,
           isFollowing: currentState.isFollowing,
           isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
@@ -124,6 +128,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
             post: currentState.post,
             comments: updatedComments,
             isUpvoted: currentState.isUpvoted,
+            isDownvoted: currentState.isDownvoted,
             isFollowing: currentState.isFollowing,
             isReported: currentState.isReported,
             hasMoreComments: newComments.length >= _commentsPerPage,
@@ -141,6 +146,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: currentState.post,
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
+          isDownvoted: currentState.isDownvoted,
           isFollowing: currentState.isFollowing,
           isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
@@ -209,6 +215,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
             post: currentState.post,
             comments: currentState.comments,
             isUpvoted: currentState.isUpvoted,
+            isDownvoted: currentState.isDownvoted,
             isFollowing: currentState.isFollowing,
             isReported: currentState.isReported,
             hasMoreComments: currentState.hasMoreComments,
@@ -276,6 +283,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: updatedPost,
           comments: updatedComments,
           isUpvoted: currentState.isUpvoted,
+          isDownvoted: currentState.isDownvoted,
           isFollowing: currentState.isFollowing,
           isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
@@ -341,6 +349,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: currentState.post,
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
+          isDownvoted: currentState.isDownvoted,
           isFollowing: currentState.isFollowing,
           isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
@@ -376,6 +385,65 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: updatedPost,
           comments: currentState.comments,
           isUpvoted: newIsUpvoted,
+          isDownvoted: currentState.isDownvoted,
+          isFollowing: currentState.isFollowing,
+          isReported: currentState.isReported,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
+        ),
+      );
+    } catch (e) {
+      emit(PostDetailsError(e.toString()));
+    }
+  }
+
+  Future<void> toggleDownvote(String postId) async {
+    if (state is! PostDetailsLoaded) return;
+    final currentState = state as PostDetailsLoaded;
+
+    try {
+      emit(
+        PostDetailsDownvoting(
+          post: currentState.post,
+          comments: currentState.comments,
+          isUpvoted: currentState.isUpvoted,
+          isDownvoted: currentState.isDownvoted,
+          isFollowing: currentState.isFollowing,
+          isReported: currentState.isReported,
+          hasMoreComments: currentState.hasMoreComments,
+          lastCommentDocument: currentState.lastCommentDocument,
+          viewingSpecificComment: currentState.viewingSpecificComment,
+        ),
+      );
+
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User must be logged in to downvote');
+      }
+
+      await _repository.toggleDownvote(postId, currentUser.uid);
+
+      final newIsDownvoted = !currentState.isDownvoted;
+      final updatedPost = currentState.post.copyWith(
+        downvotes:
+            newIsDownvoted
+                ? currentState.post.downvotes + 1
+                : currentState.post.downvotes - 1,
+        downvoters:
+            newIsDownvoted
+                ? [...currentState.post.downvoters, currentUser.uid]
+                : currentState.post.downvoters
+                    .where((id) => id != currentUser.uid)
+                    .toList(),
+      );
+
+      emit(
+        PostDetailsLoaded(
+          post: updatedPost,
+          comments: currentState.comments,
+          isUpvoted: currentState.isUpvoted,
+          isDownvoted: newIsDownvoted,
           isFollowing: currentState.isFollowing,
           isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
@@ -408,6 +476,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: currentState.post,
           comments: comments,
           isUpvoted: currentState.isUpvoted,
+          isDownvoted: currentState.isDownvoted,
           isFollowing: currentState.isFollowing,
           isReported: currentState.isReported,
           hasMoreComments: comments.length >= _commentsPerPage,
@@ -440,6 +509,8 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
       final currentUser = _auth.currentUser;
       final isUpvoted =
           currentUser != null && post.upvoters.contains(currentUser.uid);
+      final isDownvoted =
+          currentUser != null && post.downvoters.contains(currentUser.uid);
       final isFollowing =
           currentUser != null && post.followers.contains(currentUser.uid);
 
@@ -451,6 +522,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: post,
           comments: comments,
           isUpvoted: isUpvoted,
+          isDownvoted: isDownvoted,
           isFollowing: isFollowing,
           isReported: isReported,
           hasMoreComments: comments.length >= _commentsPerPage,
@@ -477,6 +549,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: currentState.post,
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
+          isDownvoted: currentState.isDownvoted,
           isFollowing: currentState.isFollowing,
           isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
@@ -508,6 +581,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: updatedPost,
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
+          isDownvoted: currentState.isDownvoted,
           isFollowing: newIsFollowing,
           isReported: currentState.isReported,
           hasMoreComments: currentState.hasMoreComments,
@@ -549,6 +623,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
         post: currentState.post,
         comments: updatedComments,
         isUpvoted: currentState.isUpvoted,
+        isDownvoted: currentState.isDownvoted,
         isFollowing: currentState.isFollowing,
         isReported: currentState.isReported,
         hasMoreComments: currentState.hasMoreComments,
@@ -613,6 +688,7 @@ class PostDetailsCubit extends Cubit<PostDetailsState> {
           post: updatedPost,
           comments: currentState.comments,
           isUpvoted: currentState.isUpvoted,
+          isDownvoted: currentState.isDownvoted,
           isFollowing: currentState.isFollowing,
           isReported: true,
           hasMoreComments: currentState.hasMoreComments,

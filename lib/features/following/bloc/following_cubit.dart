@@ -82,6 +82,42 @@ class FollowingCubit extends Cubit<FollowingState> {
     }
   }
 
+  Future<void> downvotePost(String postId, String userId) async {
+    if (state is! FollowingLoaded) return;
+    try {
+      final posts =
+          (state as FollowingLoaded).posts.map((post) {
+            if (post.id == postId) {
+              final downvoters = post.downvoters;
+              final hasDownvoted = downvoters.contains(userId);
+              final updatedDownvoters = List<String>.from(downvoters);
+              int updatedDownvotes = post.downvotes;
+
+              if (hasDownvoted) {
+                updatedDownvoters.remove(userId);
+                updatedDownvotes = updatedDownvotes > 0 ? updatedDownvotes - 1 : 0;
+              } else {
+                updatedDownvoters.add(userId);
+                updatedDownvotes = updatedDownvotes + 1;
+              }
+
+              return post.copyWith(
+                downvoters: updatedDownvoters,
+                downvotes: updatedDownvotes,
+              );
+            }
+            return post;
+          }).toList();
+
+      final user = firebaseAuth.currentUser;
+      emit(FollowingLoaded(posts, user?.uid ?? '', user?.displayName ?? ''));
+
+      await homeRepository.downvotePost(postId, userId);
+    } catch (e) {
+      emit(FollowingError(e.toString()));
+    }
+  }
+
   Future<void> reportPost(String postId, String userId) async {
     if (state is! FollowingLoaded) return;
     try {

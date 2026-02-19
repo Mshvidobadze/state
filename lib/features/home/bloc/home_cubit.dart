@@ -29,7 +29,10 @@ class HomeCubit extends Cubit<HomeState> {
   String? get currentUserId => firebaseAuth.currentUser?.uid;
   String? get currentUserName => firebaseAuth.currentUser?.displayName ?? '';
 
-  bool _isTimeFilteredTopQuery(FilterModel filter) {
+  bool _usesInMemoryRanking(FilterModel filter) {
+    if (filter.filterType == FilterType.mostDownvoted) {
+      return true;
+    }
     return filter.filterType == FilterType.top &&
         filter.timeFilter != TimeFilter.allTime &&
         filter.timeFilter.isNotEmpty;
@@ -41,19 +44,17 @@ class HomeCubit extends Cubit<HomeState> {
     _currentAdIndex = 0; // Reset ad index
     emit(HomeLoading());
     try {
-      final isTimeFiltered = _isTimeFilteredTopQuery(filter);
+      final isTimeFiltered = _usesInMemoryRanking(filter);
 
-      // Fetch posts and advertisements in parallel
-      final results = await Future.wait([
-        homeRepository.fetchPosts(
-          filter: filter,
-          limit: UIConstants.postsPerPage,
-        ),
-        advertisementRepository.fetchAdvertisements(),
-      ]);
+      // Fetch posts and advertisements in parallel.
+      final postsFuture = homeRepository.fetchPosts(
+        filter: filter,
+        limit: UIConstants.postsPerPage,
+      );
+      final advertisementsFuture = advertisementRepository.fetchAdvertisements();
 
-      final allPosts = results[0] as List<PostModel>;
-      _advertisements = results[1] as List<PostModel>;
+      final allPosts = await postsFuture;
+      _advertisements = await advertisementsFuture;
 
       final user = firebaseAuth.currentUser;
 
@@ -251,6 +252,41 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
+  Future<void> downvotePost(String postId, String userId) async {
+    if (state is! HomeLoaded) return;
+    try {
+      final currentState = state as HomeLoaded;
+      final posts =
+          currentState.posts.map((post) {
+            if (post.id == postId) {
+              final downvoters = post.downvoters;
+              final hasDownvoted = downvoters.contains(userId);
+              final updatedDownvoters = List<String>.from(downvoters);
+              int updatedDownvotes = post.downvotes;
+
+              if (hasDownvoted) {
+                updatedDownvoters.remove(userId);
+                updatedDownvotes = updatedDownvotes > 0 ? updatedDownvotes - 1 : 0;
+              } else {
+                updatedDownvoters.add(userId);
+                updatedDownvotes += 1;
+              }
+
+              return post.copyWith(
+                downvotes: updatedDownvotes,
+                downvoters: updatedDownvoters,
+              );
+            }
+            return post;
+          }).toList();
+
+      emit(currentState.copyWith(posts: posts));
+      await homeRepository.downvotePost(postId, userId);
+    } catch (e) {
+      emit(HomeError(e.toString()));
+    }
+  }
+
   Future<void> followPost(String postId, String userId) async {
     if (state is! HomeLoaded) return;
     try {
@@ -376,7 +412,7 @@ class HomeCubit extends Cubit<HomeState> {
         } catch (_) {}
       }
       if (targetUserId != null && targetUserId != userId) {
-        final isBlocked = await _isInteractionBlocked(userId, targetUserId!);
+        final isBlocked = await _isInteractionBlocked(userId, targetUserId);
         if (isBlocked) {
           return;
         }

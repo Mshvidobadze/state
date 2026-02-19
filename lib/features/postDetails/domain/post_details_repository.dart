@@ -27,6 +27,8 @@ abstract class PostDetailsRepository {
 
   Future<void> toggleUpvote(String postId, String userId);
 
+  Future<void> toggleDownvote(String postId, String userId);
+
   Future<void> toggleCommentUpvote(
     String postId,
     String commentId,

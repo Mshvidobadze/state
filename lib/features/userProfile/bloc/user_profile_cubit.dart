@@ -262,4 +262,40 @@ class UserProfileCubit extends Cubit<UserProfileState> {
       print('Upvote error: $e');
     }
   }
+
+  /// Downvote a post
+  Future<void> downvotePost(String postId, String userId) async {
+    if (state is! UserProfileLoaded) return;
+    try {
+      final currentState = state as UserProfileLoaded;
+      final updatedPosts =
+          currentState.posts.map((post) {
+            if (post.id == postId) {
+              final downvoters = post.downvoters;
+              final hasDownvoted = downvoters.contains(userId);
+              final updatedDownvoters = List<String>.from(downvoters);
+              int updatedDownvotes = post.downvotes;
+
+              if (hasDownvoted) {
+                updatedDownvoters.remove(userId);
+                updatedDownvotes = updatedDownvotes > 0 ? updatedDownvotes - 1 : 0;
+              } else {
+                updatedDownvoters.add(userId);
+                updatedDownvotes = updatedDownvotes + 1;
+              }
+
+              return post.copyWith(
+                downvoters: updatedDownvoters,
+                downvotes: updatedDownvotes,
+              );
+            }
+            return post;
+          }).toList();
+
+      emit(currentState.copyWith(posts: updatedPosts));
+      await homeRepository.downvotePost(postId, userId);
+    } catch (e) {
+      print('Downvote error: $e');
+    }
+  }
 }

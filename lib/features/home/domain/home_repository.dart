@@ -12,6 +12,8 @@ abstract class HomeRepository {
 
   Future<void> upvotePost(String postId, String userId);
 
+  Future<void> downvotePost(String postId, String userId);
+
   Future<void> followPost(String postId, String userId);
 
   Future<void> unfollowPost(String postId, String userId);

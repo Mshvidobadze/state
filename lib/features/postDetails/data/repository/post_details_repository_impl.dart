@@ -280,6 +280,35 @@ class PostDetailsRepositoryImpl implements PostDetailsRepository {
   }
 
   @override
+  Future<void> toggleDownvote(String postId, String userId) async {
+    try {
+      final postRef = firestore.collection('posts').doc(postId);
+      await firestore.runTransaction((tx) async {
+        final doc = await tx.get(postRef);
+        if (!doc.exists) throw Exception('Post not found');
+
+        final data = doc.data() as Map<String, dynamic>;
+        final List<dynamic> downvoters = data['downvoters'] ?? [];
+        final int downvotes = data['downvotes'] ?? 0;
+
+        if (downvoters.contains(userId)) {
+          tx.update(postRef, {
+            'downvotes': downvotes > 0 ? downvotes - 1 : 0,
+            'downvoters': FieldValue.arrayRemove([userId]),
+          });
+        } else {
+          tx.update(postRef, {
+            'downvotes': downvotes + 1,
+            'downvoters': FieldValue.arrayUnion([userId]),
+          });
+        }
+      });
+    } catch (e) {
+      throw Exception('Failed to toggle downvote: $e');
+    }
+  }
+
+  @override
   Future<void> toggleCommentUpvote(
     String postId,
     String commentId,
