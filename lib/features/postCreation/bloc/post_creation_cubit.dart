@@ -8,6 +8,8 @@ import 'package:state/features/home/domain/home_repository.dart';
 import 'post_creation_state.dart';
 
 class PostCreationCubit extends Cubit<PostCreationState> {
+  static const int maxImagesPerPost = 5;
+
   final HomeRepository homeRepository;
   final FirebaseAuth firebaseAuth;
   final FirebaseStorage firebaseStorage;
@@ -21,25 +23,32 @@ class PostCreationCubit extends Cubit<PostCreationState> {
   Future<void> createPost({
     required String region,
     required String content,
-    File? imageFile,
+    List<File> imageFiles = const [],
   }) async {
     emit(PostCreationLoading());
     try {
       final user = firebaseAuth.currentUser;
       if (user == null) throw Exception('User not signed in');
 
-      String? imageUrl;
-      if (imageFile != null) {
-        final ref = firebaseStorage
-            .ref()
-            .child('post_images')
-            .child('${DateTime.now().millisecondsSinceEpoch}_${user.uid}.jpg');
-        try {
-          final uploadTask = await ref.putFile(imageFile);
-          imageUrl = await uploadTask.ref.getDownloadURL();
-        } catch (e) {
-          emit(PostCreationError('Image upload failed: $e'));
-          return;
+      final limitedImageFiles = imageFiles.take(maxImagesPerPost).toList();
+      final uploadedImageUrls = <String>[];
+      if (limitedImageFiles.isNotEmpty) {
+        for (var i = 0; i < limitedImageFiles.length; i++) {
+          final imageFile = limitedImageFiles[i];
+          final ref = firebaseStorage
+              .ref()
+              .child('post_images')
+              .child(
+                '${DateTime.now().millisecondsSinceEpoch}_${user.uid}_$i.jpg',
+              );
+          try {
+            final uploadTask = await ref.putFile(imageFile);
+            final imageUrl = await uploadTask.ref.getDownloadURL();
+            uploadedImageUrls.add(imageUrl);
+          } catch (e) {
+            emit(PostCreationError('Image upload failed: $e'));
+            return;
+          }
         }
       }
 
@@ -51,7 +60,8 @@ class PostCreationCubit extends Cubit<PostCreationState> {
         region: region,
         title: '',
         content: content,
-        imageUrl: imageUrl,
+        imageUrl: uploadedImageUrls.isNotEmpty ? uploadedImageUrls.first : null,
+        imageUrls: uploadedImageUrls,
         upvotes: 0,
         downvotes: 0,
         commentsCount: 0,
