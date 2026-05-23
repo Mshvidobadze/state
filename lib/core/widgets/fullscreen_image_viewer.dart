@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:state/core/widgets/post_image_loading_placeholder.dart';
@@ -42,6 +44,12 @@ class FullscreenImageViewer extends StatefulWidget {
 class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
   late final PageController _pageController;
   late int _currentIndex;
+  final Map<int, PhotoViewScaleStateController> _scaleStateControllers = {};
+  final Map<int, StreamSubscription<PhotoViewScaleState>> _scaleSubscriptions =
+      {};
+
+  double _dragOffset = 0;
+  bool _isDismissDragging = false;
 
   @override
   void initState() {
@@ -53,69 +61,171 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
   @override
   void dispose() {
     _pageController.dispose();
+    for (final subscription in _scaleSubscriptions.values) {
+      subscription.cancel();
+    }
+    for (final controller in _scaleStateControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  PhotoViewScaleStateController _scaleControllerFor(int index) {
+    return _scaleStateControllers.putIfAbsent(index, () {
+      final controller = PhotoViewScaleStateController();
+      _scaleSubscriptions[index] = controller.outputScaleStateStream.listen((_) {
+        if (_currentIndex == index && mounted) {
+          setState(() {});
+        }
+      });
+      return controller;
+    });
+  }
+
+  bool get _canDragToDismiss {
+    final controller = _scaleStateControllers[_currentIndex];
+    if (controller == null) return true;
+    return controller.scaleState == PhotoViewScaleState.initial;
+  }
+
+  void _onPageChanged(int index) {
+    setState(() {
+      _currentIndex = index;
+      _dragOffset = 0;
+      _isDismissDragging = false;
+    });
+  }
+
+  void _handleDragUpdate(DragUpdateDetails details) {
+    if (!_canDragToDismiss && !_isDismissDragging) return;
+
+    setState(() {
+      _isDismissDragging = true;
+      _dragOffset += details.delta.dy;
+    });
+  }
+
+  void _handleDragEnd(DragEndDetails details) {
+    if (!_isDismissDragging) return;
+
+    final height = MediaQuery.sizeOf(context).height;
+    final velocity = details.primaryVelocity ?? 0;
+    final shouldDismiss =
+        _dragOffset.abs() > height * 0.12 || velocity.abs() > 650;
+
+    if (shouldDismiss) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    setState(() {
+      _dragOffset = 0;
+      _isDismissDragging = false;
+    });
+  }
+
+  void _handleDragCancel() {
+    if (!_isDismissDragging) return;
+    setState(() {
+      _dragOffset = 0;
+      _isDismissDragging = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final height = MediaQuery.sizeOf(context).height;
+    final dragProgress = (_dragOffset.abs() / height).clamp(0.0, 1.0);
+    final backgroundOpacity = (1 - dragProgress * 0.85).clamp(0.0, 1.0);
+    final contentScale = (1 - dragProgress * 0.05).clamp(0.9, 1.0);
+
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: widget.imageUrls.length,
-            onPageChanged: (index) => setState(() => _currentIndex = index),
-            itemBuilder:
-                (context, index) => _FullscreenPhotoPage(
-                  imageUrl: widget.imageUrls[index],
-                  heroTag:
-                      index == widget.initialIndex
-                          ? widget.heroTagBuilder?.call(index)
-                          : null,
+      backgroundColor: Colors.black.withValues(alpha: backgroundOpacity),
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onVerticalDragStart:
+            _canDragToDismiss
+                ? (_) => setState(() => _isDismissDragging = true)
+                : null,
+        onVerticalDragUpdate:
+            _canDragToDismiss || _isDismissDragging ? _handleDragUpdate : null,
+        onVerticalDragEnd: _isDismissDragging ? _handleDragEnd : null,
+        onVerticalDragCancel: _handleDragCancel,
+        child: Transform.translate(
+          offset: Offset(0, _dragOffset),
+          child: Transform.scale(
+            scale: contentScale,
+            child: Stack(
+              children: [
+                PageView.builder(
+                  controller: _pageController,
+                  physics:
+                      _isDismissDragging
+                          ? const NeverScrollableScrollPhysics()
+                          : const PageScrollPhysics(),
+                  itemCount: widget.imageUrls.length,
+                  onPageChanged: _onPageChanged,
+                  itemBuilder:
+                      (context, index) => _FullscreenPhotoPage(
+                        imageUrl: widget.imageUrls[index],
+                        heroTag:
+                            index == widget.initialIndex
+                                ? widget.heroTagBuilder?.call(index)
+                                : null,
+                        scaleStateController: _scaleControllerFor(index),
+                        disableGestures: _isDismissDragging,
+                      ),
                 ),
-          ),
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white, size: 28),
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: IconButton.styleFrom(backgroundColor: Colors.black54),
-                ),
-              ),
-            ),
-          ),
-          if (widget.imageUrls.length > 1)
-            SafeArea(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      '${_currentIndex + 1} / ${widget.imageUrls.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black54,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+                if (widget.imageUrls.length > 1)
+                  SafeArea(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            '${_currentIndex + 1} / ${widget.imageUrls.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -124,10 +234,14 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
 class _FullscreenPhotoPage extends StatefulWidget {
   final String imageUrl;
   final String? heroTag;
+  final PhotoViewScaleStateController scaleStateController;
+  final bool disableGestures;
 
   const _FullscreenPhotoPage({
     required this.imageUrl,
     this.heroTag,
+    required this.scaleStateController,
+    this.disableGestures = false,
   });
 
   @override
@@ -217,7 +331,10 @@ class _FullscreenPhotoPageState extends State<_FullscreenPhotoPage> {
             ),
           ),
         if (_isImageReady && !_hasError)
-          _buildPhotoView(),
+          PhotoViewGestureDetectorScope(
+            axis: Axis.vertical,
+            child: _buildPhotoView(),
+          ),
       ],
     );
   }
@@ -227,7 +344,9 @@ class _FullscreenPhotoPageState extends State<_FullscreenPhotoPage> {
       imageProvider: NetworkImage(widget.imageUrl),
       minScale: PhotoViewComputedScale.contained,
       maxScale: PhotoViewComputedScale.covered * 3,
-      backgroundDecoration: const BoxDecoration(color: Colors.black),
+      backgroundDecoration: const BoxDecoration(color: Colors.transparent),
+      scaleStateController: widget.scaleStateController,
+      disableGestures: widget.disableGestures,
       gaplessPlayback: true,
     );
 
