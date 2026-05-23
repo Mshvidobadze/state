@@ -21,7 +21,7 @@ class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
   static const double _authButtonWidth = 260;
   static const double _authButtonHeight = 48;
-  static const String _betaVersionLabel = 'Beta - 1.0.6';
+  static const String _betaVersionLabel = 'Beta - 1.0.3';
 
   Future<void> _launchUrl(String url, BuildContext context) async {
     final Uri uri = Uri.parse(url);
