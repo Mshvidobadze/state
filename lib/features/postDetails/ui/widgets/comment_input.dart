@@ -26,13 +26,39 @@ class CommentInput extends StatefulWidget {
 
 class _CommentInputState extends State<CommentInput> {
   final _controller = TextEditingController();
-  bool _isComposing = false;
-  File? _selectedImage;
+  final _selectedImage = ValueNotifier<File?>(null);
   final ImagePicker _picker = ImagePicker();
+  TextStyle? _inputTextStyle;
+  TextStyle? _hintTextStyle;
+  late final Listenable _submitStateListenable;
+
+  bool get _canSubmit =>
+      _controller.text.trim().isNotEmpty || _selectedImage.value != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _submitStateListenable = Listenable.merge([_controller, _selectedImage]);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final hintColor =
+        Theme.of(context).brightness == Brightness.light
+            ? Colors.black38
+            : Colors.white38;
+    _inputTextStyle ??= GoogleFonts.beVietnamPro(fontSize: 14);
+    _hintTextStyle ??= GoogleFonts.beVietnamPro(
+      color: hintColor,
+      fontSize: 14,
+    );
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    _selectedImage.dispose();
     super.dispose();
   }
 
@@ -59,30 +85,22 @@ class _CommentInputState extends State<CommentInput> {
       }
 
       if (image != null && mounted) {
-        setState(() {
-          _selectedImage = File(image!.path);
-          _isComposing = true;
-        });
+        _selectedImage.value = File(image.path);
       }
     }
   }
 
   void _removeImage() {
-    setState(() {
-      _selectedImage = null;
-      _isComposing = _controller.text.trim().isNotEmpty;
-    });
+    _selectedImage.value = null;
   }
 
   void _handleSubmit() {
     final text = _controller.text.trim();
-    if (text.isNotEmpty || _selectedImage != null) {
-      widget.onSubmit(text, _selectedImage);
+    final image = _selectedImage.value;
+    if (text.isNotEmpty || image != null) {
+      widget.onSubmit(text, image);
       _controller.clear();
-      setState(() {
-        _isComposing = false;
-        _selectedImage = null;
-      });
+      _selectedImage.value = null;
     }
   }
 
@@ -134,35 +152,43 @@ class _CommentInputState extends State<CommentInput> {
               ),
             ),
           // Image Preview
-          if (_selectedImage != null)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      _selectedImage!,
-                      height: 150,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: _removeImage,
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.black54,
-                        padding: const EdgeInsets.all(4),
+          ValueListenableBuilder<File?>(
+            valueListenable: _selectedImage,
+            builder: (context, selectedImage, _) {
+              if (selectedImage == null) {
+                return const SizedBox.shrink();
+              }
+
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        selectedImage,
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: _removeImage,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black54,
+                          padding: const EdgeInsets.all(4),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Row(
@@ -175,26 +201,16 @@ class _CommentInputState extends State<CommentInput> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
+                    key: const ValueKey('comment_input_field'),
                     controller: _controller,
                     enabled: widget.enabled,
-                    onChanged: (text) {
-                      setState(
-                        () =>
-                            _isComposing =
-                                text.trim().isNotEmpty ||
-                                _selectedImage != null,
-                      );
-                    },
-                    style: GoogleFonts.beVietnamPro(fontSize: 14),
+                    style: _inputTextStyle,
                     decoration: InputDecoration(
                       hintText:
                           widget.enabled
                               ? 'Add a comment...'
                               : (widget.disabledHint ?? 'You cannot comment here'),
-                      hintStyle: GoogleFonts.beVietnamPro(
-                        color: hintColor,
-                        fontSize: 14,
-                      ),
+                      hintStyle: _hintTextStyle,
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -219,10 +235,17 @@ class _CommentInputState extends State<CommentInput> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _isComposing ? _handleSubmit : null,
-                  color: _isComposing ? const Color(0xFF74182F) : hintColor,
+                ListenableBuilder(
+                  listenable: _submitStateListenable,
+                  builder: (context, _) {
+                    final canSubmit = _canSubmit;
+                    return IconButton(
+                      icon: const Icon(Icons.send),
+                      onPressed: canSubmit ? _handleSubmit : null,
+                      color:
+                          canSubmit ? const Color(0xFF74182F) : hintColor,
+                    );
+                  },
                 ),
               ],
             ),

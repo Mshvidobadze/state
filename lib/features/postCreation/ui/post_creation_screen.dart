@@ -24,6 +24,8 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
   final List<File> _selectedImages = [];
   final PageController _imagesPageController = PageController();
   int _currentImagePage = 0;
+  TextStyle? _contentTextStyle;
+  TextStyle? _contentHintStyle;
 
   @override
   void initState() {
@@ -123,6 +125,20 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _contentTextStyle ??= GoogleFonts.beVietnamPro(
+      color: const Color(0xFF121416),
+      fontSize: 16,
+      height: 1.5,
+    );
+    _contentHintStyle ??= GoogleFonts.beVietnamPro(
+      color: const Color(0xFF6A7681),
+      fontSize: 16,
+    );
+  }
+
+  @override
   void dispose() {
     contentController.dispose();
     _imagesPageController.dispose();
@@ -131,7 +147,7 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<PostCreationCubit, PostCreationState>(
+    return BlocListener<PostCreationCubit, PostCreationState>(
       listener: (context, state) {
         if (state is PostCreationSuccess) {
           Navigator.of(context).pop(true);
@@ -145,56 +161,147 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
           );
         }
       },
-      builder: (context, state) {
-        return Scaffold(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          elevation: 0,
           backgroundColor: Colors.white,
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: Colors.white,
-            iconTheme: const IconThemeData(color: Colors.black87),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.black87,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+          iconTheme: const IconThemeData(color: Colors.black87),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: BlocBuilder<PostCreationCubit, PostCreationState>(
+                buildWhen:
+                    (previous, current) =>
+                        (previous is PostCreationLoading) !=
+                        (current is PostCreationLoading),
+                builder: (context, state) {
+                  return TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.black87,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    onPressed:
+                        state is PostCreationLoading
+                            ? null
+                            : () {
+                              final content = contentController.text.trim();
+                              if (content.isNotEmpty ||
+                                  _selectedImages.isNotEmpty) {
+                                context.read<PostCreationCubit>().createPost(
+                                  region: selectedRegion,
+                                  content: content,
+                                  imageFiles: _selectedImages,
+                                );
+                              }
+                            },
+                    child:
+                        state is PostCreationLoading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.black54,
+                                ),
+                              ),
+                            )
+                            : const Text('Post'),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.grey.withValues(alpha: 0.2),
+                    ),
                   ),
-                  onPressed:
-                      state is PostCreationLoading
-                          ? null
-                          : () {
-                            final content = contentController.text.trim();
-                            // Allow posting with just image or just text or both
-                            if (content.isNotEmpty || _selectedImages.isNotEmpty) {
-                              context.read<PostCreationCubit>().createPost(
-                                region: selectedRegion,
-                                content: content,
-                                imageFiles: _selectedImages,
-                              );
-                            }
-                          },
-                  child:
-                      state is PostCreationLoading
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.black54,
+                ),
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    InkWell(
+                      onTap: _showRegionPicker,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.public,
+                              size: 20,
+                              color: Colors.black54,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              selectedRegion,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                          )
-                          : const Text('Post'),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.arrow_drop_down,
+                              size: 20,
+                              color: Colors.black54,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.add,
+                              size: 20,
+                              color: Colors.black87,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _selectedImages.isEmpty
+                                  ? 'Add Photos'
+                                  : '${_selectedImages.length}/${PostCreationCubit.maxImagesPerPost} Photos',
+                              style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
+              if (_selectedImages.isNotEmpty)
                 Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: UIConstants.spacingLarge,
+                    vertical: UIConstants.spacingLarge,
+                  ),
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
@@ -202,211 +309,120 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                       ),
                     ),
                   ),
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Stack(
                     children: [
-                      InkWell(
-                        onTap: _showRegionPicker,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              UIConstants.radiusMedium,
+                            ),
+                            child: SizedBox(
+                              height: 280,
+                              child: PageView.builder(
+                                controller: _imagesPageController,
+                                itemCount: _selectedImages.length,
+                                onPageChanged: (index) {
+                                  setState(() => _currentImagePage = index);
+                                },
+                                itemBuilder: (context, index) {
+                                  return Image.file(
+                                    _selectedImages[index],
+                                    width: double.infinity,
+                                    fit: BoxFit.contain,
+                                  );
+                                },
+                              ),
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.public,
-                                size: 20,
-                                color: Colors.black54,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                selectedRegion,
-                                style: const TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.arrow_drop_down,
-                                size: 20,
-                                color: Colors.black54,
-                              ),
-                            ],
-                          ),
-                        ),
+                          if (_selectedImages.length > 1) ...[
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(_selectedImages.length, (
+                                index,
+                              ) {
+                                final isActive = index == _currentImagePage;
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 3,
+                                  ),
+                                  width: isActive ? 8 : 6,
+                                  height: isActive ? 8 : 6,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        isActive
+                                            ? const Color(0xFF111418)
+                                            : const Color(0xFFBFC5CC),
+                                    shape: BoxShape.circle,
+                                  ),
+                                );
+                              }),
+                            ),
+                          ],
+                        ],
                       ),
-                      GestureDetector(
-                        onTap: _pickImage,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.add,
-                                size: 20,
-                                color: Colors.black87,
+                      Positioned(
+                        top: UIConstants.spacingSmall,
+                        right: UIConstants.spacingSmall,
+                        child: GestureDetector(
+                          onTap: () => _removeSelectedImage(_currentImagePage),
+                          child: Container(
+                            padding: const EdgeInsets.all(
+                              UIConstants.spacingXSmall,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(
+                                UIConstants.radiusLarge,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _selectedImages.isEmpty
-                                    ? 'Add Photos'
-                                    : '${_selectedImages.length}/${PostCreationCubit.maxImagesPerPost} Photos',
-                                style: TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: UIConstants.iconMedium,
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                if (_selectedImages.isNotEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: UIConstants.spacingLarge,
-                      vertical: UIConstants.spacingLarge,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.grey.withValues(alpha: 0.2),
-                        ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
+                  key: const ValueKey('post_creation_content_field'),
+                  controller: contentController,
+                  maxLines: 8,
+                  style: _contentTextStyle,
+                  decoration: InputDecoration(
+                    hintText: "What's on your mind?",
+                    hintStyle: _contentHintStyle,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Colors.grey.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: Stack(
-                      children: [
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                UIConstants.radiusMedium,
-                              ),
-                              child: SizedBox(
-                                height: 280,
-                                child: PageView.builder(
-                                  controller: _imagesPageController,
-                                  itemCount: _selectedImages.length,
-                                  onPageChanged: (index) {
-                                    setState(() => _currentImagePage = index);
-                                  },
-                                  itemBuilder: (context, index) {
-                                    return Image.file(
-                                      _selectedImages[index],
-                                      width: double.infinity,
-                                      fit: BoxFit.contain,
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                            if (_selectedImages.length > 1) ...[
-                              const SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(_selectedImages.length, (
-                                  index,
-                                ) {
-                                  final isActive = index == _currentImagePage;
-                                  return AnimatedContainer(
-                                    duration: const Duration(milliseconds: 150),
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 3,
-                                    ),
-                                    width: isActive ? 8 : 6,
-                                    height: isActive ? 8 : 6,
-                                    decoration: BoxDecoration(
-                                      color:
-                                          isActive
-                                              ? const Color(0xFF111418)
-                                              : const Color(0xFFBFC5CC),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  );
-                                }),
-                              ),
-                            ],
-                          ],
-                        ),
-                        Positioned(
-                          top: UIConstants.spacingSmall,
-                          right: UIConstants.spacingSmall,
-                          child: GestureDetector(
-                            onTap: () => _removeSelectedImage(_currentImagePage),
-                            child: Container(
-                              padding: const EdgeInsets.all(
-                                UIConstants.spacingXSmall,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(
-                                  UIConstants.radiusLarge,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: UIConstants.iconMedium,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Colors.grey.withValues(alpha: 0.3),
+                      ),
                     ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: TextField(
-                    controller: contentController,
-                    maxLines: 8,
-                    style: GoogleFonts.beVietnamPro(
-                      color: const Color(0xFF121416),
-                      fontSize: 16,
-                      height: 1.5,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: "What's on your mind?",
-                      hintStyle: GoogleFonts.beVietnamPro(
-                        color: const Color(0xFF6A7681),
-                        fontSize: 16,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.grey.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Colors.grey.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.black54),
-                      ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.black54),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
