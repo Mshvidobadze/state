@@ -5,6 +5,7 @@ import 'package:state/features/home/domain/home_repository.dart';
 import 'package:state/features/home/domain/advertisement_repository.dart';
 import 'package:state/features/home/data/models/filter_model.dart';
 import 'package:state/features/home/data/models/post_model.dart';
+import 'package:state/features/home/data/models/feed_item.dart';
 import 'package:state/features/home/utils/advertisement_inserter.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/constants/regions.dart';
@@ -139,10 +140,9 @@ class HomeCubit extends Cubit<HomeState> {
     try {
       final user = firebaseAuth.currentUser;
 
-      // Remove ads from current posts to get clean post list
+      // Remove ads from current feed to get clean post list
       final currentPostsWithoutAds = AdvertisementInserter.removeAdvertisements(
-        postsWithAds: currentState.posts,
-        advertisements: _advertisements,
+        feedItems: currentState.feedItems,
       );
 
       // Check if we're using in-memory pagination
@@ -220,31 +220,35 @@ class HomeCubit extends Cubit<HomeState> {
     if (state is! HomeLoaded) return;
     try {
       final currentState = state as HomeLoaded;
-      final posts =
-          currentState.posts.map((post) {
-            if (post.id == postId) {
-              final upvoters = post.upvoters;
-              bool hasUpvoted = upvoters.contains(userId);
-              final updatedUpvoters = List<String>.from(upvoters);
-              int updatedUpvotes = post.upvotes;
+      final feedItems =
+          currentState.feedItems.map((item) {
+            if (item.type != FeedItemType.post || item.post.id != postId) {
+              return item;
+            }
 
-              if (hasUpvoted) {
-                updatedUpvoters.remove(userId);
-                updatedUpvotes = updatedUpvotes > 0 ? updatedUpvotes - 1 : 0;
-              } else {
-                updatedUpvoters.add(userId);
-                updatedUpvotes += 1;
-              }
+            final post = item.post;
+            final upvoters = post.upvoters;
+            final hasUpvoted = upvoters.contains(userId);
+            final updatedUpvoters = List<String>.from(upvoters);
+            var updatedUpvotes = post.upvotes;
 
-              return post.copyWith(
+            if (hasUpvoted) {
+              updatedUpvoters.remove(userId);
+              updatedUpvotes = updatedUpvotes > 0 ? updatedUpvotes - 1 : 0;
+            } else {
+              updatedUpvoters.add(userId);
+              updatedUpvotes += 1;
+            }
+
+            return item.copyWith(
+              post: post.copyWith(
                 upvotes: updatedUpvotes,
                 upvoters: updatedUpvoters,
-              );
-            }
-            return post;
+              ),
+            );
           }).toList();
 
-      emit(currentState.copyWith(posts: posts));
+      emit(currentState.copyWith(feedItems: feedItems));
 
       await homeRepository.upvotePost(postId, userId);
     } catch (e) {
@@ -256,31 +260,35 @@ class HomeCubit extends Cubit<HomeState> {
     if (state is! HomeLoaded) return;
     try {
       final currentState = state as HomeLoaded;
-      final posts =
-          currentState.posts.map((post) {
-            if (post.id == postId) {
-              final downvoters = post.downvoters;
-              final hasDownvoted = downvoters.contains(userId);
-              final updatedDownvoters = List<String>.from(downvoters);
-              int updatedDownvotes = post.downvotes;
+      final feedItems =
+          currentState.feedItems.map((item) {
+            if (item.type != FeedItemType.post || item.post.id != postId) {
+              return item;
+            }
 
-              if (hasDownvoted) {
-                updatedDownvoters.remove(userId);
-                updatedDownvotes = updatedDownvotes > 0 ? updatedDownvotes - 1 : 0;
-              } else {
-                updatedDownvoters.add(userId);
-                updatedDownvotes += 1;
-              }
+            final post = item.post;
+            final downvoters = post.downvoters;
+            final hasDownvoted = downvoters.contains(userId);
+            final updatedDownvoters = List<String>.from(downvoters);
+            var updatedDownvotes = post.downvotes;
 
-              return post.copyWith(
+            if (hasDownvoted) {
+              updatedDownvoters.remove(userId);
+              updatedDownvotes = updatedDownvotes > 0 ? updatedDownvotes - 1 : 0;
+            } else {
+              updatedDownvoters.add(userId);
+              updatedDownvotes += 1;
+            }
+
+            return item.copyWith(
+              post: post.copyWith(
                 downvotes: updatedDownvotes,
                 downvoters: updatedDownvoters,
-              );
-            }
-            return post;
+              ),
+            );
           }).toList();
 
-      emit(currentState.copyWith(posts: posts));
+      emit(currentState.copyWith(feedItems: feedItems));
       await homeRepository.downvotePost(postId, userId);
     } catch (e) {
       emit(HomeError(e.toString()));
@@ -292,17 +300,22 @@ class HomeCubit extends Cubit<HomeState> {
     try {
       await homeRepository.followPost(postId, userId);
       final currentState = state as HomeLoaded;
-      final posts =
-          currentState.posts.map((post) {
-            if (post.id == postId && !post.followers.contains(userId)) {
-              final updatedFollowers = List<String>.from(post.followers)
-                ..add(userId);
-              return post.copyWith(followers: updatedFollowers);
+      final feedItems =
+          currentState.feedItems.map((item) {
+            if (item.type != FeedItemType.post ||
+                item.post.id != postId ||
+                item.post.followers.contains(userId)) {
+              return item;
             }
-            return post;
+
+            final updatedFollowers = List<String>.from(item.post.followers)
+              ..add(userId);
+            return item.copyWith(
+              post: item.post.copyWith(followers: updatedFollowers),
+            );
           }).toList();
 
-      emit(currentState.copyWith(posts: posts));
+      emit(currentState.copyWith(feedItems: feedItems));
     } catch (e) {
       emit(HomeError(e.toString()));
     }
@@ -313,17 +326,22 @@ class HomeCubit extends Cubit<HomeState> {
     try {
       await homeRepository.unfollowPost(postId, userId);
       final currentState = state as HomeLoaded;
-      final posts =
-          currentState.posts.map((post) {
-            if (post.id == postId && post.followers.contains(userId)) {
-              final updatedFollowers = List<String>.from(post.followers)
-                ..remove(userId);
-              return post.copyWith(followers: updatedFollowers);
+      final feedItems =
+          currentState.feedItems.map((item) {
+            if (item.type != FeedItemType.post ||
+                item.post.id != postId ||
+                !item.post.followers.contains(userId)) {
+              return item;
             }
-            return post;
+
+            final updatedFollowers = List<String>.from(item.post.followers)
+              ..remove(userId);
+            return item.copyWith(
+              post: item.post.copyWith(followers: updatedFollowers),
+            );
           }).toList();
 
-      emit(currentState.copyWith(posts: posts));
+      emit(currentState.copyWith(feedItems: feedItems));
     } catch (e) {
       emit(HomeError(e.toString()));
     }
@@ -344,22 +362,27 @@ class HomeCubit extends Cubit<HomeState> {
       // Optimistically update UI first
       final currentState = state as HomeLoaded;
       print(
-        '🚩 [HOME_CUBIT] Current posts count: ${currentState.posts.length}',
+        '🚩 [HOME_CUBIT] Current feed items count: ${currentState.feedItems.length}',
       );
 
-      final posts =
-          currentState.posts.map((post) {
-            if (post.id == postId && !post.reporters.contains(userId)) {
-              print('🚩 [HOME_CUBIT] Found post to update, adding reporter');
-              final updatedReporters = List<String>.from(post.reporters)
-                ..add(userId);
-              return post.copyWith(reporters: updatedReporters);
+      final feedItems =
+          currentState.feedItems.map((item) {
+            if (item.type != FeedItemType.post ||
+                item.post.id != postId ||
+                item.post.reporters.contains(userId)) {
+              return item;
             }
-            return post;
+
+            print('🚩 [HOME_CUBIT] Found post to update, adding reporter');
+            final updatedReporters = List<String>.from(item.post.reporters)
+              ..add(userId);
+            return item.copyWith(
+              post: item.post.copyWith(reporters: updatedReporters),
+            );
           }).toList();
 
       print('🚩 [HOME_CUBIT] Emitting updated state');
-      emit(currentState.copyWith(posts: posts));
+      emit(currentState.copyWith(feedItems: feedItems));
 
       // Then persist to backend
       print('🚩 [HOME_CUBIT] Calling repository.reportPost');
@@ -385,9 +408,9 @@ class HomeCubit extends Cubit<HomeState> {
       if (state is HomeLoaded) {
         final currentState = state as HomeLoaded;
         PostModel? found;
-        for (final p in currentState.posts) {
-          if (p.id == postId) {
-            found = p;
+        for (final item in currentState.feedItems) {
+          if (item.type == FeedItemType.post && item.post.id == postId) {
+            found = item.post;
             break;
           }
         }

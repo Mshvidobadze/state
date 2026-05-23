@@ -1,4 +1,4 @@
-import 'package:state/features/home/data/models/post_model.dart';
+import 'package:state/features/home/data/models/feed_item.dart';
 
 abstract class HomeState {}
 
@@ -7,7 +7,7 @@ class HomeInitial extends HomeState {}
 class HomeLoading extends HomeState {}
 
 class HomeLoaded extends HomeState {
-  final List<PostModel> posts;
+  final List<FeedItem> feedItems;
   final String currentUserId;
   final String currentUserName;
   final bool hasMorePosts;
@@ -15,7 +15,7 @@ class HomeLoaded extends HomeState {
   final String? lastDocumentId;
 
   HomeLoaded(
-    this.posts,
+    this.feedItems,
     this.currentUserId,
     this.currentUserName, {
     this.hasMorePosts = true,
@@ -24,7 +24,7 @@ class HomeLoaded extends HomeState {
   });
 
   HomeLoaded copyWith({
-    List<PostModel>? posts,
+    List<FeedItem>? feedItems,
     String? currentUserId,
     String? currentUserName,
     bool? hasMorePosts,
@@ -32,7 +32,7 @@ class HomeLoaded extends HomeState {
     String? lastDocumentId,
   }) {
     return HomeLoaded(
-      posts ?? this.posts,
+      feedItems ?? this.feedItems,
       currentUserId ?? this.currentUserId,
       currentUserName ?? this.currentUserName,
       hasMorePosts: hasMorePosts ?? this.hasMorePosts,
