@@ -284,6 +284,12 @@ class _UserScreenState extends State<UserScreen> {
     );
   }
 
+  Future<void> _onRefresh() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await context.read<UserProfileCubit>().refreshProfile(user.uid);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthCubit, AuthState>(
@@ -331,9 +337,13 @@ class _UserScreenState extends State<UserScreen> {
           ),
           body: BlocBuilder<UserProfileCubit, UserProfileState>(
             builder: (context, state) {
-              return SafeArea(
-                child: CustomScrollView(
-                  slivers: [
+              return RefreshIndicator(
+                color: Theme.of(context).primaryColor,
+                onRefresh: _onRefresh,
+                child: SafeArea(
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
                     // (Title moved to AppBar)
 
                     // Profile picture and user info
@@ -526,11 +536,13 @@ class _UserScreenState extends State<UserScreen> {
                       )
                     else if (state is UserProfileLoaded)
                       if (state.posts.isEmpty)
-                        SliverToBoxAdapter(
+                        SliverFillRemaining(
+                          hasScrollBody: false,
                           child: Padding(
                             padding: const EdgeInsets.all(32.0),
                             child: Center(
                               child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
                                     Icons.post_add,
@@ -581,7 +593,8 @@ class _UserScreenState extends State<UserScreen> {
                     const SliverToBoxAdapter(child: SizedBox(height: 12)),
                   ],
                 ),
-              );
+              ),
+            );
             },
           ),
         );
