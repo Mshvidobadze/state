@@ -110,8 +110,9 @@ class PostContentSection extends StatelessWidget {
               onImageTap: (index) {
                 FullscreenImageViewer.show(
                   context,
-                  imageUrl: post.resolvedImageUrls[index],
-                  heroTag: 'post-image-${post.id}-$index',
+                  imageUrls: post.resolvedImageUrls,
+                  initialIndex: index,
+                  heroTagBuilder: (i) => 'post-image-${post.id}-$i',
                 );
               },
               onDoubleTap: () {
