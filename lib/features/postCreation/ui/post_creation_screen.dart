@@ -2,14 +2,15 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:state/core/constants/ui_constants.dart';
 import 'package:state/core/services/preferences_service.dart';
+import 'package:state/core/widgets/stable_multiline_text_field.dart';
 import 'package:state/features/postCreation/bloc/post_creation_cubit.dart';
 import 'package:state/features/postCreation/bloc/post_creation_state.dart';
-import 'package:state/features/postCreation/ui/widgets/region_picker_bottom_sheet.dart';
 import 'package:state/features/postCreation/ui/widgets/image_source_selector.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:state/features/postCreation/ui/widgets/region_picker_bottom_sheet.dart';
 
 class PostCreationScreen extends StatefulWidget {
   const PostCreationScreen({super.key});
@@ -19,13 +20,9 @@ class PostCreationScreen extends StatefulWidget {
 }
 
 class _PostCreationScreenState extends State<PostCreationScreen> {
-  String selectedRegion = 'Global'; // Will be updated in initState
+  String selectedRegion = 'Georgia';
   final TextEditingController contentController = TextEditingController();
   final List<File> _selectedImages = [];
-  final PageController _imagesPageController = PageController();
-  int _currentImagePage = 0;
-  TextStyle? _contentTextStyle;
-  TextStyle? _contentHintStyle;
 
   @override
   void initState() {
@@ -73,7 +70,6 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
       final remainingSlots =
           PostCreationCubit.maxImagesPerPost - _selectedImages.length;
 
-      // Opens camera or gallery based on user selection from ImageSourceSelector
       if (result == true) {
         final image = await picker.pickImage(
           source: ImageSource.camera,
@@ -110,38 +106,12 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
 
   void _removeSelectedImage(int index) {
     if (index < 0 || index >= _selectedImages.length) return;
-    setState(() {
-      _selectedImages.removeAt(index);
-      if (_selectedImages.isEmpty) {
-        _currentImagePage = 0;
-      } else if (_currentImagePage >= _selectedImages.length) {
-        _currentImagePage = _selectedImages.length - 1;
-      }
-    });
-
-    if (_selectedImages.isNotEmpty && _imagesPageController.hasClients) {
-      _imagesPageController.jumpToPage(_currentImagePage);
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _contentTextStyle ??= GoogleFonts.beVietnamPro(
-      color: const Color(0xFF121416),
-      fontSize: 16,
-      height: 1.5,
-    );
-    _contentHintStyle ??= GoogleFonts.beVietnamPro(
-      color: const Color(0xFF6A7681),
-      fontSize: 16,
-    );
+    setState(() => _selectedImages.removeAt(index));
   }
 
   @override
   void dispose() {
     contentController.dispose();
-    _imagesPageController.dispose();
     super.dispose();
   }
 
@@ -163,6 +133,7 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
+        resizeToAvoidBottomInset: true,
         appBar: AppBar(
           elevation: 0,
           backgroundColor: Colors.white,
@@ -283,7 +254,7 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                               _selectedImages.isEmpty
                                   ? 'Add Photos'
                                   : '${_selectedImages.length}/${PostCreationCubit.maxImagesPerPost} Photos',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Colors.black87,
                                 fontSize: 14,
                               ),
@@ -296,132 +267,197 @@ class _PostCreationScreenState extends State<PostCreationScreen> {
                 ),
               ),
               if (_selectedImages.isNotEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: UIConstants.spacingLarge,
-                    vertical: UIConstants.spacingLarge,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey.withValues(alpha: 0.2),
-                      ),
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              UIConstants.radiusMedium,
-                            ),
-                            child: SizedBox(
-                              height: 280,
-                              child: PageView.builder(
-                                controller: _imagesPageController,
-                                itemCount: _selectedImages.length,
-                                onPageChanged: (index) {
-                                  setState(() => _currentImagePage = index);
-                                },
-                                itemBuilder: (context, index) {
-                                  return Image.file(
-                                    _selectedImages[index],
-                                    width: double.infinity,
-                                    fit: BoxFit.contain,
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          if (_selectedImages.length > 1) ...[
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(_selectedImages.length, (
-                                index,
-                              ) {
-                                final isActive = index == _currentImagePage;
-                                return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 3,
-                                  ),
-                                  width: isActive ? 8 : 6,
-                                  height: isActive ? 8 : 6,
-                                  decoration: BoxDecoration(
-                                    color:
-                                        isActive
-                                            ? const Color(0xFF111418)
-                                            : const Color(0xFFBFC5CC),
-                                    shape: BoxShape.circle,
-                                  ),
-                                );
-                              }),
-                            ),
-                          ],
-                        ],
-                      ),
-                      Positioned(
-                        top: UIConstants.spacingSmall,
-                        right: UIConstants.spacingSmall,
-                        child: GestureDetector(
-                          onTap: () => _removeSelectedImage(_currentImagePage),
-                          child: Container(
-                            padding: const EdgeInsets.all(
-                              UIConstants.spacingXSmall,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              borderRadius: BorderRadius.circular(
-                                UIConstants.radiusLarge,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: UIConstants.iconMedium,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                _PostCreationImagePreview(
+                  images: _selectedImages,
+                  onRemove: _removeSelectedImage,
                 ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: TextField(
-                  key: const ValueKey('post_creation_content_field'),
-                  controller: contentController,
-                  maxLines: 8,
-                  style: _contentTextStyle,
-                  decoration: InputDecoration(
-                    hintText: "What's on your mind?",
-                    hintStyle: _contentHintStyle,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: Colors.grey.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: Colors.grey.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.black54),
-                    ),
-                  ),
-                ),
-              ),
+              _PostCreationContentField(controller: contentController),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PostCreationContentField extends StatefulWidget {
+  final TextEditingController controller;
+
+  const _PostCreationContentField({required this.controller});
+
+  @override
+  State<_PostCreationContentField> createState() =>
+      _PostCreationContentFieldState();
+}
+
+class _PostCreationContentFieldState extends State<_PostCreationContentField> {
+  late final TextStyle _textStyle;
+  late final TextStyle _hintStyle;
+  var _stylesReady = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_stylesReady) return;
+    _stylesReady = true;
+    final fontFamily = GoogleFonts.beVietnamPro().fontFamily;
+    _textStyle = TextStyle(
+      fontFamily: fontFamily,
+      color: const Color(0xFF121416),
+      fontSize: 16,
+      height: 1.5,
+    );
+    _hintStyle = TextStyle(
+      fontFamily: fontFamily,
+      color: const Color(0xFF6A7681),
+      fontSize: 16,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: StableMultilineTextField(
+        key: const ValueKey('post_creation_stable_field'),
+        controller: widget.controller,
+        hintText: "What's on your mind?",
+        maxLines: 8,
+        textStyle: _textStyle,
+        hintStyle: _hintStyle,
+        borderRadius: BorderRadius.circular(8),
+        borderColor: Colors.grey.withValues(alpha: 0.3),
+        focusedBorderColor: Colors.black54,
+      ),
+    );
+  }
+}
+
+class _PostCreationImagePreview extends StatefulWidget {
+  final List<File> images;
+  final ValueChanged<int> onRemove;
+
+  const _PostCreationImagePreview({
+    required this.images,
+    required this.onRemove,
+  });
+
+  @override
+  State<_PostCreationImagePreview> createState() =>
+      _PostCreationImagePreviewState();
+}
+
+class _PostCreationImagePreviewState extends State<_PostCreationImagePreview> {
+  late final PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PostCreationImagePreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.images.isEmpty) {
+      _currentPage = 0;
+      return;
+    }
+    if (_currentPage >= widget.images.length) {
+      _currentPage = widget.images.length - 1;
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(_currentPage);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: UIConstants.spacingLarge,
+        vertical: UIConstants.spacingLarge,
+      ),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
+        ),
+      ),
+      child: Stack(
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(UIConstants.radiusMedium),
+                child: SizedBox(
+                  height: 280,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: widget.images.length,
+                    onPageChanged: (index) => setState(() => _currentPage = index),
+                    itemBuilder: (context, index) {
+                      return Image.file(
+                        widget.images[index],
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                      );
+                    },
+                  ),
+                ),
+              ),
+              if (widget.images.length > 1) ...[
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(widget.images.length, (index) {
+                    final isActive = index == _currentPage;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: isActive ? 8 : 6,
+                      height: isActive ? 8 : 6,
+                      decoration: BoxDecoration(
+                        color:
+                            isActive
+                                ? const Color(0xFF111418)
+                                : const Color(0xFFBFC5CC),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ],
+          ),
+          Positioned(
+            top: UIConstants.spacingSmall,
+            right: UIConstants.spacingSmall,
+            child: GestureDetector(
+              onTap: () => widget.onRemove(_currentPage),
+              child: Container(
+                padding: const EdgeInsets.all(UIConstants.spacingXSmall),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(UIConstants.radiusLarge),
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: UIConstants.iconMedium,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

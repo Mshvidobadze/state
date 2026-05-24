@@ -30,6 +30,9 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   String? _replyingToUserName;
   final Set<String> _collapsedCommentIds = {};
   final GlobalKey _commentInputKey = GlobalKey();
+  bool _blockedWithAuthor = false;
+  bool _blockingLoaded = false;
+  String? _blockingAuthorId;
 
   Future<bool> _isInteractionBlockedWith(String otherUserId) async {
     final me = context.read<PostDetailsCubit>().currentUserId;
@@ -94,6 +97,19 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
     });
   }
 
+  Future<void> _loadCommentBlocking(String authorId) async {
+    if (_blockingAuthorId == authorId && _blockingLoaded) return;
+
+    _blockingAuthorId = authorId;
+    final blocked = await _isInteractionBlockedWith(authorId);
+    if (!mounted || _blockingAuthorId != authorId) return;
+
+    setState(() {
+      _blockedWithAuthor = blocked;
+      _blockingLoaded = true;
+    });
+  }
+
   void _showPostOptions(
     BuildContext context,
     bool isFollowing,
@@ -140,6 +156,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
 
     return Scaffold(
       backgroundColor: theme.backgroundColor,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: theme.cardColor,
@@ -176,7 +193,17 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
           ),
         ],
       ),
-      body: BlocBuilder<PostDetailsCubit, PostDetailsState>(
+      body: BlocConsumer<PostDetailsCubit, PostDetailsState>(
+        listenWhen:
+            (previous, current) =>
+                current is PostDetailsWithData &&
+                (previous is! PostDetailsWithData ||
+                    previous.post.authorId != current.post.authorId),
+        listener: (context, state) {
+          if (state is PostDetailsWithData) {
+            _loadCommentBlocking(state.post.authorId);
+          }
+        },
         builder: (context, state) {
           if (state is PostDetailsLoading) {
             return const PostDetailsSkeleton();
@@ -191,21 +218,41 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
 
           // Handle all loaded states using the base class
           if (state is PostDetailsWithData) {
-            return _PostDetailsLoadedView(
-              key: ValueKey(state.post.id),
-              state: state,
-              postId: widget.postId,
-              commentInputKey: _commentInputKey,
-              replyingToCommentId: _replyingToCommentId,
-              replyingToUserName: _replyingToUserName,
-              collapsedCommentIds: _collapsedCommentIds,
-              onReply: _handleReply,
-              onCancelReply: _cancelReply,
-              onToggleCommentCollapse: _toggleCommentCollapse,
-              onShowPostOptions: _showPostOptions,
-              onReport: _handleReport,
-              isInteractionBlockedWith: _isInteractionBlockedWith,
-              getMyBlockedUsers: _getMyBlockedUsers,
+            final post = state.post;
+
+            return Column(
+              children: [
+                Expanded(
+                  child: _PostDetailsScrollContent(
+                    key: ValueKey(post.id),
+                    state: state,
+                    postId: widget.postId,
+                    collapsedCommentIds: _collapsedCommentIds,
+                    onReply: _handleReply,
+                    onToggleCommentCollapse: _toggleCommentCollapse,
+                    isInteractionBlockedWith: _isInteractionBlockedWith,
+                    getMyBlockedUsers: _getMyBlockedUsers,
+                  ),
+                ),
+                CommentInput(
+                  key: _commentInputKey,
+                  enabled: _blockingLoaded ? !_blockedWithAuthor : true,
+                  disabledHint:
+                      'You cannot comment on this post due to blocking settings.',
+                  onSubmit: (content, imageFile) {
+                    context.read<PostDetailsCubit>().addComment(
+                      postId: post.id,
+                      content: content,
+                      imageFile: imageFile,
+                      parentCommentId: _replyingToCommentId,
+                    );
+                    _cancelReply();
+                  },
+                  replyingTo:
+                      _replyingToCommentId != null ? _replyingToUserName : null,
+                  onCancelReply: _cancelReply,
+                ),
+              ],
             );
           }
 
@@ -216,44 +263,32 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   }
 }
 
-class _PostDetailsLoadedView extends StatefulWidget {
+class _PostDetailsScrollContent extends StatefulWidget {
   final PostDetailsWithData state;
   final String postId;
-  final GlobalKey commentInputKey;
-  final String? replyingToCommentId;
-  final String? replyingToUserName;
   final Set<String> collapsedCommentIds;
   final void Function(String commentId, String userName) onReply;
-  final VoidCallback onCancelReply;
   final void Function(String commentId) onToggleCommentCollapse;
-  final void Function(BuildContext context, bool isFollowing, bool isReported)
-  onShowPostOptions;
-  final void Function(BuildContext context) onReport;
   final Future<bool> Function(String otherUserId) isInteractionBlockedWith;
   final Future<Set<String>> Function() getMyBlockedUsers;
 
-  const _PostDetailsLoadedView({
+  const _PostDetailsScrollContent({
     super.key,
     required this.state,
     required this.postId,
-    required this.commentInputKey,
-    required this.replyingToCommentId,
-    required this.replyingToUserName,
     required this.collapsedCommentIds,
     required this.onReply,
-    required this.onCancelReply,
     required this.onToggleCommentCollapse,
-    required this.onShowPostOptions,
-    required this.onReport,
     required this.isInteractionBlockedWith,
     required this.getMyBlockedUsers,
   });
 
   @override
-  State<_PostDetailsLoadedView> createState() => _PostDetailsLoadedViewState();
+  State<_PostDetailsScrollContent> createState() =>
+      _PostDetailsScrollContentState();
 }
 
-class _PostDetailsLoadedViewState extends State<_PostDetailsLoadedView> {
+class _PostDetailsScrollContentState extends State<_PostDetailsScrollContent> {
   late Future<List<dynamic>> _interactionFuture;
 
   @override
@@ -263,7 +298,7 @@ class _PostDetailsLoadedViewState extends State<_PostDetailsLoadedView> {
   }
 
   @override
-  void didUpdateWidget(covariant _PostDetailsLoadedView oldWidget) {
+  void didUpdateWidget(covariant _PostDetailsScrollContent oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.state.post.authorId != widget.state.post.authorId) {
       _interactionFuture = _loadInteractionState();
@@ -295,167 +330,134 @@ class _PostDetailsLoadedViewState extends State<_PostDetailsLoadedView> {
                 ? (snapshot.data![1] as Set<String>)
                 : <String>{};
 
-        return Column(
-          children: [
-            Expanded(
-              child: RefreshIndicator(
-                color: Theme.of(context).primaryColor,
-                onRefresh: () async {
-                  await context.read<PostDetailsCubit>().refreshPostDetails(
-                    post.id,
-                  );
-                },
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (ScrollNotification scrollInfo) {
-                    if (scrollInfo.metrics.pixels >=
-                        scrollInfo.metrics.maxScrollExtent * 0.75) {
-                      if (hasMoreComments) {
-                        context.read<PostDetailsCubit>().loadMoreComments(
-                          post.id,
-                        );
+        return RefreshIndicator(
+          color: Theme.of(context).primaryColor,
+          onRefresh: () async {
+            await context.read<PostDetailsCubit>().refreshPostDetails(post.id);
+          },
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (scrollInfo.metrics.pixels >=
+                  scrollInfo.metrics.maxScrollExtent * 0.75) {
+                if (hasMoreComments) {
+                  context.read<PostDetailsCubit>().loadMoreComments(post.id);
+                }
+              }
+              return false;
+            },
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: PostContentSection(
+                    post: post,
+                    isUpvoted: widget.state.isUpvoted,
+                    isDownvoted: widget.state.isDownvoted,
+                    isFollowing: widget.state.isFollowing,
+                    commentsCount: post.commentsCount,
+                    onAuthorTap: () {
+                      sl<INavigationService>().goToUserProfile(
+                        context,
+                        post.authorId,
+                      );
+                    },
+                  ),
+                ),
+                if (viewingSpecificComment)
+                  SliverToBoxAdapter(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      child: OutlinedButton(
+                        onPressed: () {
+                          context.read<PostDetailsCubit>().loadAllComments(
+                            post.id,
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF111418),
+                          side: const BorderSide(
+                            color: Color(0xFFE5E7EB),
+                            width: 1,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Load All Comments',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                SliverPadding(
+                  padding: const EdgeInsets.only(top: 8),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final comment = comments[index];
+                      final currentUserId =
+                          context.read<PostDetailsCubit>().currentUserId;
+                      if (currentUserId == null) {
+                        return const SizedBox.shrink();
                       }
-                    }
-                    return false;
-                  },
-                  child: CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: PostContentSection(
-                          post: post,
-                          isUpvoted: widget.state.isUpvoted,
-                          isDownvoted: widget.state.isDownvoted,
-                          isFollowing: widget.state.isFollowing,
-                          commentsCount: post.commentsCount,
+
+                      return Container(
+                        color: theme.cardColor,
+                        margin: const EdgeInsets.only(bottom: 1),
+                        child: CommentItem(
+                          comment: comment,
+                          currentUserId: currentUserId,
+                          onReply:
+                              (commentId) => widget.onReply(
+                                commentId,
+                                comment.userName,
+                              ),
+                          onUpvote: (commentId) {
+                            context.read<PostDetailsCubit>().toggleCommentUpvote(
+                              widget.postId,
+                              commentId,
+                            );
+                          },
+                          onToggleCollapse: widget.onToggleCommentCollapse,
+                          isCollapsed: widget.collapsedCommentIds.contains(
+                            comment.id,
+                          ),
+                          collapsedCommentIds: widget.collapsedCommentIds,
                           onAuthorTap: () {
                             sl<INavigationService>().goToUserProfile(
                               context,
-                              post.authorId,
+                              comment.userId,
                             );
                           },
+                          canReply:
+                              !blockedWithAuthor &&
+                              !myBlockedSet.contains(comment.userId),
                         ),
-                      ),
-                      if (viewingSpecificComment)
-                        SliverToBoxAdapter(
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 16,
-                            ),
-                            child: OutlinedButton(
-                              onPressed: () {
-                                context
-                                    .read<PostDetailsCubit>()
-                                    .loadAllComments(post.id);
-                              },
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF111418),
-                                side: const BorderSide(
-                                  color: Color(0xFFE5E7EB),
-                                  width: 1,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'Load All Comments',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      SliverPadding(
-                        padding: const EdgeInsets.only(top: 8),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate((context, index) {
-                            final comment = comments[index];
-                            final currentUserId =
-                                context.read<PostDetailsCubit>().currentUserId;
-                            if (currentUserId == null) {
-                              return const SizedBox.shrink();
-                            }
-
-                            return Container(
-                              color: theme.cardColor,
-                              margin: const EdgeInsets.only(bottom: 1),
-                              child: CommentItem(
-                                comment: comment,
-                                currentUserId: currentUserId,
-                                onReply:
-                                    (commentId) => widget.onReply(
-                                      commentId,
-                                      comment.userName,
-                                    ),
-                                onUpvote: (commentId) {
-                                  context
-                                      .read<PostDetailsCubit>()
-                                      .toggleCommentUpvote(
-                                        widget.postId,
-                                        commentId,
-                                      );
-                                },
-                                onToggleCollapse:
-                                    widget.onToggleCommentCollapse,
-                                isCollapsed: widget.collapsedCommentIds.contains(
-                                  comment.id,
-                                ),
-                                collapsedCommentIds: widget.collapsedCommentIds,
-                                onAuthorTap: () {
-                                  sl<INavigationService>().goToUserProfile(
-                                    context,
-                                    comment.userId,
-                                  );
-                                },
-                                canReply:
-                                    !blockedWithAuthor &&
-                                    !myBlockedSet.contains(comment.userId),
-                              ),
-                            );
-                          }, childCount: comments.length),
-                        ),
-                      ),
-                      if (hasMoreComments)
-                        const SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                        ),
-                    ],
+                      );
+                    }, childCount: comments.length),
                   ),
                 ),
-              ),
+                if (hasMoreComments)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+              ],
             ),
-            CommentInput(
-              key: widget.commentInputKey,
-              enabled: !blockedWithAuthor,
-              disabledHint:
-                  'You cannot comment on this post due to blocking settings.',
-              onSubmit: (content, imageFile) {
-                context.read<PostDetailsCubit>().addComment(
-                  postId: post.id,
-                  content: content,
-                  imageFile: imageFile,
-                  parentCommentId: widget.replyingToCommentId,
-                );
-                widget.onCancelReply();
-              },
-              replyingTo:
-                  widget.replyingToCommentId != null
-                      ? widget.replyingToUserName
-                      : null,
-              onCancelReply: widget.onCancelReply,
-            ),
-          ],
+          ),
         );
       },
     );

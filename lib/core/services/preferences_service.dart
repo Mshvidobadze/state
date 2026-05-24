@@ -11,7 +11,7 @@ class PreferencesService {
 
   static Future<String> getRegion() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_regionKey) ?? 'Global';
+    return prefs.getString(_regionKey) ?? 'Georgia';
   }
 
   static Future<bool> hasSeenFeedOptionsPrompt() async {
