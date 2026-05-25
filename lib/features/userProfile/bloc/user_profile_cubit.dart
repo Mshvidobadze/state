@@ -47,9 +47,33 @@ class UserProfileCubit extends Cubit<UserProfileState> {
     }
   }
 
-  /// Refresh user profile and posts
+  /// Refresh user profile and posts without replacing the screen with a loader.
   Future<void> refreshProfile(String userId) async {
-    await loadUserProfile(userId);
+    if (state is! UserProfileLoaded) {
+      await loadUserProfile(userId);
+      return;
+    }
+
+    try {
+      final results = await Future.wait([
+        userProfileRepository.fetchUserProfile(userId),
+        userProfileRepository.fetchUserPosts(userId),
+      ]);
+
+      final userProfile = results[0] as UserProfileModel;
+      final posts = results[1] as List<PostModel>;
+      final currentState = state as UserProfileLoaded;
+
+      emit(
+        UserProfileLoaded(
+          userProfile: userProfile,
+          posts: posts,
+          isLoadingMore: currentState.isLoadingMore,
+        ),
+      );
+    } catch (_) {
+      // Keep current content visible; RefreshIndicator will still complete.
+    }
   }
 
   /// Load more posts (for future pagination)

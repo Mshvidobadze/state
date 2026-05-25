@@ -235,7 +235,7 @@ class HomeScreenState extends State<HomeScreen> {
                           },
                         );
                       } else if (state is HomeLoaded) {
-                        if (state.posts.isEmpty) {
+                        if (state.feedItems.isEmpty) {
                           return Center(
                             child: Text(
                               'No posts found.',
@@ -251,11 +251,11 @@ class HomeScreenState extends State<HomeScreen> {
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: EdgeInsets.zero,
                             itemCount:
-                                state.posts.length +
+                                state.feedItems.length +
                                 (state.isLoadingMore ? 1 : 0),
                             itemBuilder: (context, index) {
                               // Show loading indicator at the end when loading more
-                              if (index == state.posts.length) {
+                              if (index == state.feedItems.length) {
                                 return const Padding(
                                   padding: EdgeInsets.all(16.0),
                                   child: Center(
@@ -264,24 +264,25 @@ class HomeScreenState extends State<HomeScreen> {
                                 );
                               }
 
-                              final post = state.posts[index];
+                              final feedItem = state.feedItems[index];
                               return Column(
                                 children: [
                                   PostTile(
-                                    post: post,
+                                    post: feedItem.post,
+                                    feedItemType: feedItem.type,
                                     currentUserId: state.currentUserId,
                                     currentUserName: state.currentUserName,
                                     onAuthorTap:
-                                        post.authorId.isNotEmpty
+                                        feedItem.isPost
                                             ? () {
                                               final navigationService =
                                                   sl<INavigationService>();
                                               navigationService.goToUserProfile(
                                                 context,
-                                                post.authorId,
+                                                feedItem.post.authorId,
                                               );
                                             }
-                                            : null, // Don't navigate for ads
+                                            : null,
                                   ),
                                   Container(
                                     height: 1,

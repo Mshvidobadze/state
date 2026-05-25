@@ -9,6 +9,7 @@ import 'package:state/core/widgets/post_image_carousel.dart';
 import 'package:state/core/services/navigation_service.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/features/home/bloc/home_cubit.dart';
+import 'package:state/features/home/data/models/feed_item.dart';
 import 'package:state/features/home/data/models/post_model.dart';
 import 'package:state/features/home/ui/widgets/post_options_bottom_sheet.dart';
 import 'package:state/features/home/ui/widgets/report_confirmation_dialog.dart';
@@ -16,10 +17,12 @@ import 'package:state/features/userProfile/bloc/user_profile_cubit.dart';
 import 'package:state/features/following/bloc/following_cubit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:state/core/services/share_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PostTile extends StatelessWidget {
   static const int _previewMaxCharacters = 400;
   final PostModel post;
+  final FeedItemType feedItemType;
   final String currentUserId;
   final String currentUserName;
   final VoidCallback? onUnfollow;
@@ -29,6 +32,7 @@ class PostTile extends StatelessWidget {
 
   const PostTile({
     required this.post,
+    this.feedItemType = FeedItemType.post,
     required this.currentUserId,
     required this.currentUserName,
     this.onUnfollow,
@@ -42,7 +46,11 @@ class PostTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUpvoted = post.upvoters.contains(currentUserId);
     final isDownvoted = post.downvoters.contains(currentUserId);
-    final isAdvertisement = post.authorId.isEmpty;
+    final isAdvertisement = feedItemType == FeedItemType.advertisement;
+    final VoidCallback? headerTap =
+        isAdvertisement
+            ? () => _openAdvertisementLink(context)
+            : onAuthorTap;
 
     return Container(
       color: Colors.white,
@@ -52,36 +60,42 @@ class PostTile extends StatelessWidget {
           // Header with author info (not navigable)
           Stack(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Author avatar
-                    AvatarWidget(
-                      imageUrl: post.authorPhotoUrl,
-                      size: UIConstants.avatarSmall,
-                      displayName: post.authorName,
-                      onTap: onAuthorTap,
-                    ),
-                    const SizedBox(width: 8),
-                    // Author name and timestamp
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: onAuthorTap,
+              GestureDetector(
+                behavior:
+                    isAdvertisement
+                        ? HitTestBehavior.opaque
+                        : HitTestBehavior.deferToChild,
+                onTap: headerTap,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Author avatar
+                      AvatarWidget(
+                        imageUrl: post.authorPhotoUrl,
+                        size: UIConstants.avatarSmall,
+                        displayName: post.authorName,
+                        onTap: headerTap,
+                      ),
+                      const SizedBox(width: 8),
+                      // Author name and timestamp
+                      Expanded(
                         child: Row(
                           children: [
-                            Text(
-                              post.authorName,
-                              style: GoogleFonts.beVietnamPro(
-                                color: const Color(0xFF121416),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                            Flexible(
+                              child: Text(
+                                post.authorName,
+                                style: GoogleFonts.beVietnamPro(
+                                  color: const Color(0xFF121416),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -95,8 +109,8 @@ class PostTile extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               if (showOptions && !isAdvertisement)
@@ -119,12 +133,12 @@ class PostTile extends StatelessWidget {
             ],
           ),
 
-          // Post content area (navigable for regular posts, not for ads)
+          // Post content area (navigable for regular posts, opens link for ads)
           GestureDetector(
             behavior: HitTestBehavior.opaque, // Makes empty spaces clickable
             onTap:
                 isAdvertisement
-                    ? null // Don't navigate for ads
+                    ? () => _openAdvertisementLink(context)
                     : () {
                       final navigationService = sl<INavigationService>();
                       navigationService.goToPostDetails(context, post.id);
@@ -163,8 +177,9 @@ class PostTile extends StatelessWidget {
                       onImageTap: (index) {
                         FullscreenImageViewer.show(
                           context,
-                          imageUrl: post.resolvedImageUrls[index],
-                          heroTag: 'post-image-${post.id}-$index',
+                          imageUrls: post.resolvedImageUrls,
+                          initialIndex: index,
+                          heroTagBuilder: (i) => 'post-image-${post.id}-$i',
                         );
                       },
                       onDoubleTap:
@@ -343,6 +358,31 @@ class PostTile extends StatelessWidget {
   void _handleShare(BuildContext context) {
     final shareService = sl<ShareService>();
     shareService.sharePost(context, post);
+  }
+
+  Future<void> _openAdvertisementLink(BuildContext context) async {
+    final rawLink = post.link?.trim();
+    if (rawLink == null || rawLink.isEmpty) return;
+
+    final url =
+        rawLink.contains('://') ? rawLink : 'https://$rawLink';
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+      return;
+    }
+
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open link. Please try again.'),
+        ),
+      );
+    }
   }
 
   void _showPostOptions(BuildContext context) {

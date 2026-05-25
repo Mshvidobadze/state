@@ -81,11 +81,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             final isLoadingMore = state.isLoadingMore;
 
             return RefreshIndicator(
+              color: Theme.of(context).primaryColor,
               onRefresh:
                   () => context.read<UserProfileCubit>().refreshProfile(
                     widget.userId,
                   ),
               child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   // Profile header
                   SliverToBoxAdapter(
@@ -109,11 +111,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
                   // Posts list
                   if (posts.isEmpty)
-                    SliverToBoxAdapter(
+                    SliverFillRemaining(
+                      hasScrollBody: false,
                       child: Padding(
                         padding: const EdgeInsets.all(32.0),
                         child: Center(
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
                                 Icons.post_add,

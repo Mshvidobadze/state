@@ -19,6 +19,7 @@ class PostModel extends Equatable {
   final List<String> upvoters;
   final List<String> downvoters;
   final List<String> reporters;
+  final String? link;
 
   const PostModel({
     required this.id,
@@ -38,6 +39,7 @@ class PostModel extends Equatable {
     required this.upvoters,
     required this.downvoters,
     required this.reporters,
+    this.link,
   });
 
   factory PostModel.fromDoc(DocumentSnapshot doc) {
@@ -69,6 +71,7 @@ class PostModel extends Equatable {
       upvoters: List<String>.from(data['upvoters'] ?? []),
       downvoters: List<String>.from(data['downvoters'] ?? []),
       reporters: List<String>.from(data['reporters'] ?? []),
+      link: data['link'] as String?,
     );
   }
 
@@ -89,6 +92,7 @@ class PostModel extends Equatable {
     'upvoters': upvoters,
     'downvoters': downvoters,
     'reporters': reporters,
+    if (link != null) 'link': link,
   };
 
   PostModel copyWith({
@@ -109,6 +113,7 @@ class PostModel extends Equatable {
     List<String>? upvoters,
     List<String>? downvoters,
     List<String>? reporters,
+    String? link,
   }) {
     return PostModel(
       id: id ?? this.id,
@@ -128,6 +133,7 @@ class PostModel extends Equatable {
       upvoters: upvoters ?? this.upvoters,
       downvoters: downvoters ?? this.downvoters,
       reporters: reporters ?? this.reporters,
+      link: link ?? this.link,
     );
   }
 
@@ -150,6 +156,7 @@ class PostModel extends Equatable {
     upvoters,
     downvoters,
     reporters,
+    link,
   ];
 
   List<String> get resolvedImageUrls {

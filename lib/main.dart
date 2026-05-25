@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:state/service_locator.dart';
 import 'package:state/core/services/notification_service.dart';
 import 'package:state/core/services/fcm_token_service.dart';
@@ -9,6 +10,8 @@ import 'app/app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await GoogleFonts.pendingFonts([GoogleFonts.beVietnamPro()]);
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await initInjections();
